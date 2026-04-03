@@ -929,6 +929,151 @@
 
 /* ── Portal paciente ─────────────────────────────────────── */
 
+.portal-wrap {
+  max-width: 540px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.portal-bienvenida {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 28px;
+}
+
+.portal-bienvenida-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--kine-accent);
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portal-bienvenida-nombre {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--kine-text);
+}
+
+.portal-bienvenida-sub {
+  font-size: 13px;
+  color: var(--kine-text-3);
+  margin-top: 2px;
+}
+
+.portal-seccion-titulo {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--kine-text-3);
+  margin-bottom: 12px;
+}
+
+.portal-fecha-sesion {
+  font-size: 12px;
+  color: var(--kine-text-2);
+  margin-bottom: 12px;
+}
+
+.portal-ejercicios-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.portal-ejercicio-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--kine-surface);
+  border: 1px solid var(--kine-border);
+  border-radius: var(--kine-radius);
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: box-shadow 0.15s, border-color 0.15s;
+}
+.portal-ejercicio-row:hover {
+  border-color: var(--kine-accent);
+  box-shadow: 0 2px 8px rgba(14,165,233,0.1);
+}
+
+.portal-ejercicio-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--kine-accent-bg);
+  color: var(--kine-accent);
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.portal-ejercicio-info { flex: 1; min-width: 0; }
+
+.portal-ejercicio-nombre {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--kine-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.portal-ejercicio-cat {
+  font-size: 12px;
+  color: var(--kine-text-3);
+  margin-top: 2px;
+}
+
+.portal-ejercicio-params {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.portal-ejercicio-params span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--kine-accent);
+}
+.portal-ejercicio-params small {
+  font-size: 10px;
+  font-weight: 400;
+  color: var(--kine-text-3);
+}
+
+.portal-ejercicio-arrow {
+  font-size: 20px;
+  color: var(--kine-text-3);
+  flex-shrink: 0;
+}
+
+.portal-sin-ejercicios {
+  text-align: center;
+  padding: 48px 0;
+  color: var(--kine-text-2);
+  font-size: 14px;
+}
+
+.portal-sin-paciente {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--kine-text-2);
+  font-size: 14px;
+  line-height: 1.6;
+}
+.portal-sin-paciente-icon { font-size: 48px; margin-bottom: 1rem; }
+
 .portal-header {
   display: flex;
   align-items: center;
