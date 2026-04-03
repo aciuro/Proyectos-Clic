@@ -7,6 +7,18 @@ import Modal from './Modal.jsx'
 const MOTIVO_EMPTY = { sintoma: '', aparicion: '', momento_dia: '', movimientos: '', afloja_dia: false, monto_sesion: '', estado: 'activo' }
 const EVOL_EMPTY = { fecha: new Date().toISOString().slice(0, 10), notas: '', dolor: '', tecnicas: '', monto_cobrado: '', pagado: false, tecnicas_sesion: [], ejercicios_sesion: [] }
 
+// Normaliza el JSON de ejercicios_sesion al formato [{id, series, repeticiones, segundos}]
+function parseEjSesion(json) {
+  if (!json) return []
+  try {
+    const arr = JSON.parse(json)
+    return arr.map(x => typeof x === 'number' || typeof x === 'string'
+      ? { id: Number(x), series: '', repeticiones: '', segundos: '' }
+      : { id: x.id, series: x.series ?? '', repeticiones: x.repeticiones ?? '', segundos: x.segundos ?? '' }
+    )
+  } catch { return [] }
+}
+
 const TECNICAS_OPCIONES = [
   'Puncion Seca',
   'MEP',
@@ -101,9 +113,10 @@ function MotivoCard({ motivo, onUpdated }) {
       monto_cobrado: ev.monto_cobrado || '',
       pagado: !!ev.pagado,
       tecnicas_sesion: ev.tecnicas_sesion ? JSON.parse(ev.tecnicas_sesion) : [],
-      ejercicios_sesion: ev.ejercicios_sesion ? JSON.parse(ev.ejercicios_sesion) : []
+      ejercicios_sesion: parseEjSesion(ev.ejercicios_sesion),
     })
     setEditEvolId(ev.id)
+    setBusquedaEj('')
     setModalEvol(true)
   }
 
@@ -235,10 +248,13 @@ function MotivoCard({ motivo, onUpdated }) {
                   <div className="evol-lista">
                     {evoluciones.map(ev => {
                       const tecnicas = ev.tecnicas_sesion ? JSON.parse(ev.tecnicas_sesion) : []
-                      const ejerciciosIds = ev.ejercicios_sesion ? JSON.parse(ev.ejercicios_sesion) : []
-                      const ejerciciosNombres = ejerciciosIds.map(id => {
-                        const ej = ejercicios.find(e => e.id === id)
-                        return ej ? ej.nombre : null
+                      const ejData = parseEjSesion(ev.ejercicios_sesion)
+                      const ejerciciosNombres = ejData.map(ejd => {
+                        const ej = ejercicios.find(e => e.id === ejd.id)
+                        if (!ej) return null
+                        const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
+                        const params = [ejd.series && `${ejd.series}s`, ejd.repeticiones && `${ejd.repeticiones}r`, ejd.segundos && `${ejd.segundos}"`].filter(Boolean).join(' ')
+                        return params ? `${nombre} (${params})` : nombre
                       }).filter(Boolean)
                       return (
                         <div key={ev.id} className="evol-item">
@@ -339,17 +355,28 @@ function MotivoCard({ motivo, onUpdated }) {
           <div className="kine-ej-selector">
             <div className="kine-ej-selector-titulo">Ejercicios de gimnasio</div>
 
-            {/* Tags de seleccionados */}
-            {(formEvol.ejercicios_sesion?.length > 0) && (
-              <div className="kine-ej-tags-sel">
-                {formEvol.ejercicios_sesion.map(eid => {
-                  const ej = ejercicios.find(e => e.id === eid)
-                  return ej ? (
-                    <span key={eid} className="kine-ej-tag-sel">
-                      {ej.nombre}
-                      <button type="button" onClick={() => setFormEvol(f => ({ ...f, ejercicios_sesion: f.ejercicios_sesion.filter(i => i !== eid) }))}>×</button>
-                    </span>
-                  ) : null
+            {/* Ejercicios seleccionados con inputs de series/reps/seg */}
+            {formEvol.ejercicios_sesion?.length > 0 && (
+              <div className="kine-ej-sel-lista">
+                {formEvol.ejercicios_sesion.map(ejd => {
+                  const ej = ejercicios.find(e => e.id === ejd.id)
+                  if (!ej) return null
+                  const upd = (field, val) => setFormEvol(f => ({
+                    ...f,
+                    ejercicios_sesion: f.ejercicios_sesion.map(x => x.id === ejd.id ? { ...x, [field]: val } : x)
+                  }))
+                  return (
+                    <div key={ejd.id} className="kine-ej-sel-row">
+                      <div className="kine-ej-sel-nombre">{ej.nombre.replace(/ — (CC|OA)$/, '')}</div>
+                      <div className="kine-ej-sel-inputs">
+                        <label><span>Series</span><input type="number" min="1" max="10" value={ejd.series} onChange={e => upd('series', e.target.value)} placeholder="—" /></label>
+                        <label><span>Reps</span><input type="number" min="1" max="100" value={ejd.repeticiones} onChange={e => upd('repeticiones', e.target.value)} placeholder="—" /></label>
+                        <label><span>Seg</span><input type="number" min="1" max="300" value={ejd.segundos} onChange={e => upd('segundos', e.target.value)} placeholder="—" /></label>
+                      </div>
+                      <button type="button" className="kine-ej-sel-rm"
+                        onClick={() => setFormEvol(f => ({ ...f, ejercicios_sesion: f.ejercicios_sesion.filter(x => x.id !== ejd.id) }))}>×</button>
+                    </div>
+                  )
                 })}
               </div>
             )}
@@ -357,49 +384,54 @@ function MotivoCard({ motivo, onUpdated }) {
             {/* Buscador */}
             <input
               className="kine-ej-buscar"
-              placeholder="🔍 Buscar ejercicio..."
+              placeholder="🔍 Buscar y agregar ejercicio..."
               value={busquedaEj}
               onChange={e => setBusquedaEj(e.target.value)}
             />
 
-            {/* Lista filtrada */}
-            <div className="kine-ej-lista-scroll">
-              {(() => {
-                const term = busquedaEj.toLowerCase()
-                const filtrados = ejercicios.filter(ej =>
-                  ej.nombre.toLowerCase().includes(term) ||
-                  (ej.categoria || '').toLowerCase().includes(term)
-                )
-                if (filtrados.length === 0) return <div className="kine-empty-sm">Sin resultados</div>
-
-                // Agrupar por categoría
-                const cats = [...new Set(filtrados.map(e => e.categoria || 'General'))]
-                return cats.map(cat => (
-                  <div key={cat}>
-                    <div className="kine-ej-cat-header">{cat}</div>
-                    {filtrados.filter(e => (e.categoria || 'General') === cat).map(ej => {
-                      const sel = formEvol.ejercicios_sesion?.includes(ej.id)
-                      return (
-                        <label key={ej.id} className={`kine-ej-opcion ${sel ? 'selected' : ''}`}>
-                          <input
-                            type="checkbox"
-                            checked={!!sel}
-                            onChange={e => {
-                              const cur = formEvol.ejercicios_sesion || []
-                              setFormEvol(f => ({ ...f, ejercicios_sesion: e.target.checked ? [...cur, ej.id] : cur.filter(i => i !== ej.id) }))
-                            }}
-                          />
-                          <div className="kine-ej-opcion-info">
-                            <div className="kine-ej-opcion-nombre">{ej.nombre}</div>
-                            {ej.descripcion && <div className="kine-ej-opcion-desc">{ej.descripcion}</div>}
-                          </div>
-                        </label>
-                      )
-                    })}
-                  </div>
-                ))
-              })()}
-            </div>
+            {/* Lista filtrada — solo se muestra si hay texto en el buscador */}
+            {busquedaEj.trim().length > 0 && (
+              <div className="kine-ej-lista-scroll">
+                {(() => {
+                  const term = busquedaEj.toLowerCase()
+                  const filtrados = ejercicios.filter(ej =>
+                    ej.nombre.toLowerCase().includes(term) ||
+                    (ej.categoria || '').toLowerCase().includes(term)
+                  )
+                  if (filtrados.length === 0) return <div className="kine-empty-sm">Sin resultados</div>
+                  const cats = [...new Set(filtrados.map(e => e.categoria || 'General'))]
+                  return cats.map(cat => (
+                    <div key={cat}>
+                      <div className="kine-ej-cat-header">{cat}</div>
+                      {filtrados.filter(e => (e.categoria || 'General') === cat).map(ej => {
+                        const sel = formEvol.ejercicios_sesion?.some(x => x.id === ej.id)
+                        return (
+                          <label key={ej.id} className={`kine-ej-opcion ${sel ? 'selected' : ''}`}>
+                            <input
+                              type="checkbox"
+                              checked={!!sel}
+                              onChange={e => {
+                                const cur = formEvol.ejercicios_sesion || []
+                                setFormEvol(f => ({
+                                  ...f,
+                                  ejercicios_sesion: e.target.checked
+                                    ? [...cur, { id: ej.id, series: '', repeticiones: '', segundos: '' }]
+                                    : cur.filter(x => x.id !== ej.id)
+                                }))
+                              }}
+                            />
+                            <div className="kine-ej-opcion-info">
+                              <div className="kine-ej-opcion-nombre">{ej.nombre.replace(/ — (CC|OA)$/, '')}</div>
+                              {ej.descripcion && <div className="kine-ej-opcion-desc">{ej.descripcion}</div>}
+                            </div>
+                          </label>
+                        )
+                      })}
+                    </div>
+                  ))
+                })()}
+              </div>
+            )}
           </div>
 
           <label>Notas de la sesión<textarea rows={3} value={formEvol.notas} onChange={e => setFormEvol(f => ({ ...f, notas: e.target.value }))} /></label>

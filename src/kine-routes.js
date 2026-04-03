@@ -321,9 +321,18 @@ router.get('/pacientes/:id/ejercicios-gimnasio', auth, (req, res) => {
   }
   const ultima = db.getUltimaEvolucionPaciente(req.params.id);
   if (!ultima || !ultima.ejercicios_sesion) return res.json({ ejercicios: [], fecha: null });
-  let ids = [];
-  try { ids = JSON.parse(ultima.ejercicios_sesion); } catch { return res.json({ ejercicios: [], fecha: null }); }
-  const ejercicios = ids.map(id => db.getEjercicio(id)).filter(Boolean);
+  let ejData = [];
+  try { ejData = JSON.parse(ultima.ejercicios_sesion); } catch { return res.json({ ejercicios: [], fecha: null }); }
+  // normalizar formato (puede ser [id] o [{id, series, reps, seg}])
+  const ejDataNorm = ejData.map(x => typeof x === 'number' || typeof x === 'string'
+    ? { id: Number(x), series: null, repeticiones: null, segundos: null }
+    : { id: x.id, series: x.series || null, repeticiones: x.repeticiones || null, segundos: x.segundos || null }
+  );
+  const ejercicios = ejDataNorm.map(ejd => {
+    const ej = db.getEjercicio(ejd.id);
+    if (!ej) return null;
+    return { ...ej, series: ejd.series, repeticiones: ejd.repeticiones, segundos: ejd.segundos };
+  }).filter(Boolean);
   res.json({ ejercicios, fecha: ultima.fecha });
 });
 

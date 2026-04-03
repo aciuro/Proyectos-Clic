@@ -6,19 +6,19 @@ function VideoEmbed({ url }) {
 
   let embedUrl = null
 
-  // YouTube
+  // YouTube watch o youtu.be
   const ytMatch = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/)
   if (ytMatch) embedUrl = `https://www.youtube.com/embed/${ytMatch[1]}`
+
+  // YouTube Shorts
+  const shortsMatch = url.match(/youtube\.com\/shorts\/([^?&\s]+)/)
+  if (shortsMatch) embedUrl = `https://www.youtube.com/embed/${shortsMatch[1]}`
 
   // Vimeo
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
   if (vimeoMatch) embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`
 
-  if (!embedUrl) return (
-    <a href={url} target="_blank" rel="noreferrer" className="kine-ej-video">▶ Ver video</a>
-  )
-
-  return (
+  if (embedUrl) return (
     <div className="video-embed-wrap">
       <iframe
         src={embedUrl}
@@ -28,40 +28,73 @@ function VideoEmbed({ url }) {
       />
     </div>
   )
+
+  // YouTube search u otro link
+  return (
+    <a href={url} target="_blank" rel="noreferrer" className="kine-ej-video-link">
+      🔍 Ver videos del ejercicio
+    </a>
+  )
 }
 
 function EjercicioCard({ ej, onClick }) {
+  const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
+  const hasParams = ej.series || ej.repeticiones || ej.segundos || ej.duracion_seg
   return (
     <div className="portal-ej-card" onClick={() => onClick(ej.id)}>
       {ej.video_url && <div className="portal-ej-thumb">▶</div>}
       <div className="kine-ej-header">
         <span className="kine-ej-cat">{ej.categoria || 'General'}</span>
       </div>
-      <div className="kine-ej-nombre">{ej.nombre}</div>
+      <div className="kine-ej-nombre">{nombre}</div>
       {ej.descripcion && <div className="kine-ej-desc">{ej.descripcion.slice(0, 80)}{ej.descripcion.length > 80 ? '...' : ''}</div>}
-      <div className="kine-ej-params">
-        {ej.series && <span>{ej.series} series</span>}
-        {ej.repeticiones && <span>{ej.repeticiones} reps</span>}
-        {ej.duracion_seg && <span>{ej.duracion_seg}s</span>}
-      </div>
+      {hasParams && (
+        <div className="kine-ej-params">
+          {ej.series && <span>{ej.series} series</span>}
+          {ej.repeticiones && <span>{ej.repeticiones} reps</span>}
+          {(ej.segundos || ej.duracion_seg) && <span>{ej.segundos || ej.duracion_seg}s</span>}
+        </div>
+      )}
     </div>
   )
 }
 
 function EjercicioDetalle({ ej, onVolver }) {
+  const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
+  const esCadenaCerrada = ej.nombre.includes('— CC')
+  const esCadenaAbierta = ej.nombre.includes('— OA')
   return (
     <div className="portal-ej-detalle">
       <button className="kine-btn-back" onClick={onVolver}>← Volver</button>
-      <h2 className="portal-ej-titulo">{ej.nombre}</h2>
-      <span className="kine-ej-cat">{ej.categoria || 'General'}</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.5rem' }}>
+        <span className="kine-ej-cat">{ej.categoria || 'General'}</span>
+        {esCadenaCerrada && <span className="portal-cadena-tag cc">Cadena Cerrada</span>}
+        {esCadenaAbierta && <span className="portal-cadena-tag oa">Cadena Abierta</span>}
+      </div>
+      <h2 className="portal-ej-titulo">{nombre}</h2>
+
+      {/* Parámetros asignados por el kinesiólogo */}
+      {(ej.series || ej.repeticiones || ej.segundos) && (
+        <div className="portal-ej-indicacion">
+          <div className="portal-ej-indicacion-titulo">Tu prescripción</div>
+          <div className="portal-ej-params">
+            {ej.series && <div className="portal-param"><span className="portal-param-val">{ej.series}</span><span className="portal-param-lbl">Series</span></div>}
+            {ej.repeticiones && <div className="portal-param"><span className="portal-param-val">{ej.repeticiones}</span><span className="portal-param-lbl">Reps</span></div>}
+            {ej.segundos && <div className="portal-param"><span className="portal-param-val">{ej.segundos}"</span><span className="portal-param-lbl">Segundos</span></div>}
+          </div>
+        </div>
+      )}
+
       <VideoEmbed url={ej.video_url} />
       {ej.descripcion && <p className="portal-ej-desc">{ej.descripcion}</p>}
-      <div className="portal-ej-params">
-        {ej.series && <div className="portal-param"><span className="portal-param-val">{ej.series}</span><span className="portal-param-lbl">Series</span></div>}
-        {ej.repeticiones && <div className="portal-param"><span className="portal-param-val">{ej.repeticiones}</span><span className="portal-param-lbl">Repeticiones</span></div>}
-        {ej.duracion_seg && <div className="portal-param"><span className="portal-param-val">{ej.duracion_seg}s</span><span className="portal-param-lbl">Duración</span></div>}
-        {ej.frecuencia && <div className="portal-param"><span className="portal-param-val">{ej.frecuencia}</span><span className="portal-param-lbl">Frecuencia</span></div>}
-      </div>
+
+      {/* Parámetros generales del ejercicio (tabla paciente_ejercicios) */}
+      {(ej.duracion_seg || ej.frecuencia) && (
+        <div className="portal-ej-params" style={{ marginTop: '1rem' }}>
+          {ej.duracion_seg && <div className="portal-param"><span className="portal-param-val">{ej.duracion_seg}s</span><span className="portal-param-lbl">Duración</span></div>}
+          {ej.frecuencia && <div className="portal-param"><span className="portal-param-val">{ej.frecuencia}</span><span className="portal-param-lbl">Frecuencia</span></div>}
+        </div>
+      )}
       {ej.notas && <div className="portal-ej-notas"><strong>Indicaciones:</strong> {ej.notas}</div>}
     </div>
   )
