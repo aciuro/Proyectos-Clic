@@ -448,13 +448,14 @@ module.exports = {
   deleteMotivo:         (id) => deleteMotivo.run(id),
 
   // Evoluciones
-  getEvolucionesByMotivo: (id) => getEvolucionesByMotivo.all(id),
-  getEvolucion:           (id) => getEvolucion.get(id),
-  insertEvolucion:        (data) => { const r = insertEvolucion.run(data); return getEvolucion.get(r.lastInsertRowid); },
-  updateEvolucion:        (data) => { updateEvolucion.run(data); return getEvolucion.get(data.id); },
-  deleteEvolucion:        (id) => deleteEvolucion.run(id),
-  getSaldoPaciente:       (id) => getSaldoPaciente.get(id),
-  getDolorEvolByPaciente: (id) => getDolorEvolByPaciente.all(id),
+  getEvolucionesByMotivo:      (id) => getEvolucionesByMotivo.all(id),
+  getEvolucion:                (id) => getEvolucion.get(id),
+  insertEvolucion:             (data) => { const r = insertEvolucion.run(data); return getEvolucion.get(r.lastInsertRowid); },
+  updateEvolucion:             (data) => { updateEvolucion.run(data); return getEvolucion.get(data.id); },
+  deleteEvolucion:             (id) => deleteEvolucion.run(id),
+  getSaldoPaciente:            (id) => getSaldoPaciente.get(id),
+  getDolorEvolByPaciente:      (id) => getDolorEvolByPaciente.all(id),
+  getUltimaEvolucionPaciente:  (id) => getUltimaEvolucionPaciente.get(id),
 
   // Estudios
   getEstudiosByMotivo: (id) => getEstudiosByMotivo.all(id),

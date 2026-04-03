@@ -313,6 +313,20 @@ router.get('/pacientes/:id/saldo', auth, (req, res) => {
   res.json(db.getSaldoPaciente(req.params.id));
 });
 
+// Ejercicios de gimnasio: los de la última sesión del paciente
+router.get('/pacientes/:id/ejercicios-gimnasio', auth, (req, res) => {
+  if (req.user.rol === 'paciente') {
+    const miPaciente = db.getPacienteByUsuario(req.user.id);
+    if (!miPaciente || miPaciente.id != req.params.id) return res.status(403).json({ error: 'Sin acceso' });
+  }
+  const ultima = db.getUltimaEvolucionPaciente(req.params.id);
+  if (!ultima || !ultima.ejercicios_sesion) return res.json({ ejercicios: [], fecha: null });
+  let ids = [];
+  try { ids = JSON.parse(ultima.ejercicios_sesion); } catch { return res.json({ ejercicios: [], fecha: null }); }
+  const ejercicios = ids.map(id => db.getEjercicio(id)).filter(Boolean);
+  res.json({ ejercicios, fecha: ultima.fecha });
+});
+
 // ── Estudios ──────────────────────────────────────────────
 
 router.get('/motivos/:id/estudios', auth, (req, res) => {

@@ -93,6 +93,9 @@ export const api = {
   deleteEvolucion:  (id) => req('DELETE', `/evoluciones/${id}`),
   getSaldo:         (pacienteId) => req('GET', `/pacientes/${pacienteId}/saldo`),
 
+  // Ejercicios de gimnasio (última sesión)
+  getEjerciciosGimnasio: (pacienteId) => req('GET', `/pacientes/${pacienteId}/ejercicios-gimnasio`),
+
   // Estudios
   getEstudios:      (motivoId) => req('GET', `/motivos/${motivoId}/estudios`),
   deleteEstudio:    (id) => req('DELETE', `/estudios/${id}`),
