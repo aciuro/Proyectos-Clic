@@ -27,6 +27,107 @@ const TECNICAS_OPCIONES = [
   'Gun',
 ]
 
+// Selector de ejercicios por sector → músculo → ejercicios
+function EjercicioSelector({ ejercicios, seleccionados, onChange }) {
+  const [sector, setSector] = useState(null)
+  const [musculo, setMusculo] = useState(null)
+
+  // Extraer sectores y músculos de la categoría "Sector · Músculo"
+  const sectores = [...new Set(ejercicios.map(e => (e.categoria || '').split(' · ')[0]))].filter(Boolean).sort()
+  const musculos = sector
+    ? [...new Set(ejercicios.filter(e => (e.categoria || '').startsWith(sector + ' · ')).map(e => (e.categoria || '').split(' · ')[1]))].filter(Boolean)
+    : []
+  const ejsMusculo = musculo
+    ? ejercicios.filter(e => e.categoria === `${sector} · ${musculo}`)
+    : []
+
+  function toggleEj(ej) {
+    const ya = seleccionados.some(x => x.id === ej.id)
+    if (ya) onChange(seleccionados.filter(x => x.id !== ej.id))
+    else onChange([...seleccionados, { id: ej.id, series: '', repeticiones: '', segundos: '' }])
+  }
+
+  function upd(id, field, val) {
+    onChange(seleccionados.map(x => x.id === id ? { ...x, [field]: val } : x))
+  }
+
+  return (
+    <div className="kine-ej-selector">
+      <div className="kine-ej-selector-titulo">Ejercicios de gimnasio</div>
+
+      {/* Ejercicios seleccionados */}
+      {seleccionados.length > 0 && (
+        <div className="kine-ej-sel-lista">
+          {seleccionados.map(ejd => {
+            const ej = ejercicios.find(e => e.id === ejd.id)
+            if (!ej) return null
+            return (
+              <div key={ejd.id} className="kine-ej-sel-row">
+                <div className="kine-ej-sel-nombre">{ej.nombre}</div>
+                <div className="kine-ej-sel-inputs">
+                  <label><span>Series</span><input type="number" min="1" max="10" value={ejd.series} onChange={e => upd(ejd.id, 'series', e.target.value)} placeholder="—" /></label>
+                  <label><span>Reps</span><input type="number" min="1" max="100" value={ejd.repeticiones} onChange={e => upd(ejd.id, 'repeticiones', e.target.value)} placeholder="—" /></label>
+                  <label><span>Seg</span><input type="number" min="1" max="300" value={ejd.segundos} onChange={e => upd(ejd.id, 'segundos', e.target.value)} placeholder="—" /></label>
+                </div>
+                <button type="button" className="kine-ej-sel-rm" onClick={() => onChange(seleccionados.filter(x => x.id !== ejd.id))}>×</button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Navegación sector → músculo → ejercicios */}
+      <div className="kine-ej-nav">
+        {/* Paso 1: Sectores */}
+        {!sector && (
+          <div className="kine-ej-nav-grid">
+            {sectores.map(s => (
+              <button key={s} type="button" className="kine-ej-nav-btn" onClick={() => { setSector(s); setMusculo(null) }}>{s}</button>
+            ))}
+          </div>
+        )}
+
+        {/* Paso 2: Músculos del sector */}
+        {sector && !musculo && (
+          <>
+            <div className="kine-ej-nav-back">
+              <button type="button" className="kine-ej-nav-volver" onClick={() => setSector(null)}>← {sector}</button>
+            </div>
+            <div className="kine-ej-nav-grid">
+              {musculos.map(m => (
+                <button key={m} type="button" className="kine-ej-nav-btn" onClick={() => setMusculo(m)}>{m}</button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* Paso 3: Ejercicios del músculo */}
+        {sector && musculo && (
+          <>
+            <div className="kine-ej-nav-back">
+              <button type="button" className="kine-ej-nav-volver" onClick={() => setMusculo(null)}>← {musculo}</button>
+            </div>
+            <div className="kine-ej-ej-lista">
+              {ejsMusculo.map(ej => {
+                const sel = seleccionados.some(x => x.id === ej.id)
+                return (
+                  <label key={ej.id} className={`kine-ej-opcion ${sel ? 'selected' : ''}`}>
+                    <input type="checkbox" checked={sel} onChange={() => toggleEj(ej)} />
+                    <div className="kine-ej-opcion-info">
+                      <div className="kine-ej-opcion-nombre">{ej.nombre}</div>
+                      {ej.descripcion && <div className="kine-ej-opcion-desc">{ej.descripcion}</div>}
+                    </div>
+                  </label>
+                )
+              })}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 function SaldoChip({ saldo }) {
   if (!saldo) return null
   const pendiente = saldo.saldo_pendiente || 0
@@ -51,7 +152,6 @@ function MotivoCard({ motivo, onUpdated }) {
   const [modalEditMotivo, setModalEditMotivo] = useState(false)
   const [formMotivo, setFormMotivo] = useState({ ...motivo, afloja_dia: !!motivo.afloja_dia })
   const [ejercicios, setEjercicios] = useState([])
-  const [busquedaEj, setBusquedaEj] = useState('')
 
   useEffect(() => {
     if (open) {
@@ -100,7 +200,6 @@ function MotivoCard({ motivo, onUpdated }) {
   function abrirNuevaEvol() {
     setFormEvol({ ...EVOL_EMPTY, tecnicas_sesion: [], ejercicios_sesion: [], monto_cobrado: motivo.monto_sesion || '' })
     setEditEvolId(null)
-    setBusquedaEj('')
     setModalEvol(true)
   }
 
@@ -116,7 +215,6 @@ function MotivoCard({ motivo, onUpdated }) {
       ejercicios_sesion: parseEjSesion(ev.ejercicios_sesion),
     })
     setEditEvolId(ev.id)
-    setBusquedaEj('')
     setModalEvol(true)
   }
 
@@ -360,87 +458,11 @@ function MotivoCard({ motivo, onUpdated }) {
           </label>
 
           {/* Ejercicios de gimnasio */}
-          <div className="kine-ej-selector">
-            <div className="kine-ej-selector-titulo">Ejercicios de gimnasio</div>
-
-            {/* Ejercicios seleccionados con inputs de series/reps/seg */}
-            {formEvol.ejercicios_sesion?.length > 0 && (
-              <div className="kine-ej-sel-lista">
-                {formEvol.ejercicios_sesion.map(ejd => {
-                  const ej = ejercicios.find(e => e.id === ejd.id)
-                  if (!ej) return null
-                  const upd = (field, val) => setFormEvol(f => ({
-                    ...f,
-                    ejercicios_sesion: f.ejercicios_sesion.map(x => x.id === ejd.id ? { ...x, [field]: val } : x)
-                  }))
-                  return (
-                    <div key={ejd.id} className="kine-ej-sel-row">
-                      <div className="kine-ej-sel-nombre">{ej.nombre.replace(/ — (CC|OA)$/, '')}</div>
-                      <div className="kine-ej-sel-inputs">
-                        <label><span>Series</span><input type="number" min="1" max="10" value={ejd.series} onChange={e => upd('series', e.target.value)} placeholder="—" /></label>
-                        <label><span>Reps</span><input type="number" min="1" max="100" value={ejd.repeticiones} onChange={e => upd('repeticiones', e.target.value)} placeholder="—" /></label>
-                        <label><span>Seg</span><input type="number" min="1" max="300" value={ejd.segundos} onChange={e => upd('segundos', e.target.value)} placeholder="—" /></label>
-                      </div>
-                      <button type="button" className="kine-ej-sel-rm"
-                        onClick={() => setFormEvol(f => ({ ...f, ejercicios_sesion: f.ejercicios_sesion.filter(x => x.id !== ejd.id) }))}>×</button>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
-
-            {/* Buscador */}
-            <input
-              className="kine-ej-buscar"
-              placeholder="🔍 Buscar y agregar ejercicio..."
-              value={busquedaEj}
-              onChange={e => setBusquedaEj(e.target.value)}
-            />
-
-            {/* Lista filtrada — solo se muestra si hay texto en el buscador */}
-            {busquedaEj.trim().length > 0 && (
-              <div className="kine-ej-lista-scroll">
-                {(() => {
-                  const term = busquedaEj.toLowerCase()
-                  const filtrados = ejercicios.filter(ej =>
-                    ej.nombre.toLowerCase().includes(term) ||
-                    (ej.categoria || '').toLowerCase().includes(term)
-                  )
-                  if (filtrados.length === 0) return <div className="kine-empty-sm">Sin resultados</div>
-                  const cats = [...new Set(filtrados.map(e => e.categoria || 'General'))]
-                  return cats.map(cat => (
-                    <div key={cat}>
-                      <div className="kine-ej-cat-header">{cat}</div>
-                      {filtrados.filter(e => (e.categoria || 'General') === cat).map(ej => {
-                        const sel = formEvol.ejercicios_sesion?.some(x => x.id === ej.id)
-                        return (
-                          <label key={ej.id} className={`kine-ej-opcion ${sel ? 'selected' : ''}`}>
-                            <input
-                              type="checkbox"
-                              checked={!!sel}
-                              onChange={e => {
-                                const cur = formEvol.ejercicios_sesion || []
-                                setFormEvol(f => ({
-                                  ...f,
-                                  ejercicios_sesion: e.target.checked
-                                    ? [...cur, { id: ej.id, series: '', repeticiones: '', segundos: '' }]
-                                    : cur.filter(x => x.id !== ej.id)
-                                }))
-                              }}
-                            />
-                            <div className="kine-ej-opcion-info">
-                              <div className="kine-ej-opcion-nombre">{ej.nombre.replace(/ — (CC|OA)$/, '')}</div>
-                              {ej.descripcion && <div className="kine-ej-opcion-desc">{ej.descripcion}</div>}
-                            </div>
-                          </label>
-                        )
-                      })}
-                    </div>
-                  ))
-                })()}
-              </div>
-            )}
-          </div>
+          <EjercicioSelector
+            ejercicios={ejercicios}
+            seleccionados={formEvol.ejercicios_sesion || []}
+            onChange={lista => setFormEvol(f => ({ ...f, ejercicios_sesion: lista }))}
+          />
 
           <label>Notas de la sesión<textarea rows={3} value={formEvol.notas} onChange={e => setFormEvol(f => ({ ...f, notas: e.target.value }))} /></label>
           <div className="kine-form-row">

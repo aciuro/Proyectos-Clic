@@ -2306,3 +2306,59 @@
   background: #fef9c3;
   color: #854d0e;
 }
+
+/* ── Selector de ejercicios por sector/músculo ────────────── */
+
+.kine-ej-nav {
+  margin-top: 0.5rem;
+}
+
+.kine-ej-nav-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 0.4rem;
+}
+
+.kine-ej-nav-btn {
+  background: var(--kine-accent-bg);
+  color: var(--kine-accent);
+  border: 1.5px solid var(--kine-accent);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.kine-ej-nav-btn:hover {
+  background: var(--kine-accent);
+  color: #fff;
+}
+
+.kine-ej-nav-back {
+  margin-bottom: 0.4rem;
+}
+
+.kine-ej-nav-volver {
+  background: none;
+  border: none;
+  color: var(--kine-text-2);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  font-weight: 500;
+}
+
+.kine-ej-nav-volver:hover {
+  color: var(--kine-text);
+}
+
+.kine-ej-ej-lista {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 220px;
+  overflow-y: auto;
+}

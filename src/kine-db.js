@@ -181,108 +181,164 @@ if (!adminExiste) {
   console.log('✅ Admin creado: augusto@ciuro.com / admin123');
 }
 
-// ── Seed ejercicios (INSERT OR IGNORE por nombre) ─────────
+// ── Seed ejercicios ────────────────────────────────────────
 
 {
-  const existe = db.prepare(`SELECT id FROM ejercicios WHERE nombre = ?`);
-  const ins = db.prepare(`INSERT OR IGNORE INTO ejercicios (nombre, descripcion, categoria, video_url) VALUES (@nombre, @descripcion, @categoria, @video_url)`);
-  const upsertMany = db.transaction((lista) => {
-    for (const e of lista) {
-      if (!existe.get(e.nombre)) ins.run(e);
-    }
+  const ins = db.prepare(`INSERT INTO ejercicios (nombre, descripcion, categoria, video_url) VALUES (@nombre, @descripcion, @categoria, @video_url)`);
+  const seedAll = db.transaction((lista) => {
+    db.exec(`DELETE FROM ejercicios`);
+    for (const e of lista) ins.run(e);
   });
 
   const yt = (q) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
 
-  upsertMany([
-    // ── CUÁDRICEPS ──────────────────────────────────────────
-    { nombre: 'Prensa de Piernas (máquina) — CC', categoria: 'Cuádriceps', descripcion: 'Cadena cerrada. Pies en la plataforma al ancho de caderas, empujar hasta casi extender la rodilla y bajar lento controlando el peso.', video_url: yt('leg press máquina técnica') },
-    { nombre: 'Extensión de Cuádriceps (máquina) — OA', categoria: 'Cuádriceps', descripcion: 'Cadena abierta. Sentado en la máquina, extender ambas rodillas hasta la extensión completa. Bajar lento. Aisla el cuádriceps.', video_url: yt('leg extension máquina técnica') },
-    { nombre: 'Sentadilla con Barra — CC', categoria: 'Cuádriceps', descripcion: 'Cadena cerrada. Barra sobre trapecios, pies al ancho de hombros. Bajar hasta paralela controlando las rodillas. Empujar desde los talones.', video_url: yt('sentadilla con barra técnica') },
-    { nombre: 'Sentadilla Goblet con Mancuerna — CC', categoria: 'Cuádriceps', descripcion: 'Cadena cerrada. Sostener mancuerna con ambas manos frente al pecho. Bajar profundo manteniendo el tronco erguido.', video_url: yt('goblet squat mancuerna técnica') },
-    // ── ISQUIOTIBIALES ──────────────────────────────────────
-    { nombre: 'Curl de Isquiotibiales acostado (máquina) — OA', categoria: 'Isquiotibiales', descripcion: 'Cadena abierta. Boca abajo en la máquina, doblar las rodillas llevando los talones hacia los glúteos. Controlar el descenso.', video_url: yt('curl isquiotibial máquina acostado técnica') },
-    { nombre: 'Curl de Isquiotibiales sentado (máquina) — OA', categoria: 'Isquiotibiales', descripcion: 'Cadena abierta. Sentado en la máquina, doblar las rodillas bajo el asiento. Controlar la extensión al volver.', video_url: yt('curl isquiotibial máquina sentado técnica') },
-    { nombre: 'Peso Muerto Rumano con Barra — CC', categoria: 'Isquiotibiales', descripcion: 'Cadena cerrada. De pie con barra, bajar el torso manteniendo la espalda recta y rodillas levemente flexionadas. Sentir el estiramiento.', video_url: yt('peso muerto rumano barra técnica') },
-    { nombre: 'Peso Muerto Rumano con Mancuernas — CC', categoria: 'Isquiotibiales', descripcion: 'Cadena cerrada. Igual al rumano con barra pero con mancuernas a los costados. Mayor rango de movimiento.', video_url: yt('peso muerto rumano mancuernas técnica') },
-    // ── GLÚTEO MAYOR ────────────────────────────────────────
-    { nombre: 'Hip Thrust con Barra — CC', categoria: 'Glúteo Mayor', descripcion: 'Cadena cerrada. Espalda apoyada en banco, barra sobre caderas. Elevar la pelvis apretando glúteos hasta alinear cadera-rodilla-hombro.', video_url: yt('hip thrust barra técnica') },
-    { nombre: 'Patada Trasera en Polea — OA', categoria: 'Glúteo Mayor', descripcion: 'Cadena abierta. De pie frente a la polea baja, con tobillera llevar la pierna hacia atrás manteniendo la rodilla recta.', video_url: yt('patada trasera polea glúteo técnica') },
-    { nombre: 'Sentadilla Búlgara con Mancuernas — CC', categoria: 'Glúteo Mayor', descripcion: 'Cadena cerrada. Pie trasero elevado en banco, bajar la rodilla delantera hacia el piso. Gran activación de glúteo.', video_url: yt('sentadilla búlgara mancuernas técnica') },
-    // ── GLÚTEO MEDIO ────────────────────────────────────────
-    { nombre: 'Abducción de Cadera (máquina) — OA', categoria: 'Glúteo Medio', descripcion: 'Cadena abierta. Sentado en la máquina de abducción, separar las piernas contra la resistencia. Controlar el cierre.', video_url: yt('abducción de cadera máquina técnica') },
-    { nombre: 'Abducción en Polea de Pie — OA', categoria: 'Glúteo Medio', descripcion: 'Cadena abierta. De pie con tobillera en polea baja, alejar la pierna lateralmente sin inclinar el tronco.', video_url: yt('abducción cadera polea de pie técnica') },
-    { nombre: 'Abducción de Cadera acostado — OA', categoria: 'Glúteo Medio', descripcion: 'Cadena abierta. De lado en el suelo, elevar la pierna de arriba controlando. Punta del pie levemente hacia abajo.', video_url: yt('abducción de cadera acostado ejercicio') },
-    // ── ADUCTORES ───────────────────────────────────────────
-    { nombre: 'Aducción de Cadera (máquina) — OA', categoria: 'Aductores', descripcion: 'Cadena abierta. Sentado en la máquina de aducción, juntar las piernas contra la resistencia. Controlar la apertura.', video_url: yt('aducción de cadera máquina técnica') },
-    { nombre: 'Sentadilla Sumo con Mancuerna — CC', categoria: 'Aductores', descripcion: 'Cadena cerrada. Pies muy abiertos con puntas hacia afuera, sostener mancuerna entre las piernas. Bajar profundo.', video_url: yt('sentadilla sumo mancuerna técnica') },
-    // ── GASTROCNEMIOS ───────────────────────────────────────
-    { nombre: 'Elevación de Talones (máquina de pie) — CC', categoria: 'Gastrocnemios', descripcion: 'Cadena cerrada. En la máquina de pantorrilla de pie, elevar los talones al máximo y bajar lentamente por debajo del nivel de la plataforma.', video_url: yt('elevación de talones máquina de pie técnica') },
-    { nombre: 'Elevación de Talones de Pie con Mancuerna — CC', categoria: 'Gastrocnemios', descripcion: 'Cadena cerrada. De pie en escalón, sostener mancuerna. Elevar y bajar lento superando el rango normal.', video_url: yt('elevación de talones escalón mancuerna técnica') },
-    // ── SÓLEO ───────────────────────────────────────────────
-    { nombre: 'Elevación de Talones Sentado (máquina) — CC', categoria: 'Sóleo', descripcion: 'Cadena cerrada. Sentado con rodillas dobladas a 90°, elevar los talones con la carga sobre los muslos. El sóleo trabaja más con rodilla flexionada.', video_url: yt('elevación de talones sentado máquina sóleo') },
-    { nombre: 'Elevación de Talones Sentado con Peso — CC', categoria: 'Sóleo', descripcion: 'Cadena cerrada. Igual a la máquina pero con mancuerna o barra sobre los muslos. Movimiento completo.', video_url: yt('elevación de talones sentado peso sóleo técnica') },
-    // ── TIBIAL ANTERIOR ─────────────────────────────────────
-    { nombre: 'Dorsiflexión con Banda o Polea — OA', categoria: 'Tibial Anterior', descripcion: 'Cadena abierta. Sentado, con banda o polea baja en el empeine, doblar el tobillo llevando la punta del pie hacia la rodilla.', video_url: yt('dorsiflexión tobillo banda polea tibial anterior') },
-    { nombre: 'Marcha sobre Talones — CC', categoria: 'Tibial Anterior', descripcion: 'Cadena cerrada. Caminar apoyando solo los talones con la punta del pie elevada. Activa el tibial anterior en cadena cerrada.', video_url: yt('marcha sobre talones tibial anterior ejercicio') },
-    // ── PECTORAL ────────────────────────────────────────────
-    { nombre: 'Press de Banca con Barra — CC', categoria: 'Pectoral', descripcion: 'Cadena cerrada. Acostado en banco, barra al ancho de hombros. Bajar a nivel del pecho controlando y empujar hacia arriba.', video_url: yt('press de banca barra técnica') },
-    { nombre: 'Press de Banca con Mancuernas — CC', categoria: 'Pectoral', descripcion: 'Cadena cerrada. Igual al press con barra pero con mancuernas. Mayor rango de movimiento y trabajo estabilizador.', video_url: yt('press de banca mancuernas técnica') },
-    { nombre: 'Press en Máquina de Pecho — CC', categoria: 'Pectoral', descripcion: 'Cadena cerrada. Sentado en la máquina, empujar las palancas al frente hasta extender los codos. Bajar controlado.', video_url: yt('press de pecho máquina técnica') },
-    { nombre: 'Apertura con Mancuernas (Fly) — OA', categoria: 'Pectoral', descripcion: 'Cadena abierta. Acostado en banco, mancuernas arriba con codos levemente flexionados. Abrir los brazos en arco hasta sentir estiramiento y cerrar.', video_url: yt('apertura mancuernas fly pecho técnica') },
-    { nombre: 'Apertura en Polea (Cable Fly) — OA', categoria: 'Pectoral', descripcion: 'Cadena abierta. De pie entre poleas altas, llevar las manos al frente en arco cruzándolas. Tensión constante en el pectoral.', video_url: yt('cable fly polea cruzada pecho técnica') },
-    // ── DORSAL ANCHO ────────────────────────────────────────
-    { nombre: 'Jalón al Pecho en Polea — OA', categoria: 'Dorsal Ancho', descripcion: 'Cadena abierta. Sentado en la polea alta, jalar la barra hacia el pecho arqueando levemente la espalda. Codos abajo y atrás.', video_url: yt('jalón al pecho polea técnica') },
-    { nombre: 'Remo en Polea Baja (sentado) — OA', categoria: 'Dorsal Ancho', descripcion: 'Cadena abierta. Sentado frente a la polea baja, jalar el agarre hacia el abdomen. Omoplatos juntos al final.', video_url: yt('remo polea baja sentado técnica') },
-    { nombre: 'Remo con Barra — CC', categoria: 'Dorsal Ancho', descripcion: 'Cadena cerrada. Inclinado hacia adelante, jalar la barra hacia el abdomen. Mantener la espalda recta y codos cerca del cuerpo.', video_url: yt('remo con barra inclinado técnica') },
-    { nombre: 'Remo con Mancuerna (un brazo) — CC', categoria: 'Dorsal Ancho', descripcion: 'Cadena cerrada. Apoyado en banco con una mano, jalar la mancuerna hacia la cadera. Mantener la espalda paralela al suelo.', video_url: yt('remo mancuerna un brazo técnica') },
-    { nombre: 'Dominadas (Barra Fija) — CC', categoria: 'Dorsal Ancho', descripcion: 'Cadena cerrada. Colgado de la barra con agarre prono, elevar el cuerpo hasta que el mentón supere la barra. Bajar controlado.', video_url: yt('dominadas barra técnica') },
-    // ── DELTOIDES ANTERIOR ──────────────────────────────────
-    { nombre: 'Press Militar con Barra — CC', categoria: 'Deltoides', descripcion: 'Cadena cerrada. Sentado o de pie, barra a nivel de la clavícula. Empujar hacia arriba hasta la extensión completa y bajar lento.', video_url: yt('press militar barra técnica') },
-    { nombre: 'Press con Mancuernas (sentado) — CC', categoria: 'Deltoides', descripcion: 'Cadena cerrada. Sentado con espalda apoyada, mancuernas a nivel del hombro. Empujar hacia arriba y bajar lento.', video_url: yt('press mancuernas hombro sentado técnica') },
-    { nombre: 'Elevación Frontal con Mancuerna — OA', categoria: 'Deltoides', descripcion: 'Cadena abierta. De pie, mancuerna en la mano, elevar el brazo al frente hasta la altura del hombro. Bajar lento. Aisla el deltoides anterior.', video_url: yt('elevación frontal mancuerna hombro técnica') },
-    { nombre: 'Elevación Lateral con Mancuerna — OA', categoria: 'Deltoides', descripcion: 'Cadena abierta. De pie, elevar los brazos a los costados hasta la altura del hombro. Codos levemente flexionados. Aisla el deltoides lateral.', video_url: yt('elevación lateral mancuerna hombro técnica') },
-    { nombre: 'Elevación Lateral en Polea — OA', categoria: 'Deltoides', descripcion: 'Cadena abierta. De pie junto a la polea baja, jalar el agarre lateralmente hasta la altura del hombro. Tensión constante.', video_url: yt('elevación lateral polea hombro técnica') },
-    { nombre: 'Face Pull en Polea — OA', categoria: 'Deltoides', descripcion: 'Cadena abierta. Polea a nivel de la cara, jalar el agarre hacia la frente separando los codos. Trabaja deltoides posterior y manguito.', video_url: yt('face pull polea técnica') },
-    { nombre: 'Vuelo Posterior con Mancuernas — OA', categoria: 'Deltoides', descripcion: 'Cadena abierta. Inclinado hacia adelante, elevar los brazos a los costados. Aisla el deltoides posterior y romboides.', video_url: yt('vuelo posterior mancuernas técnica') },
-    // ── MANGUITO ROTADOR ────────────────────────────────────
-    { nombre: 'Rotación Externa en Polea — OA', categoria: 'Manguito Rotador', descripcion: 'Cadena abierta. Codo pegado al cuerpo a 90°, jalar la polea hacia afuera (rotación externa). Trabaja infraespinoso y redondo menor.', video_url: yt('rotación externa hombro polea técnica') },
-    { nombre: 'Rotación Interna en Polea — OA', categoria: 'Manguito Rotador', descripcion: 'Cadena abierta. Codo pegado al cuerpo a 90°, jalar la polea hacia adentro (rotación interna). Trabaja subescapular.', video_url: yt('rotación interna hombro polea técnica') },
-    // ── BÍCEPS ──────────────────────────────────────────────
-    { nombre: 'Curl con Barra — OA', categoria: 'Bíceps', descripcion: 'Cadena abierta. De pie con barra en agarre supino, doblar los codos llevando la barra hacia los hombros. Codos fijos.', video_url: yt('curl bíceps barra técnica') },
-    { nombre: 'Curl con Mancuernas alternado — OA', categoria: 'Bíceps', descripcion: 'Cadena abierta. De pie, doblar un codo a la vez llevando la mancuerna al hombro con supinación de la muñeca.', video_url: yt('curl mancuernas bíceps alternado técnica') },
-    { nombre: 'Curl en Polea (Cable Curl) — OA', categoria: 'Bíceps', descripcion: 'Cadena abierta. De pie frente a la polea baja, jalar hacia arriba. Tensión constante durante todo el movimiento.', video_url: yt('curl bíceps polea técnica') },
-    { nombre: 'Chin-up (Dominada Supina) — CC', categoria: 'Bíceps', descripcion: 'Cadena cerrada. Colgado de la barra con agarre supino (palmas hacia vos), elevar el cuerpo. Gran trabajo de bíceps y dorsal.', video_url: yt('chin up dominada supina bíceps técnica') },
-    // ── TRÍCEPS ─────────────────────────────────────────────
-    { nombre: 'Extensión en Polea (hacia abajo) — OA', categoria: 'Tríceps', descripcion: 'Cadena abierta. De pie frente a la polea alta, empujar el agarre hacia abajo extendiendo los codos. Codos fijos al cuerpo.', video_url: yt('extensión tríceps polea hacia abajo técnica') },
-    { nombre: 'Extensión sobre la Cabeza con Mancuerna — OA', categoria: 'Tríceps', descripcion: 'Cadena abierta. Sentado, mancuerna sostenida con ambas manos sobre la cabeza. Doblar los codos hacia atrás y extender.', video_url: yt('extensión tríceps sobre cabeza mancuerna técnica') },
-    { nombre: 'Fondos en Paralelas (Dips) — CC', categoria: 'Tríceps', descripcion: 'Cadena cerrada. Entre dos apoyos, bajar el cuerpo doblando los codos y empujar hacia arriba. Torso erguido para enfatizar tríceps.', video_url: yt('fondos paralelas dips tríceps técnica') },
-    { nombre: 'Patada de Tríceps con Mancuerna — OA', categoria: 'Tríceps', descripcion: 'Cadena abierta. Inclinado con un brazo apoyado, codo pegado al cuerpo, extender el codo llevando la mancuerna hacia atrás.', video_url: yt('patada tríceps mancuerna kickback técnica') },
-    // ── TRAPECIO / ROMBOIDES ────────────────────────────────
-    { nombre: 'Encogimiento con Barra (Shrug) — OA', categoria: 'Trapecio', descripcion: 'Cadena abierta. De pie con barra, elevar los hombros hacia las orejas sin doblar los codos. Trabaja el trapecio superior.', video_url: yt('encogimiento barra shrug trapecio técnica') },
-    { nombre: 'Encogimiento con Mancuernas — OA', categoria: 'Trapecio', descripcion: 'Cadena abierta. De pie con mancuernas a los costados, elevar los hombros. Mayor rango que con barra.', video_url: yt('encogimiento mancuernas trapecio técnica') },
-    { nombre: 'Retracción Escapular en Polea — OA', categoria: 'Trapecio', descripcion: 'Cadena abierta. Sentado frente a la polea, jalar solo juntando los omoplatos sin doblar los codos. Trabaja romboides y trapecio medio.', video_url: yt('retracción escapular polea romboides técnica') },
-    // ── RECTO ABDOMINAL ─────────────────────────────────────
-    { nombre: 'Plancha Abdominal — CC', categoria: 'Core', descripcion: 'Cadena cerrada. En antebrazos y puntillas, cuerpo completamente recto. No dejar caer la cadera. Sostener el tiempo indicado.', video_url: yt('plancha abdominal técnica correcta') },
-    { nombre: 'Crunch Abdominal — OA', categoria: 'Core', descripcion: 'Cadena abierta. Boca arriba, rodillas dobladas. Elevar los hombros del suelo flexionando el tronco. No jalar del cuello.', video_url: yt('crunch abdominal técnica correcta') },
-    { nombre: 'Crunch en Máquina — OA', categoria: 'Core', descripcion: 'Cadena abierta. Sentado en la máquina abdominal, flexionar el tronco llevando los codos hacia las rodillas. Controlar el regreso.', video_url: yt('crunch máquina abdominal técnica') },
-    { nombre: 'Rueda Abdominal — OA', categoria: 'Core', descripcion: 'Cadena abierta. De rodillas con la rueda, extender los brazos hacia adelante controlando la caída y volver. Nivel avanzado.', video_url: yt('rueda abdominal técnica correcta') },
-    // ── OBLICUOS ────────────────────────────────────────────
-    { nombre: 'Plancha Lateral — CC', categoria: 'Core', descripcion: 'Cadena cerrada. Apoyado en un antebrazo y el borde del pie, cuerpo en línea recta lateral. Sostener el tiempo indicado.', video_url: yt('plancha lateral técnica correcta') },
-    { nombre: 'Woodchop en Polea — OA', categoria: 'Core', descripcion: 'Cadena abierta. Polea alta, jalar diagonalmente desde arriba hacia la cadera opuesta rotando el tronco. Trabaja oblicuos.', video_url: yt('woodchop polea oblicuos técnica') },
-    { nombre: 'Russian Twist con Mancuerna — OA', categoria: 'Core', descripcion: 'Cadena abierta. Sentado con pies levantados, rotar el tronco de lado a lado sosteniendo la mancuerna con ambas manos.', video_url: yt('russian twist mancuerna oblicuos técnica') },
-    // ── PARAVERTEBRALES ─────────────────────────────────────
-    { nombre: 'Extensión en Banco Romano (Hiperextensión) — CC', categoria: 'Paravertebrales', descripcion: 'Cadena cerrada. En el banco romano, bajar el tronco y extender la columna hasta quedar en línea con las piernas. No hiperextender.', video_url: yt('hiperextensión banco romano técnica') },
-    { nombre: 'Pájaro-Perro (Bird Dog) — CC', categoria: 'Paravertebrales', descripcion: 'Cadena cerrada. En cuatro apoyos, extender brazo y pierna opuesta. Estabiliza columna y activa paravertebrales.', video_url: yt('pájaro perro bird dog paravertebrales técnica') },
-    { nombre: 'Buenos Días con Barra — OA', categoria: 'Paravertebrales', descripcion: 'Cadena abierta. Barra sobre los trapecios, doblar el tronco hacia adelante con espalda recta. Activa paravertebrales e isquiotibiales.', video_url: yt('buenos días barra ejercicio técnica') },
-    // ── CERVICAL ────────────────────────────────────────────
-    { nombre: 'Retracción Cervical (Chin Tuck) — CC', categoria: 'Cervical', descripcion: 'Cadena cerrada. Llevar el mentón hacia adentro como haciendo doble papada. Sostener 5 seg. Activa flexores profundos.', video_url: yt('chin tuck retracción cervical técnica') },
-    { nombre: 'Flexión Cervical Activa — OA', categoria: 'Cervical', descripcion: 'Cadena abierta. Boca arriba, llevar el mentón hacia el pecho elevando la cabeza del suelo. Bajar lento.', video_url: yt('flexión cervical ejercicio técnica') },
-    { nombre: 'Isometría Extensora Cervical — CC', categoria: 'Cervical', descripcion: 'Cadena cerrada. Apoyar la nuca contra la mano y hacer fuerza sin mover la cabeza. Sostener 5 seg. Activa extensores cervicales.', video_url: yt('isometría cervical extensores ejercicio') },
-    { nombre: 'Extensión Cervical Activa — OA', categoria: 'Cervical', descripcion: 'Cadena abierta. Boca abajo o sentado, llevar la cabeza hacia atrás controlando. Bajar lento.', video_url: yt('extensión cervical activa ejercicio técnica') },
-    { nombre: 'Rotación Cervical Activa — OA', categoria: 'Cervical', descripcion: 'Cadena abierta. Girar la cabeza hacia un lado hasta el límite indoloro. Sostener 3 seg. 10 reps por lado.', video_url: yt('rotación cervical ejercicio técnica') },
-    { nombre: 'Isometría Rotatoria Cervical — CC', categoria: 'Cervical', descripcion: 'Cadena cerrada. Apoyar la palma en la sien y hacer fuerza rotando contra la mano sin mover la cabeza. 5 seg por lado.', video_url: yt('isometría cervical rotatoria ejercicio') },
-    { nombre: 'Inclinación Lateral de Cuello — OA', categoria: 'Cervical', descripcion: 'Cadena abierta. Llevar la oreja hacia el hombro lentamente hasta sentir estiramiento. Sostener 20 seg por lado.', video_url: yt('inclinación lateral cuello estiramiento') },
+  seedAll([
+    // ══ TOBILLO ═════════════════════════════════════════════
+    // Tibial Anterior
+    { nombre: 'Dorsiflexión con Banda', categoria: 'Tobillo · Tibial Anterior', descripcion: 'Sentado, banda en el empeine, llevar la punta del pie hacia la rodilla. Volver lento.', video_url: yt('dorsiflexión tobillo banda tibial anterior') },
+    { nombre: 'Marcha sobre Talones', categoria: 'Tobillo · Tibial Anterior', descripcion: 'Caminar apoyando solo los talones con la punta elevada. Activación en cadena cerrada.', video_url: yt('marcha sobre talones tibial anterior') },
+    { nombre: 'Dorsiflexión en Polea', categoria: 'Tobillo · Tibial Anterior', descripcion: 'Sentado frente a la polea baja, jalar la punta del pie hacia arriba contra resistencia.', video_url: yt('dorsiflexión tobillo polea tibial anterior') },
+    // Peroneo Lateral
+    { nombre: 'Eversión con Banda', categoria: 'Tobillo · Peroneo Lateral', descripcion: 'Sentado, banda en el pie, girar el tobillo hacia afuera (eversión) lentamente. Volver controlado.', video_url: yt('eversión tobillo banda peroneo lateral') },
+    { nombre: 'Eversión en Polea', categoria: 'Tobillo · Peroneo Lateral', descripcion: 'De pie junto a la polea baja con tobillera, alejar el pie hacia afuera rotando el tobillo.', video_url: yt('eversión tobillo polea peroneo ejercicio') },
+    { nombre: 'Marcha Lateral sobre Puntillas', categoria: 'Tobillo · Peroneo Lateral', descripcion: 'Caminar de lado en puntillas. Activa el peroneo en cadena cerrada.', video_url: yt('marcha lateral puntillas peroneo ejercicio') },
+    // Sóleo
+    { nombre: 'Elevación de Talones Sentado (máquina)', categoria: 'Tobillo · Sóleo', descripcion: 'Sentado con rodillas a 90°, elevar los talones contra la carga. El sóleo trabaja más con rodilla flexionada.', video_url: yt('elevación de talones sentado sóleo máquina') },
+    { nombre: 'Elevación de Talones Sentado con Mancuerna', categoria: 'Tobillo · Sóleo', descripcion: 'Sentado, mancuerna sobre el muslo, elevar el talón. Rango completo.', video_url: yt('elevación de talones sentado mancuerna sóleo') },
+    { nombre: 'Sentadilla Isométrica con Talones', categoria: 'Tobillo · Sóleo', descripcion: 'En posición de sentadilla parcial, elevar los talones y sostener. Sóleo en cadena cerrada.', video_url: yt('sentadilla isométrica talones sóleo ejercicio') },
+    // Gemelos
+    { nombre: 'Elevación de Talones de Pie (máquina)', categoria: 'Tobillo · Gemelos', descripcion: 'En la máquina de pantorrilla de pie, elevar al máximo y bajar por debajo del nivel de la plataforma.', video_url: yt('elevación de talones máquina de pie gemelos') },
+    { nombre: 'Elevación de Talones en Escalón', categoria: 'Tobillo · Gemelos', descripcion: 'De pie en escalón, elevar y bajar lento superando el rango normal. Sostener arriba 1 seg.', video_url: yt('elevación de talones escalón gemelos técnica') },
+    { nombre: 'Salto a la Soga', categoria: 'Tobillo · Gemelos', descripcion: 'Saltar con soga en puntillas. Alta activación de gemelos en cadena cerrada.', video_url: yt('salto soga gemelos ejercicio') },
+    // ══ RODILLA ═════════════════════════════════════════════
+    // Gemelos (rodilla)
+    { nombre: 'Press de Piernas con Talones Altos', categoria: 'Rodilla · Gemelos', descripcion: 'Prensa con los talones en el borde inferior de la plataforma. Activa gemelos en cadena cerrada.', video_url: yt('press piernas talones gemelos técnica') },
+    { nombre: 'Step Up con énfasis en puntillas', categoria: 'Rodilla · Gemelos', descripcion: 'Subir el escalón empujando desde la punta del pie. Activa gemelos funcionalmente.', video_url: yt('step up puntillas gemelos ejercicio') },
+    { nombre: 'Elevación de Talones de Pie con Mancuerna', categoria: 'Rodilla · Gemelos', descripcion: 'De pie, mancuerna en una mano, elevar el talón. Versión unilateral para mayor intensidad.', video_url: yt('elevación de talones mancuerna gemelos unilateral') },
+    // Isquiotibiales (rodilla)
+    { nombre: 'Curl de Isquiotibiales acostado (máquina)', categoria: 'Rodilla · Isquiotibiales', descripcion: 'Boca abajo, doblar las rodillas llevando los talones hacia los glúteos. Controlar el descenso.', video_url: yt('curl isquiotibial máquina acostado técnica') },
+    { nombre: 'Curl de Isquiotibiales sentado (máquina)', categoria: 'Rodilla · Isquiotibiales', descripcion: 'Sentado, doblar las rodillas bajo el asiento contra la resistencia. Controlar la vuelta.', video_url: yt('curl isquiotibial máquina sentado técnica') },
+    { nombre: 'Nordic Curl (Curl Nórdico)', categoria: 'Rodilla · Isquiotibiales', descripcion: 'De rodillas con pies fijos, bajar el tronco lentamente con la fuerza excéntrica de los isquiotibiales.', video_url: yt('nordic curl isquiotibiales ejercicio técnica') },
+    // Cuádriceps
+    { nombre: 'Extensión de Cuádriceps (máquina)', categoria: 'Rodilla · Cuádriceps', descripcion: 'Sentado, extender las rodillas hasta la extensión completa. Bajar lento. Cadena abierta.', video_url: yt('leg extension máquina cuádriceps técnica') },
+    { nombre: 'Prensa de Piernas', categoria: 'Rodilla · Cuádriceps', descripcion: 'Pies al ancho de caderas en la plataforma, empujar hasta casi extender la rodilla y bajar lento.', video_url: yt('leg press prensa de piernas técnica') },
+    { nombre: 'Sentadilla con Barra', categoria: 'Rodilla · Cuádriceps', descripcion: 'Barra sobre trapecios, pies al ancho de hombros. Bajar hasta paralela. Empujar desde los talones.', video_url: yt('sentadilla con barra técnica correcta') },
+    // Sartorio
+    { nombre: 'Flexión de Cadera con Rodilla Rotada', categoria: 'Rodilla · Sartorio', descripcion: 'De pie, elevar la rodilla hacia el hombro opuesto (flexión + abducción + rotación externa). Movimiento del sartorio.', video_url: yt('sartorio ejercicio flexión cadera rotación') },
+    { nombre: 'Sentadilla con Rodillas hacia Afuera', categoria: 'Rodilla · Sartorio', descripcion: 'Sentadilla con pies en rotación externa pronunciada. Activa sartorio en cadena cerrada.', video_url: yt('sentadilla rotación externa sartorio ejercicio') },
+    { nombre: 'Cruce de Pierna Sentado', categoria: 'Rodilla · Sartorio', descripcion: 'Sentado, cruzar una pierna sobre la otra (posición de sastre). Sostener. Trabajo de sartorio.', video_url: yt('estiramiento sartorio posición sastre ejercicio') },
+    // Aductores
+    { nombre: 'Aducción de Cadera (máquina)', categoria: 'Rodilla · Aductores', descripcion: 'Sentado, juntar las piernas contra la resistencia. Controlar la apertura.', video_url: yt('aducción cadera máquina técnica') },
+    { nombre: 'Sentadilla Sumo', categoria: 'Rodilla · Aductores', descripcion: 'Pies muy abiertos con puntas hacia afuera, bajar profundo. Gran activación de aductores.', video_url: yt('sentadilla sumo aductores técnica') },
+    { nombre: 'Aducción en Polea', categoria: 'Rodilla · Aductores', descripcion: 'De pie con tobillera en polea baja, llevar la pierna hacia la línea media cruzando levemente.', video_url: yt('aducción cadera polea de pie técnica') },
+    // ══ CADERA ══════════════════════════════════════════════
+    // Glúteo Medio
+    { nombre: 'Abducción de Cadera (máquina)', categoria: 'Cadera · Glúteo Medio', descripcion: 'Sentado, separar las piernas contra la resistencia. Controlar el cierre.', video_url: yt('abducción cadera máquina glúteo medio') },
+    { nombre: 'Abducción en Polea de Pie', categoria: 'Cadera · Glúteo Medio', descripcion: 'De pie, tobillera en polea baja, alejar la pierna lateralmente sin inclinar el tronco.', video_url: yt('abducción cadera polea pie glúteo medio') },
+    { nombre: 'Caminata con Banda (Monster Walk)', categoria: 'Cadera · Glúteo Medio', descripcion: 'Banda en las rodillas, posición semiflexionada, caminar hacia los lados. Glúteo medio en cadena cerrada.', video_url: yt('monster walk banda glúteo medio ejercicio') },
+    // Glúteo Mayor
+    { nombre: 'Hip Thrust con Barra', categoria: 'Cadera · Glúteo Mayor', descripcion: 'Espalda en banco, barra sobre caderas. Elevar la pelvis apretando glúteos. Bajar controlado.', video_url: yt('hip thrust barra glúteo mayor técnica') },
+    { nombre: 'Patada Trasera en Polea', categoria: 'Cadera · Glúteo Mayor', descripcion: 'De pie frente a la polea, tobillera, llevar la pierna hacia atrás con rodilla recta.', video_url: yt('patada trasera polea glúteo mayor técnica') },
+    { nombre: 'Sentadilla Búlgara', categoria: 'Cadera · Glúteo Mayor', descripcion: 'Pie trasero en banco, bajar la rodilla delantera hacia el piso. Gran activación de glúteo.', video_url: yt('sentadilla búlgara split squat glúteo técnica') },
+    // Isquiotibiales (cadera)
+    { nombre: 'Peso Muerto Rumano con Barra', categoria: 'Cadera · Isquiotibiales', descripcion: 'De pie con barra, bajar el torso con espalda recta y rodillas levemente flexionadas. Sentir el estiramiento en la parte posterior.', video_url: yt('peso muerto rumano barra isquiotibiales técnica') },
+    { nombre: 'Peso Muerto Rumano con Mancuernas', categoria: 'Cadera · Isquiotibiales', descripcion: 'Igual al rumano con barra pero con mancuernas. Mayor rango de movimiento.', video_url: yt('peso muerto rumano mancuernas isquiotibiales técnica') },
+    { nombre: 'Good Morning con Barra', categoria: 'Cadera · Isquiotibiales', descripcion: 'Barra sobre trapecios, doblar el tronco hacia adelante con espalda recta. Isquiotibiales y glúteo.', video_url: yt('good morning barra isquiotibiales ejercicio') },
+    // Piramidal
+    { nombre: 'Rotación Externa en Decúbito (Almeja)', categoria: 'Cadera · Piramidal', descripcion: 'De lado con rodillas flexionadas, abrir la rodilla de arriba como almeja. Activa piramidal y glúteo medio.', video_url: yt('ejercicio almeja piramidal rotación externa cadera') },
+    { nombre: 'Estiramiento de Piramidal en Decúbito', categoria: 'Cadera · Piramidal', descripcion: 'Boca arriba, cruzar el tobillo sobre la rodilla opuesta y jalar la pierna hacia el pecho. Sostener 30 seg.', video_url: yt('estiramiento piramidal decúbito técnica') },
+    { nombre: 'Rotación Externa con Banda', categoria: 'Cadera · Piramidal', descripcion: 'De pie o sentado, banda en las rodillas, rotar la cadera hacia afuera contra resistencia.', video_url: yt('rotación externa cadera banda piramidal ejercicio') },
+    // ══ LUMBAR ══════════════════════════════════════════════
+    // Cuadrado Lumbar
+    { nombre: 'Plancha Lateral', categoria: 'Lumbar · Cuadrado Lumbar', descripcion: 'Apoyado en un antebrazo y el borde del pie, cuerpo en línea lateral. Sostener el tiempo indicado.', video_url: yt('plancha lateral cuadrado lumbar técnica') },
+    { nombre: 'Inclinación Lateral con Mancuerna', categoria: 'Lumbar · Cuadrado Lumbar', descripcion: 'De pie, mancuerna en una mano, inclinar el tronco hacia el lado contrario y volver. Activa cuadrado lumbar.', video_url: yt('inclinación lateral mancuerna cuadrado lumbar') },
+    { nombre: 'Elevación de Cadera en Plancha Lateral', categoria: 'Lumbar · Cuadrado Lumbar', descripcion: 'En plancha lateral, bajar y subir la cadera. Mayor trabajo del cuadrado lumbar.', video_url: yt('elevación cadera plancha lateral cuadrado lumbar') },
+    // Glúteo Medio (lumbar)
+    { nombre: 'Abducción Acostado', categoria: 'Lumbar · Glúteo Medio', descripcion: 'De lado en el suelo, elevar la pierna de arriba controlando. Trabajo del glúteo medio.', video_url: yt('abducción cadera acostado glúteo medio ejercicio') },
+    { nombre: 'Hip Thrust Unilateral', categoria: 'Lumbar · Glúteo Medio', descripcion: 'Espalda en banco, elevar la pelvis con una sola pierna. Activa glúteo medio para estabilizar.', video_url: yt('hip thrust unilateral glúteo medio técnica') },
+    { nombre: 'Caminata Lateral con Banda', categoria: 'Lumbar · Glúteo Medio', descripcion: 'Banda en las rodillas, pasos laterales en posición semi-squat. Activa glúteo medio en funcional.', video_url: yt('caminata lateral banda glúteo medio ejercicio') },
+    // Glúteo Mayor (lumbar)
+    { nombre: 'Puente de Glúteos', categoria: 'Lumbar · Glúteo Mayor', descripcion: 'Boca arriba, rodillas dobladas, elevar la pelvis apretando glúteos. Sostener arriba 2 seg.', video_url: yt('puente de glúteos técnica correcta') },
+    { nombre: 'Hip Thrust con Barra (lumbar)', categoria: 'Lumbar · Glúteo Mayor', descripcion: 'Espalda en banco, barra sobre caderas. Elevar la pelvis con máxima contracción de glúteo.', video_url: yt('hip thrust barra glúteo técnica') },
+    { nombre: 'Patada de Glúteo en Cuatro Apoyos', categoria: 'Lumbar · Glúteo Mayor', descripcion: 'En cuatro apoyos, llevar la pierna hacia atrás y arriba con rodilla flexionada. Lento y controlado.', video_url: yt('patada glúteo cuatro apoyos ejercicio') },
+    // Isquiotibiales (lumbar)
+    { nombre: 'Peso Muerto Convencional', categoria: 'Lumbar · Isquiotibiales', descripcion: 'Barra en el piso, empujar con los pies hasta quedar de pie. Isquiotibiales, glúteos y espalda baja.', video_url: yt('peso muerto convencional técnica correcta') },
+    { nombre: 'Peso Muerto Rumano Unilateral', categoria: 'Lumbar · Isquiotibiales', descripcion: 'De pie en una pierna, inclinar el tronco hacia adelante con la otra pierna extendida hacia atrás.', video_url: yt('peso muerto rumano unilateral isquiotibiales técnica') },
+    { nombre: 'Curl Nórdico', categoria: 'Lumbar · Isquiotibiales', descripcion: 'De rodillas con pies fijos, bajar el tronco lentamente. Trabajo excéntrico de isquiotibiales.', video_url: yt('curl nórdico isquiotibiales excéntrico técnica') },
+    // Erectores de la Espalda
+    { nombre: 'Hiperextensión en Banco Romano', categoria: 'Lumbar · Erectores de la Espalda', descripcion: 'En el banco romano, bajar el tronco y extender hasta quedar en línea con las piernas. No hiperextender.', video_url: yt('hiperextensión banco romano erectores técnica') },
+    { nombre: 'Pájaro-Perro (Bird Dog)', categoria: 'Lumbar · Erectores de la Espalda', descripcion: 'En cuatro apoyos, extender brazo y pierna opuesta. Estabiliza columna y activa erectores.', video_url: yt('bird dog pájaro perro erectores espalda técnica') },
+    { nombre: 'Remo con Barra', categoria: 'Lumbar · Erectores de la Espalda', descripcion: 'Inclinado hacia adelante, jalar la barra hacia el abdomen. Erectores activos isométricamente.', video_url: yt('remo con barra inclinado erectores técnica') },
+    // Dorsal Ancho (lumbar)
+    { nombre: 'Jalón al Pecho en Polea', categoria: 'Lumbar · Dorsal Ancho', descripcion: 'Sentado en la polea alta, jalar la barra hacia el pecho. Codos abajo y atrás.', video_url: yt('jalón al pecho polea dorsal ancho técnica') },
+    { nombre: 'Remo en Polea Baja', categoria: 'Lumbar · Dorsal Ancho', descripcion: 'Sentado frente a la polea baja, jalar hacia el abdomen. Omoplatos juntos al final.', video_url: yt('remo polea baja sentado dorsal ancho técnica') },
+    { nombre: 'Remo con Mancuerna (un brazo)', categoria: 'Lumbar · Dorsal Ancho', descripcion: 'Apoyado en banco, jalar la mancuerna hacia la cadera. Espalda paralela al suelo.', video_url: yt('remo mancuerna un brazo dorsal técnica') },
+    // ══ HOMBRO ══════════════════════════════════════════════
+    // Trapecio
+    { nombre: 'Encogimiento con Barra (Shrug)', categoria: 'Hombro · Trapecio', descripcion: 'De pie con barra, elevar los hombros hacia las orejas. Sin doblar los codos.', video_url: yt('encogimiento barra shrug trapecio técnica') },
+    { nombre: 'Encogimiento con Mancuernas', categoria: 'Hombro · Trapecio', descripcion: 'De pie con mancuernas a los costados, elevar los hombros. Mayor rango que con barra.', video_url: yt('encogimiento mancuernas trapecio técnica') },
+    { nombre: 'Retracción Escapular en Polea', categoria: 'Hombro · Trapecio', descripcion: 'Sentado frente a la polea, jalar juntando los omoplatos sin doblar los codos.', video_url: yt('retracción escapular polea trapecio romboides') },
+    // Dorsal Ancho (hombro)
+    { nombre: 'Jalón al Pecho Agarre Abierto', categoria: 'Hombro · Dorsal Ancho', descripcion: 'Agarre ancho en la polea alta, jalar hacia el pecho arqueando levemente. Énfasis en dorsal.', video_url: yt('jalón al pecho agarre ancho dorsal hombro técnica') },
+    { nombre: 'Dominadas (Barra Fija)', categoria: 'Hombro · Dorsal Ancho', descripcion: 'Colgado de la barra, elevar el cuerpo hasta que el mentón supere la barra. Bajar controlado.', video_url: yt('dominadas barra fija dorsal técnica') },
+    { nombre: 'Pullover con Mancuerna', categoria: 'Hombro · Dorsal Ancho', descripcion: 'Acostado en banco, mancuerna sobre el pecho, bajar hacia atrás de la cabeza. Activa dorsal y serrato.', video_url: yt('pullover mancuerna dorsal ancho técnica') },
+    // Redondo Menor
+    { nombre: 'Rotación Externa con Banda (codo pegado)', categoria: 'Hombro · Redondo Menor', descripcion: 'Codo pegado al cuerpo a 90°, rotar el antebrazo hacia afuera contra la banda. Activa redondo menor e infraespinoso.', video_url: yt('rotación externa hombro banda redondo menor técnica') },
+    { nombre: 'Rotación Externa en Polea', categoria: 'Hombro · Redondo Menor', descripcion: 'Codo a 90° pegado al cuerpo, jalar la polea hacia afuera. Trabajo de redondo menor.', video_url: yt('rotación externa polea hombro técnica') },
+    { nombre: 'Face Pull en Polea', categoria: 'Hombro · Redondo Menor', descripcion: 'Polea a nivel de la cara, jalar separando los codos. Trabaja redondo menor, infraespinoso y deltoides posterior.', video_url: yt('face pull polea rotadores externos técnica') },
+    // Redondo Mayor
+    { nombre: 'Remo con Agarre Prono (codos pegados)', categoria: 'Hombro · Redondo Mayor', descripcion: 'Remo en polea baja con agarre prono y codos pegados al tronco. Activa redondo mayor y dorsal.', video_url: yt('remo agarre prono codos pegados redondo mayor') },
+    { nombre: 'Jalón en Polea con Brazos Extendidos', categoria: 'Hombro · Redondo Mayor', descripcion: 'De pie, jalar la polea hacia abajo con brazos extendidos (straight arm pulldown). Activa redondo mayor.', video_url: yt('straight arm pulldown polea redondo mayor técnica') },
+    { nombre: 'Aducción Horizontal en Polea', categoria: 'Hombro · Redondo Mayor', descripcion: 'Brazos extendidos, jalar la polea alta hacia la cadera. Gran activación de redondo mayor.', video_url: yt('aducción horizontal polea redondo mayor hombro') },
+    // Infraespinoso
+    { nombre: 'Rotación Externa Acostado', categoria: 'Hombro · Infraespinoso', descripcion: 'De lado, codo a 90°, rotar el antebrazo hacia arriba. Máxima activación del infraespinoso.', video_url: yt('rotación externa hombro acostado infraespinoso técnica') },
+    { nombre: 'Rotación Externa en Polea (infraespinoso)', categoria: 'Hombro · Infraespinoso', descripcion: 'Codo fijo a 90°, rotar hacia afuera contra la polea. Aislamiento del infraespinoso.', video_url: yt('rotación externa polea infraespinoso ejercicio') },
+    { nombre: 'Y-T-W en Banco Inclinado', categoria: 'Hombro · Infraespinoso', descripcion: 'Boca abajo en banco inclinado, hacer formas de Y, T y W con los brazos. Activa toda la musculatura escapular posterior.', video_url: yt('YTW banco inclinado infraespinoso manguito rotador') },
+    // Supraespinoso
+    { nombre: 'Elevación Lateral Vacía (Empty Can)', categoria: 'Hombro · Supraespinoso', descripcion: 'De pie, elevar el brazo a 30° hacia adelante con el pulgar hacia abajo. Máxima activación del supraespinoso.', video_url: yt('empty can supraespinoso elevación ejercicio técnica') },
+    { nombre: 'Elevación Lateral Llena (Full Can)', categoria: 'Hombro · Supraespinoso', descripcion: 'Igual al empty can pero con el pulgar hacia arriba. Menor compresión subacromial.', video_url: yt('full can supraespinoso elevación ejercicio técnica') },
+    { nombre: 'Elevación Lateral con Polea', categoria: 'Hombro · Supraespinoso', descripcion: 'Tensión constante de la polea baja al elevar el brazo lateralmente. Activa supraespinoso.', video_url: yt('elevación lateral polea supraespinoso hombro técnica') },
+    // Deltoides
+    { nombre: 'Press Militar con Barra', categoria: 'Hombro · Deltoides', descripcion: 'Sentado o de pie, barra a nivel de la clavícula. Empujar hacia arriba hasta extender los codos.', video_url: yt('press militar barra deltoides técnica') },
+    { nombre: 'Elevación Lateral con Mancuerna', categoria: 'Hombro · Deltoides', descripcion: 'De pie, elevar los brazos a los costados hasta la altura del hombro. Codos levemente flexionados.', video_url: yt('elevación lateral mancuerna deltoides técnica') },
+    { nombre: 'Elevación Frontal con Mancuerna', categoria: 'Hombro · Deltoides', descripcion: 'De pie, elevar el brazo al frente hasta la altura del hombro. Aisla el deltoides anterior.', video_url: yt('elevación frontal mancuerna deltoides anterior técnica') },
+    // Tríceps (hombro)
+    { nombre: 'Extensión en Polea (hacia abajo)', categoria: 'Hombro · Tríceps', descripcion: 'De pie frente a la polea alta, empujar hacia abajo extendiendo los codos. Codos fijos al cuerpo.', video_url: yt('extensión tríceps polea hacia abajo técnica') },
+    { nombre: 'Press Francés con Barra (Skullcrusher)', categoria: 'Hombro · Tríceps', descripcion: 'Acostado, barra sobre el pecho, doblar los codos bajando la barra hacia la frente. Extender.', video_url: yt('press francés skullcrusher tríceps técnica') },
+    { nombre: 'Fondos en Paralelas', categoria: 'Hombro · Tríceps', descripcion: 'Entre dos apoyos, bajar doblando los codos y empujar. Torso erguido para enfatizar tríceps.', video_url: yt('fondos paralelas dips tríceps técnica') },
+    // Bíceps (hombro)
+    { nombre: 'Curl con Barra', categoria: 'Hombro · Bíceps', descripcion: 'De pie con barra en agarre supino, doblar los codos llevando la barra hacia los hombros.', video_url: yt('curl bíceps barra técnica correcta') },
+    { nombre: 'Curl con Mancuernas Alternado', categoria: 'Hombro · Bíceps', descripcion: 'De pie, doblar un codo a la vez con supinación de la muñeca al subir.', video_url: yt('curl mancuernas bíceps alternado técnica') },
+    { nombre: 'Curl en Polea', categoria: 'Hombro · Bíceps', descripcion: 'De pie frente a la polea baja, jalar hacia arriba. Tensión constante durante todo el movimiento.', video_url: yt('curl bíceps polea técnica') },
+    // Subescapular
+    { nombre: 'Rotación Interna en Polea', categoria: 'Hombro · Subescapular', descripcion: 'Codo pegado al cuerpo a 90°, jalar la polea hacia adentro. Trabaja el subescapular.', video_url: yt('rotación interna hombro polea subescapular técnica') },
+    { nombre: 'Rotación Interna Acostado', categoria: 'Hombro · Subescapular', descripcion: 'Boca arriba, codo a 90°, rotar el antebrazo hacia abajo contra resistencia. Aislamiento de subescapular.', video_url: yt('rotación interna hombro acostado subescapular ejercicio') },
+    { nombre: 'Press de Pecho Neutro (máquina)', categoria: 'Hombro · Subescapular', descripcion: 'Press en máquina de pecho con agarre neutro. Activa subescapular como rotador interno.', video_url: yt('press pecho neutro máquina subescapular técnica') },
+    // Romboides
+    { nombre: 'Remo en Polea con Agarre Neutro', categoria: 'Hombro · Romboides', descripcion: 'Sentado frente a la polea, jalar hacia el abdomen juntando los omoplatos al final.', video_url: yt('remo polea agarre neutro romboides técnica') },
+    { nombre: 'Vuelo Posterior con Mancuernas', categoria: 'Hombro · Romboides', descripcion: 'Inclinado hacia adelante, elevar los brazos a los costados. Aisla romboides y deltoides posterior.', video_url: yt('vuelo posterior mancuernas romboides técnica') },
+    { nombre: 'Retracción Escapular contra la Pared', categoria: 'Hombro · Romboides', descripcion: 'Apoyado en la pared, juntar los omoplatos sin mover los brazos. Activación isométrica de romboides.', video_url: yt('retracción escapular pared romboides ejercicio') },
+    // Serrato Mayor
+    { nombre: 'Protracción en Plancha', categoria: 'Hombro · Serrato Mayor', descripcion: 'En posición de plancha, empujar el suelo separando las escápulas al máximo (serratus push-up). Activa serrato mayor.', video_url: yt('serratus push up serrato mayor ejercicio técnica') },
+    { nombre: 'Golpe de Boxeador en Polea', categoria: 'Hombro · Serrato Mayor', descripcion: 'De pie frente a la polea, empujar el agarre al frente como un golpe. Máxima protracción escapular.', video_url: yt('golpe boxeador polea serrato mayor protracción') },
+    { nombre: 'Deslizamiento de Pared (Wall Slide)', categoria: 'Hombro · Serrato Mayor', descripcion: 'Antebrazos apoyados en la pared, deslizar hacia arriba. Activa serrato mayor en cadena cerrada.', video_url: yt('wall slide serrato mayor ejercicio técnica') },
+    // ══ CODO ════════════════════════════════════════════════
+    // Tríceps (codo)
+    { nombre: 'Extensión en Polea hacia Abajo', categoria: 'Codo · Tríceps', descripcion: 'De pie frente a la polea alta, empujar el agarre hacia abajo extendiendo los codos. Codos fijos.', video_url: yt('extensión tríceps polea codo técnica') },
+    { nombre: 'Extensión sobre la Cabeza con Mancuerna', categoria: 'Codo · Tríceps', descripcion: 'Sentado, mancuerna sobre la cabeza, doblar los codos hacia atrás y extender.', video_url: yt('extensión tríceps cabeza mancuerna técnica') },
+    { nombre: 'Patada de Tríceps (Kickback)', categoria: 'Codo · Tríceps', descripcion: 'Inclinado, codo pegado al cuerpo, extender el codo llevando la mancuerna hacia atrás.', video_url: yt('kickback tríceps mancuerna técnica') },
+    // Bíceps (codo)
+    { nombre: 'Curl con Barra en Banco Scott', categoria: 'Codo · Bíceps', descripcion: 'Codos apoyados en el banco, doblar llevando la barra hacia los hombros. Aísla el bíceps.', video_url: yt('curl banco scott bíceps técnica') },
+    { nombre: 'Curl Martillo con Mancuerna', categoria: 'Codo · Bíceps', descripcion: 'Agarre neutro (pulgar arriba), doblar el codo. Trabaja bíceps y braquiorradial.', video_url: yt('curl martillo mancuerna bíceps braquiorradial técnica') },
+    { nombre: 'Curl Concentrado', categoria: 'Codo · Bíceps', descripcion: 'Sentado, codo apoyado en el muslo, doblar el codo con mancuerna. Máxima concentración en bíceps.', video_url: yt('curl concentrado bíceps mancuerna técnica') },
+    // Supinadores
+    { nombre: 'Supinación con Mancuerna', categoria: 'Codo · Supinadores', descripcion: 'Codo a 90° apoyado, rotar el antebrazo con la palma hacia arriba contra la mancuerna. Activa supinadores.', video_url: yt('supinación antebrazo mancuerna supinadores ejercicio') },
+    { nombre: 'Supinación en Polea', categoria: 'Codo · Supinadores', descripcion: 'Agarre en la polea baja, codo fijo, rotar el antebrazo hacia la supinación. Trabajo aislado.', video_url: yt('supinación antebrazo polea ejercicio técnica') },
+    { nombre: 'Curl Supinado con Banda', categoria: 'Codo · Supinadores', descripcion: 'Codo fijo, iniciar en pronación y supinar el antebrazo mientras se flexiona el codo. Trabaja supinadores y bíceps.', video_url: yt('curl supinado banda supinadores bíceps ejercicio') },
+    // Pronadores
+    { nombre: 'Pronación con Mancuerna', categoria: 'Codo · Pronadores', descripcion: 'Codo a 90° apoyado, rotar el antebrazo con la palma hacia abajo. Activa pronador redondo y cuadrado.', video_url: yt('pronación antebrazo mancuerna pronadores ejercicio') },
+    { nombre: 'Pronación en Polea', categoria: 'Codo · Pronadores', descripcion: 'Agarre en la polea alta, codo fijo, rotar el antebrazo hacia la pronación.', video_url: yt('pronación antebrazo polea ejercicio técnica') },
+    { nombre: 'Lanzamiento con Rotación (Chop) en Polea', categoria: 'Codo · Pronadores', descripcion: 'Movimiento diagonal desde arriba hacia abajo con rotación del antebrazo. Trabaja pronadores funcionalmente.', video_url: yt('chop rotación polea pronadores antebrazo funcional') },
   ]);
   console.log('✅ Seed de ejercicios actualizado');
 }
