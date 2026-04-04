@@ -2282,3 +2282,27 @@
 .portal-deuda-btn:hover {
   background: #1ebe5c;
 }
+
+/* ── Botón rápido de pago en sesiones ─────────────────────── */
+
+.evol-pago-btn {
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.evol-pago-btn:hover { opacity: 0.75; }
+
+.evol-pago-btn.pagado {
+  background: #dcfce7;
+  color: var(--kine-ok);
+}
+
+.evol-pago-btn.pendiente {
+  background: #fef9c3;
+  color: #854d0e;
+}

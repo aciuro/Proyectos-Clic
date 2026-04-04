@@ -91,6 +91,8 @@ export const api = {
   createEvolucion:  (motivoId, data) => req('POST', `/motivos/${motivoId}/evoluciones`, data),
   updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`, data),
   deleteEvolucion:  (id) => req('DELETE', `/evoluciones/${id}`),
+  togglePagado:     (id) => req('PATCH', `/evoluciones/${id}/pagar`),
+  pagarTodo:        (pacienteId) => req('POST', `/pacientes/${pacienteId}/pagar-todo`),
   getSaldo:         (pacienteId) => req('GET', `/pacientes/${pacienteId}/saldo`),
 
   // Ejercicios de gimnasio (última sesión)

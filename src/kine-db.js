@@ -403,6 +403,12 @@ const getSaldoPaciente = db.prepare(`
   WHERE m.paciente_id = ?
 `);
 
+const pagarTodasEvoluciones = db.prepare(`
+  UPDATE evoluciones SET pagado = 1
+  WHERE motivo_id IN (SELECT id FROM motivos WHERE paciente_id = ?)
+  AND pagado = 0 AND monto_cobrado > 0
+`);
+
 const getDolorEvolByPaciente = db.prepare(`
   SELECT e.fecha, e.dolor FROM evoluciones e
   JOIN motivos m ON m.id = e.motivo_id
@@ -560,6 +566,7 @@ module.exports = {
   insertEvolucion:             (data) => { const r = insertEvolucion.run(data); return getEvolucion.get(r.lastInsertRowid); },
   updateEvolucion:             (data) => { updateEvolucion.run(data); return getEvolucion.get(data.id); },
   deleteEvolucion:             (id) => deleteEvolucion.run(id),
+  pagarTodasEvoluciones:       (id) => pagarTodasEvoluciones.run(id),
   getSaldoPaciente:            (id) => getSaldoPaciente.get(id),
   getDolorEvolByPaciente:      (id) => getDolorEvolByPaciente.all(id),
   getUltimaEvolucionPaciente:  (id) => getUltimaEvolucionPaciente.get(id),

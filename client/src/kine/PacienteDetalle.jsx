@@ -275,9 +275,17 @@ function MotivoCard({ motivo, onUpdated }) {
                           </div>
                           <div className="evol-pago">
                             {ev.monto_cobrado > 0 && (
-                              <span className={`evol-monto ${ev.pagado ? 'pagado' : 'pendiente'}`}>
+                              <button
+                                className={`evol-pago-btn ${ev.pagado ? 'pagado' : 'pendiente'}`}
+                                onClick={async () => {
+                                  await api.togglePagado(ev.id)
+                                  setEvoluciones(await api.getEvoluciones(motivo.id))
+                                  onUpdated()
+                                }}
+                                title={ev.pagado ? 'Marcar como pendiente' : 'Marcar como pagado'}
+                              >
                                 ${Number(ev.monto_cobrado).toLocaleString('es-AR')} {ev.pagado ? '✓' : '⏳'}
-                              </span>
+                              </button>
                             )}
                           </div>
                           <div className="evol-btns">
@@ -530,6 +538,15 @@ export default function PacienteDetalle() {
             <span>Saldo pendiente</span>
             <strong>${Number(saldo.saldo_pendiente).toLocaleString('es-AR')}</strong>
           </div>
+          {saldo.saldo_pendiente > 0 && (
+            <button className="kine-btn-primary" style={{ marginLeft: 'auto' }} onClick={async () => {
+              if (!confirm(`¿Marcar todas las sesiones pendientes de ${paciente.nombre} como pagadas?`)) return
+              await api.pagarTodo(id)
+              cargar()
+            }}>
+              ✓ Marcar todo como pagado
+            </button>
+          )}
         </div>
       )}
 

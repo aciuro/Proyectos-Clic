@@ -321,6 +321,18 @@ router.delete('/evoluciones/:id', auth, soloAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+router.patch('/evoluciones/:id/pagar', auth, soloAdmin, (req, res) => {
+  const ev = db.getEvolucion(req.params.id);
+  if (!ev) return res.status(404).json({ error: 'No encontrada' });
+  db.updateEvolucion({ ...ev, id: ev.id, pagado: ev.pagado ? 0 : 1 });
+  res.json({ ok: true, pagado: !ev.pagado });
+});
+
+router.post('/pacientes/:id/pagar-todo', auth, soloAdmin, (req, res) => {
+  db.pagarTodasEvoluciones(req.params.id);
+  res.json({ ok: true });
+});
+
 router.get('/pacientes/:id/saldo', auth, (req, res) => {
   res.json(db.getSaldoPaciente(req.params.id));
 });
