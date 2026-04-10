@@ -17,18 +17,15 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 
 WORKDIR /app
 
+# Copiar todo el código fuente
+COPY . .
+
 # Instalar dependencias del servidor
-COPY package*.json ./
 RUN npm ci --omit=dev
 
 # Instalar dependencias y buildear el frontend
-COPY client/package*.json ./client/
 RUN cd client && npm ci
-COPY client/ ./client/
 RUN cd client && npm run build
-
-# Copiar el resto del código
-COPY . .
 
 # Directorio para datos persistentes (montar volumen aquí en Railway)
 RUN mkdir -p /data/uploads
