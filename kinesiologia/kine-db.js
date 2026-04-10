@@ -1,16 +1,155 @@
-const Database = require('better-sqlite3');
-const path = require('path');
 const bcrypt = require('bcryptjs');
 
-const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
-const db = new Database(path.join(dataDir, 'kine.db'));
+let db;
+let isPostgres = false;
 
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
+if (process.env.DATABASE_URL) {
+  // Railway PostgreSQL
+  const { Pool } = require('pg');
+  isPostgres = true;
+  const pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false }
+  });
+  
+  // Wrapper para PostgreSQL
+  db = {
+    exec: (sql) => pool.query(sql),
+    prepare: (sql) => ({
+      run: (...params) => pool.query(sql, params),
+      get: (...params) => pool.query(sql, params).then(r => r.rows[0]),
+      all: (...params) => pool.query(sql, params).then(r => r.rows)
+    }),
+    close: () => pool.end()
+  };
+} else {
+  // Local SQLite
+  const Database = require('better-sqlite3');
+  const path = require('path');
+  const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
+  db = new Database(path.join(dataDir, 'kine.db'));
+  db.pragma('journal_mode = WAL');
+  db.pragma('foreign_keys = ON');
+}
 
 // ── Schema ────────────────────────────────────────────────
 
-db.exec(`
+const schemaSQL = isPostgres ? `
+CREATE TABLE IF NOT EXISTS motivos (
+  id           SERIAL PRIMARY KEY,
+  paciente_id  INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  sintoma      TEXT NOT NULL,
+  aparicion    TEXT,
+  momento_dia  TEXT,
+  movimientos  TEXT,
+  afloja_dia   INTEGER DEFAULT 0,
+  monto_sesion REAL DEFAULT 0,
+  estado       TEXT DEFAULT 'activo',
+  created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS evoluciones (
+  id             SERIAL PRIMARY KEY,
+  motivo_id      INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
+  fecha          TEXT NOT NULL,
+  notas          TEXT,
+  dolor          INTEGER,
+  tecnicas       TEXT,
+  monto_cobrado  REAL DEFAULT 0,
+  paganado         INTEGER DEFAULT 0,
+  created_at     TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS estudios (
+  id          SERIAL PRIMARY KEY,
+  motivo_id   INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
+  nombre      TEXT,
+  tipo        TEXT,
+  archivo     TEXT NOT NULL,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS turnos (
+  id          SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  fecha       TEXT NOT NULL,
+  hora        TEXT NOT NULL,
+  duracion    INTEGER DEFAULT 60,
+  motivo      TEXT,
+  estado      TEXT DEFAULT 'pendiente',
+  notas       TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id          SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  nombre      TEXT NOT NULL,
+  tipo        TEXT,
+  archivo     TEXT NOT NULL,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS usuarios (
+  id          SERIAL PRIMARY KEY,
+  email       TEXT NOT NULL UNIQUE,
+  password    TEXT NOT NULL,
+  rol         TEXT NOT NULL DEFAULT 'paciente',
+  nombre      TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS pacientes (
+  id          SERIAL PRIMARY KEY,
+  usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+  nombre      TEXT NOT NULL,
+  apellido    TEXT NOT NULL,
+  dni         TEXT,
+  fecha_nac   TEXT,
+  telefono    TEXT,
+  email       TEXT,
+  obra_social TEXT,
+  nro_afiliado TEXT,
+  ocupacion   TEXT,
+  direccion   TEXT,
+  motivo_consulta TEXT,
+  antecedentes    TEXT,
+  medicacion      TEXT,
+  alergias        TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS lesiones (
+  id            SERIAL PRIMARY KEY,
+  paciente_id   INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  nombre        TEXT,
+  tipo          TEXT,
+  diagnostico   TEXT,
+  evolucion    TEXT,
+  estado       TEXT DEFAULT 'activa',
+  created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ejercicios (
+  id          SERIAL PRIMARY KEY,
+  nombre      TEXT NOT NULL,
+  categoria   TEXT,
+  descripcion TEXT,
+  video_url   TEXT,
+  series      INTEGER,
+  repeticiones INTEGER,
+  segundos   INTEGER,
+  notas       TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS ejercicio_paciente (
+  id          SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  ejercicio_id INTEGER NOT NULL REFERENCES ejercicios(id) ON DELETE CASCADE,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+` : `
   CREATE TABLE IF NOT EXISTS motivos (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     paciente_id  INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
@@ -140,37 +279,42 @@ db.exec(`
     fecha_desde  TEXT DEFAULT (date('now','localtime')),
     activo       INTEGER DEFAULT 1
   );
-`);
+`;
 
-// ── Migraciones seguras ───────────────────────────────────
+// Ejecutar schema
+db.exec(schemaSQL);
 
-const cols = db.prepare("PRAGMA table_info(sesiones)").all().map(c => c.name);
-if (!cols.includes('tecnicas')) db.exec(`ALTER TABLE sesiones ADD COLUMN tecnicas TEXT`);
-if (!cols.includes('evolucion')) db.exec(`ALTER TABLE sesiones ADD COLUMN evolucion TEXT`);
+// ── Migraciones seguras ──────────────────────────────────────
 
-const colsPac = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
-if (!colsPac.includes('usuario_id')) db.exec(`ALTER TABLE pacientes ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
-if (!colsPac.includes('nro_afiliado')) db.exec(`ALTER TABLE pacientes ADD COLUMN nro_afiliado TEXT`);
-if (!colsPac.includes('ocupacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN ocupacion TEXT`);
-if (!colsPac.includes('direccion')) db.exec(`ALTER TABLE pacientes ADD COLUMN direccion TEXT`);
-if (!colsPac.includes('motivo_consulta')) db.exec(`ALTER TABLE pacientes ADD COLUMN motivo_consulta TEXT`);
-if (!colsPac.includes('antecedentes')) db.exec(`ALTER TABLE pacientes ADD COLUMN antecedentes TEXT`);
-if (!colsPac.includes('medicacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN medicacion TEXT`);
-if (!colsPac.includes('alergias')) db.exec(`ALTER TABLE pacientes ADD COLUMN alergias TEXT`);
+if (!isPostgres) {
+  const cols = db.prepare("PRAGMA table_info(sesiones)").all().map(c => c.name);
+  if (!cols.includes('tecnicas')) db.exec(`ALTER TABLE sesiones ADD COLUMN tecnicas TEXT`);
+  if (!cols.includes('evolucion')) db.exec(`ALTER TABLE sesiones ADD COLUMN evolucion TEXT`);
 
-const colsPacNuevos = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
-if (!colsPacNuevos.includes('edad'))   db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
-if (!colsPacNuevos.includes('celular')) db.exec(`ALTER TABLE pacientes ADD COLUMN celular TEXT`);
+  const colsPac = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
+  if (!colsPac.includes('usuario_id')) db.exec(`ALTER TABLE pacientes ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
+  if (!colsPac.includes('nro_afiliado')) db.exec(`ALTER TABLE pacientes ADD COLUMN nro_afiliado TEXT`);
+  if (!colsPac.includes('ocupacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN ocupacion TEXT`);
+  if (!colsPac.includes('direccion')) db.exec(`ALTER TABLE pacientes ADD COLUMN direccion TEXT`);
+  if (!colsPac.includes('motivo_consulta')) db.exec(`ALTER TABLE pacientes ADD COLUMN motivo_consulta TEXT`);
+  if (!colsPac.includes('antecedentes')) db.exec(`ALTER TABLE pacientes ADD COLUMN antecedentes TEXT`);
+  if (!colsPac.includes('medicacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN medicacion TEXT`);
+  if (!colsPac.includes('alergias')) db.exec(`ALTER TABLE pacientes ADD COLUMN alergias TEXT`);
 
-const colsSes = db.prepare("PRAGMA table_info(sesiones)").all().map(c => c.name);
-if (!colsSes.includes('dolor')) db.exec(`ALTER TABLE sesiones ADD COLUMN dolor INTEGER`);
+  const colsPacNuevos = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
+  if (!colsPacNuevos.includes('edad'))   db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
+  if (!colsPacNuevos.includes('celular')) db.exec(`ALTER TABLE pacientes ADD COLUMN celular TEXT`);
 
-const colsEvol = db.prepare("PRAGMA table_info(evoluciones)").all().map(c => c.name);
-if (!colsEvol.includes('tecnicas_sesion')) db.exec(`ALTER TABLE evoluciones ADD COLUMN tecnicas_sesion TEXT`);
-if (!colsEvol.includes('ejercicios_sesion')) db.exec(`ALTER TABLE evoluciones ADD COLUMN ejercicios_sesion TEXT`);
+  const colsSes = db.prepare("PRAGMA table_info(sesiones)").all().map(c => c.name);
+  if (!colsSes.includes('dolor')) db.exec(`ALTER TABLE sesiones ADD COLUMN dolor INTEGER`);
 
-const colsEj = db.prepare("PRAGMA table_info(ejercicios)").all().map(c => c.name);
-if (!colsEj.includes('imagen_url')) db.exec(`ALTER TABLE ejercicios ADD COLUMN imagen_url TEXT`);
+  const colsEvol = db.prepare("PRAGMA table_info(evoluciones)").all().map(c => c.name);
+  if (!colsEvol.includes('tecnicas_sesion')) db.exec(`ALTER TABLE evoluciones ADD COLUMN tecnicas_sesion TEXT`);
+  if (!colsEvol.includes('ejercicios_sesion')) db.exec(`ALTER TABLE evoluciones ADD COLUMN ejercicios_sesion TEXT`);
+
+  const colsEj = db.prepare("PRAGMA table_info(ejercicios)").all().map(c => c.name);
+  if (!colsEj.includes('imagen_url')) db.exec(`ALTER TABLE ejercicios ADD COLUMN imagen_url TEXT`);
+}
 
 // ── Crear admin por defecto si no existe ──────────────────
 
