@@ -18,8 +18,8 @@ function AdminLayout({ usuario, onLogout }) {
         <div className="kine-nav-brand">
           <span className="kine-nav-logo">⚕</span>
           <div>
-            <div className="kine-nav-title">Kinesiología Ciuró</div>
-            <div className="kine-nav-sub">Panel de administración</div>
+            <div className="kine-nav-title">Kinesiologia Ciuro</div>
+            <div className="kine-nav-sub">Panel de administracion</div>
           </div>
         </div>
         <div className="kine-nav-links">
@@ -51,37 +51,23 @@ function AdminLayout({ usuario, onLogout }) {
 
 function PacienteLayout({ usuario, paciente, onLogout }) {
   return (
-    <div className="kine-app">
-      <nav className="kine-nav">
-        <div className="kine-nav-brand">
-          <span className="kine-nav-logo">⚕</span>
-          <div>
-            <div className="kine-nav-title">Kinesiología Ciuró</div>
-            <div className="kine-nav-sub">Mi portal</div>
-          </div>
-        </div>
-        <div className="kine-nav-right">
-          <span className="kine-nav-usuario">{usuario?.nombre}</span>
-          <button className="kine-btn-logout" onClick={onLogout}>Salir</button>
-        </div>
-      </nav>
-      <div className="kine-content">
-        <Routes>
-          <Route path="/*" element={<PortalPaciente paciente={paciente} />} />
-        </Routes>
-      </div>
-    </div>
+    <Routes>
+      <Route path="/*" element={<PortalPaciente usuario={usuario} paciente={paciente} onLogout={onLogout} />} />
+    </Routes>
   )
 }
 
 export default function KineApp() {
-  const [auth, setAuth] = useState(null) // { usuario, paciente }
+  const [auth, setAuth] = useState(null)
   const [loading, setLoading] = useState(true)
   const navigate = useNavigate()
 
   useEffect(() => {
     const token = localStorage.getItem('kine_token')
-    if (!token) { setLoading(false); return }
+    if (!token) {
+      setLoading(false)
+      return
+    }
     api.me()
       .then(data => setAuth(data))
       .catch(() => localStorage.removeItem('kine_token'))
@@ -99,21 +85,25 @@ export default function KineApp() {
     navigate('/kine/login')
   }
 
-  if (loading) return (
-    <div className="kine-app kine-splash">
-      <div className="kine-splash-logo">⚕</div>
-      <div className="kine-splash-titulo">Kinesiología Ciuró</div>
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="kine-app kine-splash">
+        <div className="kine-splash-logo">⚕</div>
+        <div className="kine-splash-titulo">Kinesiologia Ciuro</div>
+      </div>
+    )
+  }
 
-  if (!auth) return (
-    <div className="kine-app">
-      <Routes>
-        <Route path="/login" element={<Login onLogin={handleLogin} />} />
-        <Route path="*" element={<Navigate to="/kine/login" replace />} />
-      </Routes>
-    </div>
-  )
+  if (!auth) {
+    return (
+      <div className="kine-app">
+        <Routes>
+          <Route path="/login" element={<Login onLogin={handleLogin} />} />
+          <Route path="*" element={<Navigate to="/kine/login" replace />} />
+        </Routes>
+      </div>
+    )
+  }
 
   if (auth.usuario.rol === 'admin') {
     return <AdminLayout usuario={auth.usuario} onLogout={handleLogout} />

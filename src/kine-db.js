@@ -486,6 +486,13 @@ const getTurnos = db.prepare(`
   LEFT JOIN pacientes p ON p.id = t.paciente_id
   ORDER BY t.fecha, t.hora
 `);
+
+const getTurnosByPaciente = db.prepare(`
+  SELECT t.*, p.nombre, p.apellido FROM turnos t
+  LEFT JOIN pacientes p ON p.id = t.paciente_id
+  WHERE t.paciente_id = ?
+  ORDER BY t.fecha, t.hora
+`);
 const getTurnosByMes = db.prepare(`
   SELECT t.*, p.nombre, p.apellido FROM turnos t
   LEFT JOIN pacientes p ON p.id = t.paciente_id
@@ -597,6 +604,7 @@ module.exports = {
 
   // Turnos
   getTurnos:        () => getTurnos.all(),
+  getTurnosByPaciente: (pacienteId) => getTurnosByPaciente.all(pacienteId),
   getTurnosByMes:   (mes) => getTurnosByMes.all(mes),
   getTurno:         (id) => getTurno.get(id),
   insertTurno:      (data) => { const r = insertTurno.run(data); return getTurno.get(r.lastInsertRowid); },

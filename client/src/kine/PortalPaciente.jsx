@@ -1,10 +1,17 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { api } from './api.js'
 
 const ALIAS = 'clic.escobar'
 const ADMIN_WA = '5491144054833'
 
-/* ── Video embed ─────────────────────────────────────────── */
+function formatMoney(value) {
+  return `$${Number(value || 0).toLocaleString('es-AR')}`
+}
+
+function formatLongDate(value) {
+  return new Date(value).toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+}
+
 function VideoEmbed({ url }) {
   if (!url) return null
   let embedUrl = null
@@ -15,613 +22,332 @@ function VideoEmbed({ url }) {
   const vimeoMatch = url.match(/vimeo\.com\/(\d+)/)
   if (vimeoMatch) embedUrl = `https://player.vimeo.com/video/${vimeoMatch[1]}`
 
-  if (embedUrl) return (
-    <div className="video-embed-wrap">
-      <iframe src={embedUrl} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Ejercicio" />
-    </div>
-  )
-  return <a href={url} target="_blank" rel="noreferrer" className="kine-ej-video-link">Ver video del ejercicio</a>
-}
-
-/* ── Ejercicio detalle ───────────────────────────────────── */
-function EjercicioDetalle({ ej, onVolver }) {
-  const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-  return (
-    <div className="pp-ej-detalle">
-      <button className="pp-btn-volver" onClick={onVolver}>← Volver a la rutina</button>
-      <span className="pp-ej-cat-badge">{ej.categoria || 'General'}</span>
-      <h2 className="pp-ej-titulo">{nombre}</h2>
-
-      {(ej.series || ej.repeticiones || ej.segundos) && (
-        <div className="pp-prescripcion">
-          <div className="pp-prescripcion-titulo">Tu prescripción</div>
-          <div className="pp-prescripcion-params">
-            {ej.series && <div className="pp-param"><span className="pp-param-val">{ej.series}</span><span className="pp-param-lbl">Series</span></div>}
-            {ej.repeticiones && <div className="pp-param"><span className="pp-param-val">{ej.repeticiones}</span><span className="pp-param-lbl">Reps</span></div>}
-            {ej.segundos && <div className="pp-param"><span className="pp-param-val">{ej.segundos}"</span><span className="pp-param-lbl">Segundos</span></div>}
-          </div>
-        </div>
-      )}
-
-      <VideoEmbed url={ej.video_url} />
-      {ej.descripcion && <p className="pp-ej-desc">{ej.descripcion}</p>}
-    </div>
-  )
-}
-
-/* ── Próximo turno destacado ─────────────────────────────── */
-function ProximoTurnoCard({ turno }) {
-  if (!turno) return null
-  const fecha = new Date(turno.fecha + 'T' + turno.hora)
-  const diasSemana = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
-  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
-  const hoy = new Date()
-  const diffDias = Math.ceil((fecha - hoy) / (1000 * 60 * 60 * 24))
-
-  return (
-    <div className="pp-proximo-turno">
-      <div className="pp-proximo-turno-header">
-        <span className="pp-proximo-turno-badge">Próximo turno</span>
-        {diffDias <= 1 && <span className="pp-proximo-turno-urgente">¡Mañana!</span>}
-        {diffDias === 0 && <span className="pp-proximo-turno-urgente">¡Hoy!</span>}
-      </div>
-      <div className="pp-proximo-turno-body">
-        <div className="pp-proximo-turno-dia">
-          <div className="pp-proximo-turno-dianum">{fecha.getDate()}</div>
-          <div className="pp-proximo-turno-diames">{meses[fecha.getMonth()]}</div>
-        </div>
-        <div className="pp-proximo-turno-separador" />
-        <div className="pp-proximo-turno-info">
-          <div className="pp-proximo-turno-semana">{diasSemana[fecha.getDay()]}</div>
-          <div className="pp-proximo-turno-hora">{turno.hora?.slice(0,5)}</div>
-          {turno.duracion && <div className="pp-proximo-turno-duracion">{turno.duracion} min</div>}
-        </div>
-        <div className="pp-proximo-turno-icono">🏃</div>
-      </div>
-      {turno.motivo && (
-        <div className="pp-proximo-turno-motivo">{turno.motivo}</div>
-      )}
-    </div>
-  )
-}
-
-/* ── Calendario interactivo ──────────────────────────────── */
-function CalendarioInteractivo({ turnos }) {
-  const hoy = new Date()
-  const [mes, setMes] = useState(hoy.getMonth())
-  const [anio, setAnio] = useState(hoy.getFullYear())
-
-  const mesesNombre = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre']
-  const diasNombre = ['D','L','M','X','J','V','S']
-
-  const diasEnMes = new Date(anio, mes + 1, 0).getDate()
-  const primerDia = new Date(anio, mes, 1).getDay()
-
-  // Días con turnos en este mes
-  const diasConTurno = new Set(
-    turnos
-      .filter(t => {
-        const d = new Date(t.fecha + 'T12:00')
-        return d.getMonth() === mes && d.getFullYear() === anio
-      })
-      .map(t => new Date(t.fecha + 'T12:00').getDate())
-  )
-
-  const irMesAnterior = () => {
-    if (mes === 0) { setMes(11); setAnio(a => a - 1) }
-    else setMes(m => m - 1)
-  }
-  const irMesSiguiente = () => {
-    if (mes === 11) { setMes(0); setAnio(a => a + 1) }
-    else setMes(m => m + 1)
-  }
-
-  const celdas = []
-  for (let i = 0; i < primerDia; i++) celdas.push(null)
-  for (let d = 1; d <= diasEnMes; d++) celdas.push(d)
-
-  return (
-    <div className="pp-cal">
-      <div className="pp-cal-nav">
-        <button className="pp-cal-nav-btn" onClick={irMesAnterior}>‹</button>
-        <span className="pp-cal-mes">{mesesNombre[mes]} {anio}</span>
-        <button className="pp-cal-nav-btn" onClick={irMesSiguiente}>›</button>
-      </div>
-      <div className="pp-cal-dias-header">
-        {diasNombre.map(d => <div key={d} className="pp-cal-dia-nombre">{d}</div>)}
-      </div>
-      <div className="pp-cal-grid">
-        {celdas.map((dia, i) => {
-          const esHoy = dia === hoy.getDate() && mes === hoy.getMonth() && anio === hoy.getFullYear()
-          const tieneTurno = dia && diasConTurno.has(dia)
-          return (
-            <div
-              key={i}
-              className={`pp-cal-celda${!dia ? ' pp-cal-celda-vacia' : ''}${esHoy ? ' pp-cal-celda-hoy' : ''}${tieneTurno ? ' pp-cal-celda-turno' : ''}`}
-            >
-              {dia && <span className="pp-cal-celda-num">{dia}</span>}
-              {tieneTurno && <span className="pp-cal-punto" />}
-            </div>
-          )
-        })}
-      </div>
-      {diasConTurno.size > 0 && (
-        <div className="pp-cal-leyenda">
-          <span className="pp-cal-punto-leyenda" /> Turno agendado
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Rutina con checks ───────────────────────────────────── */
-function RutinaEjercicios({ ejercicios, onVerDetalle }) {
-  const [completados, setCompletados] = useState({})
-
-  const toggleCheck = (id, e) => {
-    e.stopPropagation()
-    setCompletados(prev => ({ ...prev, [id]: !prev[id] }))
-  }
-
-  const total = ejercicios.length
-  const hechos = Object.values(completados).filter(Boolean).length
-  const pct = total > 0 ? Math.round((hechos / total) * 100) : 0
-
-  return (
-    <div className="pp-rutina">
-      <div className="pp-rutina-header">
-        <div>
-          <div className="pp-seccion-titulo">Rutina de hoy</div>
-          <div className="pp-rutina-progreso-txt">{hechos} de {total} ejercicios</div>
-        </div>
-        <div className="pp-rutina-pct">{pct}%</div>
-      </div>
-
-      <div className="pp-progreso-bar">
-        <div className="pp-progreso-fill" style={{ width: `${pct}%` }} />
-      </div>
-
-      <div className="pp-rutina-lista">
-        {ejercicios.map((ej, i) => {
-          const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-          const hecho = completados[ej.id]
-          return (
-            <div
-              key={ej.id}
-              className={`pp-rutina-row${hecho ? ' pp-rutina-row-hecho' : ''}`}
-              onClick={() => onVerDetalle(ej.id)}
-            >
-              <button
-                className={`pp-check${hecho ? ' pp-check-on' : ''}`}
-                onClick={(e) => toggleCheck(ej.id, e)}
-                aria-label="Marcar como hecho"
-              >
-                {hecho ? '✓' : ''}
-              </button>
-              <div className="pp-rutina-num">{i + 1}</div>
-              <div className="pp-rutina-info">
-                <div className={`pp-rutina-nombre${hecho ? ' pp-rutina-nombre-hecho' : ''}`}>{nombre}</div>
-                <div className="pp-rutina-cat">{ej.categoria}</div>
-              </div>
-              <div className="pp-rutina-params">
-                {ej.series && <span>{ej.series}<small>s</small></span>}
-                {ej.repeticiones && <span>{ej.repeticiones}<small>r</small></span>}
-                {ej.segundos && <span>{ej.segundos}<small>"</small></span>}
-              </div>
-              <div className="pp-rutina-arrow">›</div>
-            </div>
-          )
-        })}
-      </div>
-
-      {pct === 100 && (
-        <div className="pp-rutina-completa">
-          ¡Excelente! Completaste toda la rutina de hoy
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Formulario solicitar turno ──────────────────────────── */
-function FormularioTurno({ paciente, onTurnoCreado }) {
-  const [form, setForm] = useState({ fecha: '', hora: '', notas: '' })
-  const [enviando, setEnviando] = useState(false)
-  const [exito, setExito] = useState(false)
-  const [error, setError] = useState('')
-
-  const hoy = new Date().toISOString().split('T')[0]
-
-  const handleChange = (campo, val) => {
-    setForm(prev => ({ ...prev, [campo]: val }))
-    setError('')
-  }
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!form.fecha || !form.hora) { setError('Completá fecha y hora'); return }
-
-    setEnviando(true)
-    try {
-      const nuevo = await api.createTurno({
-        paciente_id: paciente.id,
-        fecha: form.fecha,
-        hora: form.hora,
-        duracion: 45,
-        motivo: form.notas || 'Sesión kinesiología',
-        estado: 'pendiente',
-        notas: form.notas,
-      })
-      setExito(true)
-      setForm({ fecha: '', hora: '', notas: '' })
-      if (onTurnoCreado) onTurnoCreado(nuevo)
-      setTimeout(() => setExito(false), 4000)
-    } catch {
-      setError('No se pudo enviar la solicitud. Intentá de nuevo.')
-    } finally {
-      setEnviando(false)
-    }
-  }
-
-  return (
-    <div className="pp-form-turno">
-      <div className="pp-seccion-titulo">Solicitar turno</div>
-
-      {exito ? (
-        <div className="pp-form-exito">
-          Tu solicitud fue enviada. El kinesiólogo te confirmará el turno.
-        </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="pp-form">
-          <div className="pp-form-row">
-            <div className="pp-form-campo">
-              <label className="pp-form-label">Fecha</label>
-              <input
-                type="date"
-                className="pp-form-input"
-                min={hoy}
-                value={form.fecha}
-                onChange={e => handleChange('fecha', e.target.value)}
-              />
-            </div>
-            <div className="pp-form-campo">
-              <label className="pp-form-label">Hora preferida</label>
-              <input
-                type="time"
-                className="pp-form-input"
-                value={form.hora}
-                onChange={e => handleChange('hora', e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="pp-form-campo">
-            <label className="pp-form-label">Motivo o comentario (opcional)</label>
-            <textarea
-              className="pp-form-textarea"
-              rows={3}
-              placeholder="Ej: Control de rodilla, tengo dolor al caminar..."
-              value={form.notas}
-              onChange={e => handleChange('notas', e.target.value)}
-            />
-          </div>
-          {error && <div className="pp-form-error">{error}</div>}
-          <button type="submit" className="pp-btn-solicitar" disabled={enviando}>
-            {enviando ? 'Enviando...' : 'Solicitar turno'}
-          </button>
-        </form>
-      )}
-    </div>
-  )
-}
-
-/* ── Estudios complementarios ────────────────────────────── */
-function EstudiosSection({ motivo }) {
-  const [estudios, setEstudios] = useState([])
-  const [loading, setLoading] = useState(false)
-  const [uploading, setUploading] = useState(false)
-
-  useEffect(() => {
-    if (motivo?.id) {
-      setLoading(true)
-      api.getEstudios(motivo.id).then(setEstudios).finally(() => setLoading(false))
-    }
-  }, [motivo?.id])
-
-  const handleUpload = (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    const formData = new FormData()
-    formData.append('archivo', file)
-    formData.append('nombre', file.name.split('.')[0])
-    api.uploadEstudio(motivo.id, formData)
-      .then((est) => { setEstudios([...estudios, est]); setUploading(false) })
-      .catch(() => setUploading(false))
-  }
-
-  const handleDelete = async (id) => {
-    if (!confirm('¿Confirmar eliminar?')) return
-    await api.deleteEstudio(id)
-    setEstudios(estudios.filter(e => e.id !== id))
-  }
-
-  return (
-    <div className="pp-estudios">
-      <div className="pp-estudios-header">
-        <span>Estudios complementarios</span>
-        <label className="pp-btn-upload">
-          + Agregar
-          <input type="file" onChange={handleUpload} disabled={uploading} style={{ display: 'none' }} />
-        </label>
-      </div>
-      {loading ? (
-        <div className="pp-loading-sm">Cargando...</div>
-      ) : estudios.length === 0 ? (
-        <div className="pp-sin-estudios">Sin estudios complementarios cargados</div>
-      ) : (
-        <div className="pp-estudios-lista">
-          {estudios.map(est => (
-            <div key={est.id} className="pp-estudio-item">
-              <div className="pp-estudio-info">
-                <div className="pp-estudio-nombre">{est.nombre || 'Documento'}</div>
-                <div className="pp-estudio-fecha">{new Date(est.created_at).toLocaleDateString('es-AR')}</div>
-              </div>
-              <div className="pp-estudio-acciones">
-                <a href={`/api/kine/estudios/${est.id}/descargar`} className="pp-link-descarga">Descargar</a>
-                <button className="pp-btn-eliminar" onClick={() => handleDelete(est.id)}>✕</button>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Mis tratamientos ────────────────────────────────────── */
-function MotivoCard({ motivo }) {
-  const [abierto, setAbierto] = useState(false)
-  const evoluciones = motivo.evoluciones || []
-  const ultimaFecha = evoluciones.length > 0 ? evoluciones[0].fecha : null
-
-  return (
-    <div className={`pp-motivo${abierto ? ' pp-motivo-abierto' : ''}`}>
-      <div className="pp-motivo-header" onClick={() => setAbierto(!abierto)}>
-        <div className="pp-motivo-header-left">
-          <div className="pp-motivo-titulo">
-            {motivo.sintoma.charAt(0).toUpperCase() + motivo.sintoma.slice(1)}
-          </div>
-          {motivo.aparicion && (
-            <div className="pp-motivo-sub">Desde {motivo.aparicion}</div>
-          )}
-        </div>
-        <div className="pp-motivo-meta">
-          <span className="pp-motivo-sesiones-badge">{evoluciones.length} sesiones</span>
-          <span className="pp-motivo-chevron">{abierto ? '▾' : '▸'}</span>
-        </div>
-      </div>
-
-      {abierto && (
-        <div className="pp-motivo-body">
-          <div className="pp-motivo-stats">
-            <div className="pp-motivo-stat">
-              <span className="pp-motivo-stat-val">{evoluciones.length}</span>
-              <span className="pp-motivo-stat-lbl">Sesiones</span>
-            </div>
-            {ultimaFecha && (
-              <div className="pp-motivo-stat">
-                <span className="pp-motivo-stat-val">
-                  {new Date(ultimaFecha + 'T12:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })}
-                </span>
-                <span className="pp-motivo-stat-lbl">Última sesión</span>
-              </div>
-            )}
-          </div>
-          <EstudiosSection motivo={motivo} />
-        </div>
-      )}
-    </div>
-  )
-}
-
-/* ── Overlay deuda ───────────────────────────────────────── */
-function DeudaOverlay({ paciente, saldo }) {
-  const mensaje = encodeURIComponent(`Hola Augusto! Soy ${paciente.nombre} ${paciente.apellido}. Acabo de realizar el pago de $${saldo} por mis sesiones de kinesiología. Alias: ${ALIAS}. Por favor confirmame cuando lo recibas. Gracias!`)
-  const waUrl = `https://wa.me/${ADMIN_WA}?text=${mensaje}`
-
-  return (
-    <div className="pp-deuda-overlay">
-      <div className="pp-deuda-card">
-        <div className="pp-deuda-icono">🔒</div>
-        <h2 className="pp-deuda-titulo">Acceso suspendido</h2>
-        <p className="pp-deuda-texto">
-          Tenés un saldo pendiente de <strong>${saldo}</strong> por tus sesiones de kinesiología.
-        </p>
-        <div className="pp-deuda-alias-box">
-          <div className="pp-deuda-alias-lbl">Transferí al alias</div>
-          <div className="pp-deuda-alias">{ALIAS}</div>
-        </div>
-        <p className="pp-deuda-sub">Una vez que realices el pago, avisanos por WhatsApp y activamos tu acceso.</p>
-        <a href={waUrl} target="_blank" rel="noreferrer" className="pp-deuda-btn">
-          Avisá que pagaste por WhatsApp
-        </a>
-      </div>
-    </div>
-  )
-}
-
-/* ── Perfil section ────────────────────────────────────── */
-function PerfilSection({ paciente }) {
-  return (
-    <div className="pp-seccion">
-      <div className="pp-perfil-card">
-        <div className="pp-perfil-avatar">{paciente.nombre[0]}{paciente.apellido[0]}</div>
-        <div className="pp-perfil-nombre">{paciente.nombre} {paciente.apellido}</div>
-        <div className="pp-perfil-email">{paciente.email}</div>
-      </div>
-      <div className="pp-perfil-datos">
-        <div className="pp-perfil-dato">
-          <span className="pp-perfil-dato-lbl">Obra Social</span>
-          <span className="pp-perfil-dato-val">{paciente.obra_social || 'No especificada'}</span>
-        </div>
-        <div className="pp-perfil-dato">
-          <span className="pp-perfil-dato-lbl">Teléfono</span>
-          <span className="pp-perfil-dato-val">{paciente.telefono || 'No especificado'}</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-/* ── Portal principal ────────────────────────────────────── */
-export default function PortalPaciente({ paciente }) {
-  const [saldo, setSaldo] = useState(null)
-  const [ejercicios, setEjercicios] = useState([])
-  const [motivos, setMotivos] = useState([])
-  const [turnos, setTurnos] = useState([])
-  const [seleccionado, setSeleccionado] = useState(null)
-  const [loading, setLoading] = useState(true)
-  const [seccionActiva, setSeccionActiva] = useState('ejercicios')
-
-  useEffect(() => {
-    if (!paciente) return
-    setLoading(true)
-    Promise.all([
-      api.getEjerciciosGimnasio(paciente.id).then(d => setEjercicios(d?.ejercicios || [])),
-      api.getSaldo(paciente.id).then(s => setSaldo(s.saldo_pendiente || 0)),
-      api.getTurnos().then(ts => setTurnos(ts || [])),
-      api.getMotivos(paciente.id).then(setMotivos),
-    ]).finally(() => setLoading(false))
-  }, [paciente?.id])
-
-  const agregarTurno = (nuevo) => {
-    setTurnos(prev => [...prev, nuevo])
-  }
-
-  if (!paciente) return (
-    <div className="pp-sin-paciente">
-      <div className="pp-sin-paciente-icono">🏥</div>
-      <p>Tu cuenta aún no está vinculada a un paciente.<br />Consultá con tu kinesiólogo.</p>
-    </div>
-  )
-
-  if (seleccionado) {
-    const ej = ejercicios.find(e => e.id === seleccionado)
-    if (ej) return (
-      <div className="pp-wrap">
-        <EjercicioDetalle ej={ej} onVolver={() => setSeleccionado(null)} />
+  if (embedUrl) {
+    return (
+      <div className="video-embed-wrap">
+        <iframe src={embedUrl} allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Ejercicio" />
       </div>
     )
   }
 
-  const tieneDeuda = saldo > 0
-  const hoy = new Date()
-  hoy.setHours(0, 0, 0, 0)
-  const proximoTurno = turnos
-    .filter(t => {
-      const d = new Date(t.fecha + 'T' + (t.hora || '00:00'))
-      return d >= hoy && t.estado !== 'cancelado'
-    })
-    .sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora))[0]
+  return <a href={url} target="_blank" rel="noreferrer" className="kine-ej-video-link">Ver video del ejercicio</a>
+}
 
-  const botonesNav = [
-    { id: 'perfil', label: 'Perfil', icon: '👤' },
-    { id: 'turnos', label: 'Turnos', icon: '📅' },
-    { id: 'ejercicios', label: 'Rutina', icon: '💪' },
-    { id: 'saldo', label: 'Saldo', icon: '💰' },
+function ExerciseDetail({ exercise, onBack }) {
+  return (
+    <div className="rhp-detail-shell">
+      <div className="rhp-detail-card">
+        <button className="rhp-back-link" onClick={onBack}>← Volver a la rutina</button>
+        <span className="rhp-chip">{exercise.categoria || 'General'}</span>
+        <h2 className="rhp-detail-title">{exercise.nombre.replace(/ — (CC|OA)$/, '')}</h2>
+        <div className="rhp-prescription-grid">
+          {exercise.series ? <div className="rhp-prescription-item"><strong>{exercise.series}</strong><span>Series</span></div> : null}
+          {exercise.repeticiones ? <div className="rhp-prescription-item"><strong>{exercise.repeticiones}</strong><span>Reps</span></div> : null}
+          {exercise.segundos ? <div className="rhp-prescription-item"><strong>{exercise.segundos}"</strong><span>Segundos</span></div> : null}
+        </div>
+        <VideoEmbed url={exercise.video_url} />
+        {exercise.descripcion ? <p className="rhp-detail-description">{exercise.descripcion}</p> : null}
+      </div>
+    </div>
+  )
+}
+
+export default function PortalPaciente({ usuario, paciente, onLogout }) {
+  const [loading, setLoading] = useState(true)
+  const [view, setView] = useState('home')
+  const [selectedExerciseId, setSelectedExerciseId] = useState(null)
+  const [saldo, setSaldo] = useState(0)
+  const [ejercicios, setEjercicios] = useState([])
+  const [turnos, setTurnos] = useState([])
+  const [motivos, setMotivos] = useState([])
+  const [studies, setStudies] = useState([])
+  const [completed, setCompleted] = useState({})
+  const [turnoForm, setTurnoForm] = useState({ fecha: '', hora: '', notas: '' })
+  const [submittingTurno, setSubmittingTurno] = useState(false)
+  const [turnoError, setTurnoError] = useState('')
+
+  useEffect(() => {
+    if (!paciente) return
+    let active = true
+
+    async function load() {
+      setLoading(true)
+      try {
+        const [rutinaData, saldoData, turnosData, motivosData] = await Promise.all([
+          api.getEjerciciosGimnasio(paciente.id),
+          api.getSaldo(paciente.id),
+          api.getTurnosPaciente(paciente.id),
+          api.getMotivos(paciente.id),
+        ])
+
+        if (!active) return
+        setEjercicios(rutinaData?.ejercicios || [])
+        setSaldo(saldoData?.saldo_pendiente || 0)
+        setTurnos(turnosData || [])
+        setMotivos(motivosData || [])
+
+        const grouped = await Promise.all((motivosData || []).map(async (motivo) => {
+          const items = await api.getEstudios(motivo.id).catch(() => [])
+          return items.map(item => ({ ...item, motivo }))
+        }))
+        if (!active) return
+        setStudies(grouped.flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+      } finally {
+        if (active) setLoading(false)
+      }
+    }
+
+    load()
+    return () => { active = false }
+  }, [paciente?.id])
+
+  const upcomingTurnos = useMemo(() => {
+    const today = new Date()
+    const floor = new Date(today.getFullYear(), today.getMonth(), today.getDate())
+    return [...turnos]
+      .filter(turno => turno.estado !== 'cancelado')
+      .filter(turno => new Date(`${turno.fecha}T${turno.hora || '00:00'}`) >= floor)
+      .sort((a, b) => new Date(`${a.fecha}T${a.hora || '00:00'}`) - new Date(`${b.fecha}T${b.hora || '00:00'}`))
+  }, [turnos])
+
+  const selectedExercise = ejercicios.find(item => item.id === selectedExerciseId)
+  const latestMotivo = motivos[0]
+  const hasDebt = saldo > 0
+  const payMessage = encodeURIComponent(`Hola Augusto. Soy ${paciente?.nombre || ''} ${paciente?.apellido || ''}. Acabo de realizar el pago de ${formatMoney(saldo)}. Alias: ${ALIAS}.`)
+  const payUrl = `https://wa.me/${ADMIN_WA}?text=${payMessage}`
+
+  async function refreshStudies(nextMotivos = motivos) {
+    const grouped = await Promise.all((nextMotivos || []).map(async (motivo) => {
+      const items = await api.getEstudios(motivo.id).catch(() => [])
+      return items.map(item => ({ ...item, motivo }))
+    }))
+    setStudies(grouped.flat().sort((a, b) => new Date(b.created_at) - new Date(a.created_at)))
+  }
+
+  async function handleStudyUpload(event) {
+    const file = event.target.files?.[0]
+    event.target.value = ''
+    if (!file || !latestMotivo) return
+    const formData = new FormData()
+    formData.append('archivo', file)
+    formData.append('nombre', file.name)
+    await api.uploadEstudio(latestMotivo.id, formData)
+    await refreshStudies()
+    setView('estudios')
+  }
+
+  async function handleTurnoSubmit(event) {
+    event.preventDefault()
+    setSubmittingTurno(true)
+    setTurnoError('')
+    try {
+      const turno = await api.solicitarTurnoPaciente(paciente.id, {
+        fecha: turnoForm.fecha,
+        hora: turnoForm.hora,
+        notas: turnoForm.notas,
+        motivo: turnoForm.notas || 'Solicitud de turno',
+      })
+      setTurnos(prev => [...prev, turno])
+      setTurnoForm({ fecha: '', hora: '', notas: '' })
+      setView('turnos')
+    } catch (error) {
+      setTurnoError(error.message || 'No se pudo enviar la solicitud.')
+    } finally {
+      setSubmittingTurno(false)
+    }
+  }
+
+  if (!paciente) {
+    return <div className="rhp-empty-state">Tu cuenta todavia no esta vinculada a un paciente.</div>
+  }
+
+  if (selectedExercise) {
+    return <ExerciseDetail exercise={selectedExercise} onBack={() => setSelectedExerciseId(null)} />
+  }
+
+  const nextTurno = upcomingTurnos[0]
+  const menu = [
+    ['home', 'Inicio'],
+    ['turnos', 'Turnos'],
+    ['rutina', 'Rutinas'],
+    ['estudios', 'Estudios'],
+    ['saldo', 'Saldo'],
+    ['perfil', 'Perfil'],
   ]
 
   return (
-    <div className="pp-wrap">
-      {!loading && tieneDeuda && <DeudaOverlay paciente={paciente} saldo={saldo} />}
-
-      <div className={tieneDeuda ? 'pp-contenido-bloqueado' : ''}>
-
-        {/* Header */}
-        <div className="pp-header">
-          <div className="pp-avatar">{paciente.nombre[0]}{paciente.apellido[0]}</div>
-          <div className="pp-header-info">
-            <div className="pp-nombre">Hola, {paciente.nombre}</div>
-            <div className="pp-sub">Kinesiología Ciuró</div>
+    <div className="rhp-shell">
+      {hasDebt && !loading ? (
+        <div className="rhp-debt-overlay">
+          <div className="rhp-debt-card">
+            <div className="rhp-debt-icon">Saldo pendiente</div>
+            <h2>{formatMoney(saldo)}</h2>
+            <p>Regulariza el pago para recuperar el acceso completo al portal.</p>
+            <div className="rhp-alias-box"><span>Alias</span><strong>{ALIAS}</strong></div>
+            <a href={payUrl} target="_blank" rel="noreferrer" className="rhp-primary-btn">Avisar pago por WhatsApp</a>
           </div>
         </div>
+      ) : null}
 
-        {loading && <div className="pp-loading">Cargando...</div>}
+      <header className="rhp-topnav">
+        <div className="rhp-logo"><span className="rhp-logo-mark" /><span>Rehabilitaplus</span></div>
+        <div className="rhp-topnav-right">
+          <button className="rhp-icon-btn" type="button">○</button>
+          <div className="rhp-avatar-wrap">
+            <div className="rhp-avatar">{paciente.nombre?.[0]}{paciente.apellido?.[0]}</div>
+            <span className="rhp-avatar-name">{usuario?.nombre || paciente.nombre}</span>
+          </div>
+          <button className="rhp-logout-btn rhp-desktop-only" onClick={onLogout}>Salir</button>
+        </div>
+      </header>
 
-        {!loading && (
-          <>
-            {/* PERFIL */}
-            {seccionActiva === 'perfil' && (
-              <PerfilSection paciente={paciente} />
-            )}
+      <div className={`rhp-main${hasDebt && !loading ? ' locked' : ''}`}>
+        <aside className="rhp-sidebar rhp-desktop-only">
+          <div className="rhp-sidebar-date">{formatLongDate(new Date())}</div>
+          <div className="rhp-sidebar-menu">
+            {menu.map(([id, label]) => (
+              <button key={id} className={`rhp-sidebar-item${view === id ? ' active' : ''}`} onClick={() => setView(id)}>{label}</button>
+            ))}
+          </div>
+        </aside>
 
-            {/* TURNOS */}
-            {seccionActiva === 'turnos' && (
-              <div className="pp-seccion">
-                <CalendarioInteractivo turnos={turnos} />
-                {proximoTurno && (
-                  <div className="pp-cal-proximo">
-                    <ProximoTurnoCard turno={proximoTurno} />
-                  </div>
-                )}
-                <FormularioTurno paciente={paciente} onTurnoCreado={agregarTurno} />
+        <main className="rhp-content">
+          <div className="rhp-mobile-greeting rhp-mobile-only">
+            <div className="rhp-mobile-date">{new Date().toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+            <div className="rhp-mobile-name">Hola, {paciente.nombre}</div>
+          </div>
+
+          {loading ? <div className="rhp-loading">Cargando portal...</div> : null}
+
+          {!loading && view === 'home' ? (
+            <>
+              <div className="rhp-section-top rhp-desktop-only">
+                <span className="rhp-section-label">Resumen</span>
+                <span className="rhp-section-date">{formatLongDate(new Date())}</span>
               </div>
-            )}
 
-            {/* SALDO */}
-            {seccionActiva === 'saldo' && (
-              <div className="pp-seccion">
-                <div className="pp-saldo-card">
-                  <div className="pp-saldo-titulo">Saldo pendiente</div>
-                  <div className={`pp-saldo-monto${saldo > 0 ? ' pp-saldo-deuda' : ' pp-saldo-ok'}`}>
-                    ${saldo ?? 0}
-                  </div>
-                  {saldo > 0 ? (
-                    <>
-                      <div className="pp-saldo-alias-lbl">Transferí al alias</div>
-                      <div className="pp-saldo-alias">{ALIAS}</div>
-                      <a
-                        href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(`Hola Augusto! Soy ${paciente.nombre} ${paciente.apellido}. Acabo de realizar el pago de $${saldo}. Alias: ${ALIAS}.`)}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="pp-deuda-btn"
-                      >
-                        Avisá que pagaste por WhatsApp
-                      </a>
-                    </>
-                  ) : (
-                    <div className="pp-saldo-al-dia">¡Estás al día!</div>
-                  )}
+              <div className="rhp-stat-grid rhp-desktop-only">
+                <button className="rhp-stat-card sky" onClick={() => setView('turnos')}><span>Proximo turno</span><strong>{nextTurno ? formatLongDate(`${nextTurno.fecha}T12:00`) : 'Sin turno'}</strong><small>{nextTurno ? `${nextTurno.hora?.slice(0, 5)} hs` : 'Pedinos uno nuevo'}</small></button>
+                <button className="rhp-stat-card aqua" onClick={() => setView('rutina')}><span>Rutina de hoy</span><strong>{ejercicios.length} ejercicios</strong><small>{ejercicios[0]?.categoria || 'Movilidad y fuerza'}</small></button>
+                <button className="rhp-stat-card debt" onClick={() => setView('saldo')}><span>Estado de cuenta</span><strong>{hasDebt ? formatMoney(saldo) : 'Sin deuda'}</strong><small>{hasDebt ? 'Regularizar' : 'Todo al dia'}</small></button>
+              </div>
+
+              <div className="rhp-two-col rhp-desktop-only">
+                <section className="rhp-panel">
+                  <div className="rhp-panel-head"><h3>Mis turnos</h3><button onClick={() => setView('turnos')}>Ver todos</button></div>
+                  {upcomingTurnos.slice(0, 3).map(turno => (
+                    <div key={turno.id} className="rhp-list-row"><strong>{formatLongDate(`${turno.fecha}T12:00`)}</strong><span>{turno.motivo || 'Sesion'} · {turno.hora?.slice(0, 5)} hs</span></div>
+                  ))}
+                  {upcomingTurnos.length === 0 ? <div className="rhp-empty-inline">Todavia no tenes turnos cargados.</div> : null}
+                </section>
+                <section className="rhp-panel">
+                  <div className="rhp-panel-head"><h3>Estudios clinicos</h3><button onClick={() => setView('estudios')}>Ver todo</button></div>
+                  {studies.slice(0, 3).map(study => (
+                    <div key={study.id} className="rhp-study-row"><div><strong>{study.nombre}</strong><span>{new Date(study.created_at).toLocaleDateString('es-AR')}</span></div><a href={`/api/kine/estudios/${study.id}/descargar`}>Descargar</a></div>
+                  ))}
+                  {studies.length === 0 ? <div className="rhp-empty-inline">No hay estudios cargados.</div> : null}
+                  {latestMotivo ? <label className="rhp-upload-row">Subir archivo<input type="file" hidden onChange={handleStudyUpload} /></label> : null}
+                </section>
+              </div>
+
+              <div className="rhp-mobile-home rhp-mobile-only">
+                <button className="rhp-mobile-card" onClick={() => setView('turnos')}>
+                  <span className="rhp-card-kicker">Proximo turno</span>
+                  <strong>{nextTurno ? (nextTurno.motivo || 'Sesion') : 'Sin turno confirmado'}</strong>
+                  <small>{nextTurno ? `${new Date(`${nextTurno.fecha}T12:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short' })} · ${nextTurno.hora?.slice(0, 5)} hs` : 'Toca pedir turno'}</small>
+                </button>
+                <button className="rhp-mobile-card aqua" onClick={() => setView('rutina')}>
+                  <span className="rhp-card-kicker">Rutina de hoy</span>
+                  <strong>{ejercicios[0]?.categoria || 'Rutina personalizada'}</strong>
+                  <small>{ejercicios.length} ejercicios</small>
+                </button>
+                <div className="rhp-mini-grid">
+                  <button className="rhp-mini-card" onClick={() => setView('estudios')}><strong>Estudios</strong><small>{studies.length} archivos</small></button>
+                  <button className="rhp-mini-card debt" onClick={() => setView('saldo')}><strong>{formatMoney(saldo)}</strong><small>{hasDebt ? 'Pendiente' : 'Al dia'}</small></button>
                 </div>
               </div>
-            )}
+            </>
+          ) : null}
 
-            {/* EJERCICIOS */}
-            {seccionActiva === 'ejercicios' && (
-              <div className="pp-seccion">
-                {ejercicios.length > 0
-                  ? <RutinaEjercicios ejercicios={ejercicios} onVerDetalle={setSeleccionado} />
-                  : <div className="pp-sin-contenido">No tenés ejercicios asignados aún.</div>
-                }
+          {!loading && view === 'turnos' ? (
+            <div className="rhp-stack">
+              <section className="rhp-panel">
+                <div className="rhp-panel-head"><h3>Mis turnos</h3></div>
+                {upcomingTurnos.length === 0 ? <div className="rhp-empty-inline">Todavia no tenes turnos agendados.</div> : upcomingTurnos.map(turno => (
+                  <div key={turno.id} className="rhp-list-row"><strong>{formatLongDate(`${turno.fecha}T12:00`)}</strong><span>{turno.motivo || 'Sesion'} · {turno.hora?.slice(0, 5)} hs</span></div>
+                ))}
+              </section>
+              <section className="rhp-panel">
+                <div className="rhp-panel-head"><h3>Solicitar turno</h3></div>
+                <form className="rhp-form" onSubmit={handleTurnoSubmit}>
+                  <div className="rhp-form-row">
+                    <label><span>Fecha</span><input type="date" min={new Date().toISOString().slice(0, 10)} value={turnoForm.fecha} onChange={e => setTurnoForm(prev => ({ ...prev, fecha: e.target.value }))} required /></label>
+                    <label><span>Hora</span><input type="time" value={turnoForm.hora} onChange={e => setTurnoForm(prev => ({ ...prev, hora: e.target.value }))} required /></label>
+                  </div>
+                  <label><span>Motivo o comentario</span><textarea rows={3} value={turnoForm.notas} onChange={e => setTurnoForm(prev => ({ ...prev, notas: e.target.value }))} /></label>
+                  {turnoError ? <div className="rhp-form-error">{turnoError}</div> : null}
+                  <button type="submit" className="rhp-primary-btn" disabled={submittingTurno}>{submittingTurno ? 'Enviando...' : 'Solicitar turno'}</button>
+                </form>
+              </section>
+            </div>
+          ) : null}
+
+          {!loading && view === 'rutina' ? (
+            <section className="rhp-panel">
+              <div className="rhp-panel-head"><h3>Rutina de hoy</h3><span>{Object.values(completed).filter(Boolean).length}/{ejercicios.length}</span></div>
+              <div className="rhp-routine-list">
+                {ejercicios.length === 0 ? <div className="rhp-empty-inline">No tenes ejercicios asignados.</div> : ejercicios.map((exercise, index) => (
+                  <button key={exercise.id} className={`rhp-routine-row${completed[exercise.id] ? ' done' : ''}`} onClick={() => setSelectedExerciseId(exercise.id)}>
+                    <span className={`rhp-check-btn${completed[exercise.id] ? ' active' : ''}`} onClick={(event) => { event.stopPropagation(); setCompleted(prev => ({ ...prev, [exercise.id]: !prev[exercise.id] })) }}>{completed[exercise.id] ? '✓' : ''}</span>
+                    <span className="rhp-routine-index">{index + 1}</span>
+                    <div className="rhp-routine-copy"><strong>{exercise.nombre.replace(/ — (CC|OA)$/, '')}</strong><small>{exercise.categoria || 'General'}</small></div>
+                  </button>
+                ))}
               </div>
-            )}
-          </>
-        )}
+            </section>
+          ) : null}
 
-        {/* Bottom Navigation */}
-        <div className="pp-bottom-nav">
-          {botonesNav.map(b => (
-            <button
-              key={b.id}
-              className={`pp-bottom-nav-btn${seccionActiva === b.id ? ' pp-bottom-nav-btn-activa' : ''}`}
-              onClick={() => setSeccionActiva(b.id)}
-            >
-              <span className="pp-bottom-nav-icon">{b.icon}</span>
-              <span className="pp-bottom-nav-label">{b.label}</span>
-            </button>
-          ))}
-        </div>
+          {!loading && view === 'estudios' ? (
+            <section className="rhp-panel">
+              <div className="rhp-panel-head"><h3>Estudios clinicos</h3>{latestMotivo ? <label className="rhp-upload-row inline">Subir archivo<input type="file" hidden onChange={handleStudyUpload} /></label> : null}</div>
+              {studies.length === 0 ? <div className="rhp-empty-inline">No hay estudios cargados.</div> : studies.map(study => (
+                <div key={study.id} className="rhp-study-row"><div><strong>{study.nombre}</strong><span>{new Date(study.created_at).toLocaleDateString('es-AR')}</span></div><a href={`/api/kine/estudios/${study.id}/descargar`}>Descargar</a></div>
+              ))}
+            </section>
+          ) : null}
+
+          {!loading && view === 'saldo' ? (
+            <section className="rhp-panel debt-panel">
+              <div className="rhp-panel-head"><h3>Estado de cuenta</h3></div>
+              <div className={`rhp-balance-value${hasDebt ? ' debt' : ''}`}>{formatMoney(saldo)}</div>
+              <div className="rhp-balance-sub">{hasDebt ? 'Saldo pendiente' : 'Estas al dia'}</div>
+              {hasDebt ? <><div className="rhp-alias-box"><span>Alias</span><strong>{ALIAS}</strong></div><a href={payUrl} target="_blank" rel="noreferrer" className="rhp-primary-btn">Avisar pago por WhatsApp</a></> : null}
+            </section>
+          ) : null}
+
+          {!loading && view === 'perfil' ? (
+            <div className="rhp-stack">
+              <section className="rhp-panel profile">
+                <div className="rhp-profile-avatar">{paciente.nombre?.[0]}{paciente.apellido?.[0]}</div>
+                <strong>{paciente.nombre} {paciente.apellido}</strong>
+                <span>{usuario?.email || paciente.email || 'Sin email'}</span>
+              </section>
+              <section className="rhp-panel">
+                <div className="rhp-profile-row"><span>Telefono</span><strong>{paciente.telefono || paciente.celular || 'No informado'}</strong></div>
+                <div className="rhp-profile-row"><span>Obra social</span><strong>{paciente.obra_social || 'No informada'}</strong></div>
+                <div className="rhp-profile-row"><span>DNI</span><strong>{paciente.dni || 'No informado'}</strong></div>
+              </section>
+              <button className="rhp-secondary-btn rhp-mobile-only" onClick={onLogout}>Cerrar sesion</button>
+            </div>
+          ) : null}
+        </main>
       </div>
+
+      <nav className="rhp-mobile-nav rhp-mobile-only">
+        {menu.filter(([id]) => ['home', 'turnos', 'rutina', 'perfil'].includes(id)).map(([id, label]) => (
+          <button key={id} className={`rhp-mobile-nav-item${view === id ? ' active' : ''}`} onClick={() => setView(id)}>{label}</button>
+        ))}
+      </nav>
     </div>
   )
 }

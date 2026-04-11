@@ -64,7 +64,9 @@ export const api = {
 
   // Turnos
   getTurnos:   (mes) => req('GET', `/turnos${mes ? `?mes=${mes}` : ''}`),
+  getTurnosPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/turnos`),
   createTurno: (data) => req('POST', '/turnos', data),
+  solicitarTurnoPaciente: (pacienteId, data) => req('POST', `/pacientes/${pacienteId}/turnos`, data),
   updateTurno: (id, data) => req('PUT', `/turnos/${id}`, data),
   deleteTurno: (id) => req('DELETE', `/turnos/${id}`),
 

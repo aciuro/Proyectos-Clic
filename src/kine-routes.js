@@ -38,6 +38,24 @@ function soloAdmin(req, res, next) {
   next();
 }
 
+function getPacienteDelUsuario(req) {
+  if (req.user?.rol !== 'paciente') return null;
+  return db.getPacienteByUsuario(req.user.id);
+}
+
+function puedeAccederPaciente(req, pacienteId) {
+  if (req.user?.rol === 'admin') return true;
+  const miPaciente = getPacienteDelUsuario(req);
+  return !!miPaciente && String(miPaciente.id) === String(pacienteId);
+}
+
+function puedeAccederMotivo(req, motivoId) {
+  if (req.user?.rol === 'admin') return true;
+  const motivo = db.getMotivo(motivoId);
+  if (!motivo) return false;
+  return puedeAccederPaciente(req, motivo.paciente_id);
+}
+
 // ── Auth ──────────────────────────────────────────────────
 
 router.post('/login', (req, res) => {
@@ -74,11 +92,7 @@ router.get('/pacientes', auth, soloAdmin, (req, res) => {
 router.get('/pacientes/:id', auth, (req, res) => {
   const p = db.getPaciente(req.params.id);
   if (!p) return res.status(404).json({ error: 'No encontrado' });
-  // Paciente solo puede ver su propio perfil
-  if (req.user.rol === 'paciente') {
-    const miPaciente = db.getPacienteByUsuario(req.user.id);
-    if (!miPaciente || miPaciente.id != req.params.id) return res.status(403).json({ error: 'Sin acceso' });
-  }
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(p);
 });
 
@@ -223,9 +237,31 @@ router.get('/turnos', auth, soloAdmin, (req, res) => {
   res.json(mes ? db.getTurnosByMes(mes) : db.getTurnos());
 });
 
+router.get('/pacientes/:id/turnos', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
+  res.json(db.getTurnosByPaciente(req.params.id));
+});
+
 router.post('/turnos', auth, soloAdmin, (req, res) => {
   try { res.status(201).json(db.insertTurno(req.body)); }
   catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+router.post('/pacientes/:id/turnos', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
+  try {
+    res.status(201).json(db.insertTurno({
+      paciente_id: req.params.id,
+      fecha: req.body.fecha,
+      hora: req.body.hora,
+      duracion: req.body.duracion || 45,
+      motivo: req.body.motivo || 'Solicitud de turno',
+      estado: 'pendiente',
+      notas: req.body.notas || '',
+    }));
+  } catch (e) {
+    res.status(400).json({ error: e.message });
+  }
 });
 
 router.put('/turnos/:id', auth, soloAdmin, (req, res) => {
@@ -241,6 +277,7 @@ router.delete('/turnos/:id', auth, soloAdmin, (req, res) => {
 // ── Documentos ────────────────────────────────────────────
 
 router.get('/pacientes/:id/documentos', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getDocumentosByPaciente(req.params.id));
 });
 
@@ -276,12 +313,14 @@ router.delete('/documentos/:id', auth, soloAdmin, (req, res) => {
 // ── Evolución dolor (legacy) ──────────────────────────────
 
 router.get('/pacientes/:id/dolor', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getDolorEvolucion(req.params.id));
 });
 
 // ── Motivos de consulta ───────────────────────────────────
 
 router.get('/pacientes/:id/motivos', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getMotivosByPaciente(req.params.id));
 });
 
@@ -303,6 +342,7 @@ router.delete('/motivos/:id', auth, soloAdmin, (req, res) => {
 // ── Evoluciones ───────────────────────────────────────────
 
 router.get('/motivos/:id/evoluciones', auth, (req, res) => {
+  if (!puedeAccederMotivo(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getEvolucionesByMotivo(req.params.id));
 });
 
@@ -334,6 +374,7 @@ router.post('/pacientes/:id/pagar-todo', auth, soloAdmin, (req, res) => {
 });
 
 router.get('/pacientes/:id/saldo', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getSaldoPaciente(req.params.id));
 });
 
@@ -363,10 +404,12 @@ router.get('/pacientes/:id/ejercicios-gimnasio', auth, (req, res) => {
 // ── Estudios ──────────────────────────────────────────────
 
 router.get('/motivos/:id/estudios', auth, (req, res) => {
+  if (!puedeAccederMotivo(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getEstudiosByMotivo(req.params.id));
 });
 
-router.post('/motivos/:id/estudios', auth, soloAdmin, upload.single('archivo'), (req, res) => {
+router.post('/motivos/:id/estudios', auth, upload.single('archivo'), (req, res) => {
+  if (!puedeAccederMotivo(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   try {
     db.insertEstudio({
       motivo_id: req.params.id,
@@ -397,6 +440,7 @@ router.delete('/estudios/:id', auth, soloAdmin, (req, res) => {
 // ── Ejercicios por paciente ───────────────────────────────
 
 router.get('/pacientes/:id/ejercicios', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   res.json(db.getEjerciciosByPaciente(req.params.id));
 });
 
