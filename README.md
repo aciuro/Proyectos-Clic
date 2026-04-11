@@ -2,6 +2,20 @@
 
 Bot que registra gastos de un grupo de socios en Google Sheets directamente desde WhatsApp.
 
+## Documentacion recomendada
+
+Si vas a trabajar sobre el modulo web de kinesiologia, arranca por aca:
+
+- [GUIA_PROYECTO_KINESIOLOGIA.md](./GUIA_PROYECTO_KINESIOLOGIA.md)
+
+Esa guia explica:
+
+- que parte del repo esta activa hoy
+- donde tocar cada feature
+- que rutas y tablas usa cada pantalla
+- que capas legacy y duplicadas existen
+- que riesgos hay antes de hacer cambios
+
 ## Requisitos
 
 - Node.js 18+

@@ -4,24 +4,9 @@ let db;
 let isPostgres = false;
 
 if (process.env.DATABASE_URL) {
-  // Railway PostgreSQL
-  const { Pool } = require('pg');
   isPostgres = true;
-  const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: { rejectUnauthorized: false }
-  });
-  
-  // Wrapper para PostgreSQL
-  db = {
-    exec: (sql) => pool.query(sql),
-    prepare: (sql) => ({
-      run: (...params) => pool.query(sql, params),
-      get: (...params) => pool.query(sql, params).then(r => r.rows[0]),
-      all: (...params) => pool.query(sql, params).then(r => r.rows)
-    }),
-    close: () => pool.end()
-  };
+  const { createPgDb } = require('./pg-sync');
+  db = createPgDb(process.env.DATABASE_URL);
 } else {
   // Local SQLite
   const Database = require('better-sqlite3');
@@ -56,7 +41,9 @@ CREATE TABLE IF NOT EXISTS evoluciones (
   dolor          INTEGER,
   tecnicas       TEXT,
   monto_cobrado  REAL DEFAULT 0,
-  paganado         INTEGER DEFAULT 0,
+  pagado         INTEGER DEFAULT 0,
+  tecnicas_sesion TEXT,
+  ejercicios_sesion TEXT,
   created_at     TIMESTAMP DEFAULT NOW()
 );
 
@@ -104,8 +91,10 @@ CREATE TABLE IF NOT EXISTS pacientes (
   usuario_id  INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
   nombre      TEXT NOT NULL,
   apellido    TEXT NOT NULL,
+  edad        INTEGER,
   dni         TEXT,
   fecha_nac   TEXT,
+  celular     TEXT,
   telefono    TEXT,
   email       TEXT,
   obra_social TEXT,
@@ -122,31 +111,47 @@ CREATE TABLE IF NOT EXISTS pacientes (
 CREATE TABLE IF NOT EXISTS lesiones (
   id            SERIAL PRIMARY KEY,
   paciente_id   INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-  nombre        TEXT,
-  tipo          TEXT,
+  descripcion   TEXT NOT NULL,
   diagnostico   TEXT,
-  evolucion    TEXT,
+  fecha_lesion  TEXT,
+  fecha_ingreso TEXT,
   estado       TEXT DEFAULT 'activa',
+  notas         TEXT,
   created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS sesiones (
+  id          SERIAL PRIMARY KEY,
+  lesion_id   INTEGER NOT NULL REFERENCES lesiones(id) ON DELETE CASCADE,
+  fecha       TEXT NOT NULL,
+  duracion    INTEGER,
+  tecnicas    TEXT,
+  evolucion   TEXT,
+  notas       TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
 );
 
 CREATE TABLE IF NOT EXISTS ejercicios (
   id          SERIAL PRIMARY KEY,
   nombre      TEXT NOT NULL,
-  categoria   TEXT,
   descripcion TEXT,
+  categoria   TEXT,
   video_url   TEXT,
-  series      INTEGER,
-  repeticiones INTEGER,
-  segundos   INTEGER,
-  notas       TEXT,
+  imagen_url  TEXT,
   created_at  TIMESTAMP DEFAULT NOW()
 );
 
-CREATE TABLE IF NOT EXISTS ejercicio_paciente (
+CREATE TABLE IF NOT EXISTS paciente_ejercicios (
   id          SERIAL PRIMARY KEY,
   paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
   ejercicio_id INTEGER NOT NULL REFERENCES ejercicios(id) ON DELETE CASCADE,
+  series       INTEGER,
+  repeticiones INTEGER,
+  duracion_seg INTEGER,
+  frecuencia   TEXT,
+  notas        TEXT,
+  fecha_desde  TEXT DEFAULT (CURRENT_DATE::text),
+  activo       INTEGER DEFAULT 1,
   created_at  TIMESTAMP DEFAULT NOW()
 );
 ` : `
@@ -292,14 +297,16 @@ if (!isPostgres) {
   if (!cols.includes('evolucion')) db.exec(`ALTER TABLE sesiones ADD COLUMN evolucion TEXT`);
 
   const colsPac = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
-  if (!colsPac.includes('usuario_id')) db.exec(`ALTER TABLE pacientes ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
-  if (!colsPac.includes('nro_afiliado')) db.exec(`ALTER TABLE pacientes ADD COLUMN nro_afiliado TEXT`);
-  if (!colsPac.includes('ocupacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN ocupacion TEXT`);
-  if (!colsPac.includes('direccion')) db.exec(`ALTER TABLE pacientes ADD COLUMN direccion TEXT`);
-  if (!colsPac.includes('motivo_consulta')) db.exec(`ALTER TABLE pacientes ADD COLUMN motivo_consulta TEXT`);
-  if (!colsPac.includes('antecedentes')) db.exec(`ALTER TABLE pacientes ADD COLUMN antecedentes TEXT`);
-  if (!colsPac.includes('medicacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN medicacion TEXT`);
-  if (!colsPac.includes('alergias')) db.exec(`ALTER TABLE pacientes ADD COLUMN alergias TEXT`);
+if (!colsPac.includes('usuario_id')) db.exec(`ALTER TABLE pacientes ADD COLUMN usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL`);
+if (!colsPac.includes('nro_afiliado')) db.exec(`ALTER TABLE pacientes ADD COLUMN nro_afiliado TEXT`);
+if (!colsPac.includes('ocupacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN ocupacion TEXT`);
+if (!colsPac.includes('direccion')) db.exec(`ALTER TABLE pacientes ADD COLUMN direccion TEXT`);
+if (!colsPac.includes('motivo_consulta')) db.exec(`ALTER TABLE pacientes ADD COLUMN motivo_consulta TEXT`);
+if (!colsPac.includes('antecedentes')) db.exec(`ALTER TABLE pacientes ADD COLUMN antecedentes TEXT`);
+if (!colsPac.includes('medicacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN medicacion TEXT`);
+if (!colsPac.includes('alergias')) db.exec(`ALTER TABLE pacientes ADD COLUMN alergias TEXT`);
+if (!colsPac.includes('edad')) db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
+if (!colsPac.includes('celular')) db.exec(`ALTER TABLE pacientes ADD COLUMN celular TEXT`);
 
   const colsPacNuevos = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
   if (!colsPacNuevos.includes('edad'))   db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
@@ -556,6 +563,9 @@ const getEjercicio = db.prepare(`SELECT * FROM ejercicios WHERE id = ?`);
 const insertEjercicio = db.prepare(`INSERT INTO ejercicios (nombre, descripcion, categoria, video_url, imagen_url) VALUES (@nombre, @descripcion, @categoria, @video_url, @imagen_url)`);
 const updateEjercicio = db.prepare(`UPDATE ejercicios SET nombre=@nombre, descripcion=@descripcion, categoria=@categoria, video_url=@video_url, imagen_url=@imagen_url WHERE id=@id`);
 const deleteEjercicio = db.prepare(`DELETE FROM ejercicios WHERE id = ?`);
+const monthExpr = (field) => (isPostgres ? `to_char(${field}::date, 'YYYY-MM')` : `strftime('%Y-%m', ${field})`);
+const todayTextExpr = isPostgres ? 'CURRENT_DATE::text' : "date('now','localtime')";
+const todayDateExpr = isPostgres ? 'CURRENT_DATE' : "date('now','localtime')";
 
 // ── Motivos de consulta ───────────────────────────────────
 
@@ -633,7 +643,7 @@ const getTurnos = db.prepare(`
 const getTurnosByMes = db.prepare(`
   SELECT t.*, p.nombre, p.apellido FROM turnos t
   LEFT JOIN pacientes p ON p.id = t.paciente_id
-  WHERE strftime('%Y-%m', t.fecha) = ?
+  WHERE ${monthExpr('t.fecha')} = ?
   ORDER BY t.fecha, t.hora
 `);
 const getTurno = db.prepare(`SELECT t.*, p.nombre, p.apellido FROM turnos t LEFT JOIN pacientes p ON p.id = t.paciente_id WHERE t.id = ?`);
@@ -654,13 +664,13 @@ const getDashboardStats = db.prepare(`
   SELECT
     (SELECT COUNT(*) FROM pacientes) as total_pacientes,
     (SELECT COUNT(*) FROM lesiones WHERE estado='activa') as lesiones_activas,
-    (SELECT COUNT(*) FROM sesiones WHERE strftime('%Y-%m', fecha) = strftime('%Y-%m', 'now','localtime')) as sesiones_mes,
-    (SELECT COUNT(*) FROM turnos WHERE fecha = date('now','localtime') AND estado != 'cancelado') as turnos_hoy,
-    (SELECT COUNT(*) FROM turnos WHERE fecha >= date('now','localtime') AND estado = 'pendiente') as turnos_proximos
+    (SELECT COUNT(*) FROM sesiones WHERE ${monthExpr('fecha')} = ${monthExpr(todayDateExpr)}) as sesiones_mes,
+    (SELECT COUNT(*) FROM turnos WHERE ${isPostgres ? 'fecha::date' : 'fecha'} = ${todayDateExpr} AND estado != 'cancelado') as turnos_hoy,
+    (SELECT COUNT(*) FROM turnos WHERE ${isPostgres ? 'fecha::date' : 'fecha'} >= ${todayDateExpr} AND estado = 'pendiente') as turnos_proximos
 `);
 
 const getSesionesPorMes = db.prepare(`
-  SELECT strftime('%Y-%m', fecha) as mes, COUNT(*) as cantidad
+  SELECT ${monthExpr('fecha')} as mes, COUNT(*) as cantidad
   FROM sesiones
   GROUP BY mes ORDER BY mes DESC LIMIT 6
 `);
@@ -668,7 +678,7 @@ const getSesionesPorMes = db.prepare(`
 const getProximosTurnos = db.prepare(`
   SELECT t.*, p.nombre, p.apellido FROM turnos t
   LEFT JOIN pacientes p ON p.id = t.paciente_id
-  WHERE t.fecha >= date('now','localtime') AND t.estado != 'cancelado'
+  WHERE ${isPostgres ? 't.fecha::date' : 't.fecha'} >= ${todayDateExpr} AND t.estado != 'cancelado'
   ORDER BY t.fecha, t.hora LIMIT 5
 `);
 
