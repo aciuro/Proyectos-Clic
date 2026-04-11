@@ -450,6 +450,29 @@ function DeudaOverlay({ paciente, saldo }) {
   )
 }
 
+/* ── Perfil section ────────────────────────────────────── */
+function PerfilSection({ paciente }) {
+  return (
+    <div className="pp-seccion">
+      <div className="pp-perfil-card">
+        <div className="pp-perfil-avatar">{paciente.nombre[0]}{paciente.apellido[0]}</div>
+        <div className="pp-perfil-nombre">{paciente.nombre} {paciente.apellido}</div>
+        <div className="pp-perfil-email">{paciente.email}</div>
+      </div>
+      <div className="pp-perfil-datos">
+        <div className="pp-perfil-dato">
+          <span className="pp-perfil-dato-lbl">Obra Social</span>
+          <span className="pp-perfil-dato-val">{paciente.obra_social || 'No especificada'}</span>
+        </div>
+        <div className="pp-perfil-dato">
+          <span className="pp-perfil-dato-lbl">Teléfono</span>
+          <span className="pp-perfil-dato-val">{paciente.telefono || 'No especificado'}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 /* ── Portal principal ────────────────────────────────────── */
 export default function PortalPaciente({ paciente }) {
   const [saldo, setSaldo] = useState(null)
@@ -458,7 +481,7 @@ export default function PortalPaciente({ paciente }) {
   const [turnos, setTurnos] = useState([])
   const [seleccionado, setSeleccionado] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [seccionActiva, setSeccionActiva] = useState('inicio')
+  const [seccionActiva, setSeccionActiva] = useState('ejercicios')
 
   useEffect(() => {
     if (!paciente) return
@@ -501,12 +524,11 @@ export default function PortalPaciente({ paciente }) {
     })
     .sort((a, b) => new Date(a.fecha + 'T' + a.hora) - new Date(b.fecha + 'T' + b.hora))[0]
 
-  const secciones = [
-    { id: 'inicio', label: 'Inicio' },
-    { id: 'rutina', label: 'Rutina' },
-    { id: 'calendario', label: 'Calendario' },
-    { id: 'turno', label: 'Pedir turno' },
-    { id: 'tratamientos', label: 'Tratamientos' },
+  const botonesNav = [
+    { id: 'perfil', label: 'Perfil', icon: '👤' },
+    { id: 'turnos', label: 'Turnos', icon: '📅' },
+    { id: 'ejercicios', label: 'Rutina', icon: '💪' },
+    { id: 'saldo', label: 'Saldo', icon: '💰' },
   ]
 
   return (
@@ -524,71 +546,17 @@ export default function PortalPaciente({ paciente }) {
           </div>
         </div>
 
-        {/* Nav tabs */}
-        <div className="pp-tabs">
-          {secciones.map(s => (
-            <button
-              key={s.id}
-              className={`pp-tab${seccionActiva === s.id ? ' pp-tab-activa' : ''}`}
-              onClick={() => setSeccionActiva(s.id)}
-            >
-              {s.label}
-            </button>
-          ))}
-        </div>
-
         {loading && <div className="pp-loading">Cargando...</div>}
 
         {!loading && (
           <>
-            {/* INICIO */}
-            {seccionActiva === 'inicio' && (
-              <div className="pp-seccion">
-                <ProximoTurnoCard turno={proximoTurno} />
-
-                {ejercicios.length > 0 && (
-                  <div className="pp-inicio-rutina-preview">
-                    <div className="pp-seccion-titulo">Rutina de hoy</div>
-                    <div className="pp-rutina-preview-lista">
-                      {ejercicios.slice(0, 3).map((ej, i) => (
-                        <div key={ej.id} className="pp-rutina-preview-item">
-                          <span className="pp-rutina-preview-num">{i + 1}</span>
-                          <span className="pp-rutina-preview-nombre">{ej.nombre.replace(/ — (CC|OA)$/, '')}</span>
-                        </div>
-                      ))}
-                    </div>
-                    {ejercicios.length > 3 && (
-                      <div className="pp-rutina-preview-mas">+{ejercicios.length - 3} más</div>
-                    )}
-                    <button className="pp-btn-ver-rutina" onClick={() => setSeccionActiva('rutina')}>
-                      Ver rutina completa →
-                    </button>
-                  </div>
-                )}
-
-                {!proximoTurno && (
-                  <div className="pp-inicio-sin-turno">
-                    <div className="pp-inicio-sin-turno-txt">No tenés turnos próximos</div>
-                    <button className="pp-btn-pedir-turno" onClick={() => setSeccionActiva('turno')}>
-                      Pedí un turno
-                    </button>
-                  </div>
-                )}
-              </div>
+            {/* PERFIL */}
+            {seccionActiva === 'perfil' && (
+              <PerfilSection paciente={paciente} />
             )}
 
-            {/* RUTINA */}
-            {seccionActiva === 'rutina' && (
-              <div className="pp-seccion">
-                {ejercicios.length > 0
-                  ? <RutinaEjercicios ejercicios={ejercicios} onVerDetalle={setSeleccionado} />
-                  : <div className="pp-sin-contenido">No tenés ejercicios asignados aún.</div>
-                }
-              </div>
-            )}
-
-            {/* CALENDARIO */}
-            {seccionActiva === 'calendario' && (
+            {/* TURNOS */}
+            {seccionActiva === 'turnos' && (
               <div className="pp-seccion">
                 <CalendarioInteractivo turnos={turnos} />
                 {proximoTurno && (
@@ -596,27 +564,63 @@ export default function PortalPaciente({ paciente }) {
                     <ProximoTurnoCard turno={proximoTurno} />
                   </div>
                 )}
-              </div>
-            )}
-
-            {/* PEDIR TURNO */}
-            {seccionActiva === 'turno' && (
-              <div className="pp-seccion">
                 <FormularioTurno paciente={paciente} onTurnoCreado={agregarTurno} />
               </div>
             )}
 
-            {/* TRATAMIENTOS */}
-            {seccionActiva === 'tratamientos' && (
+            {/* SALDO */}
+            {seccionActiva === 'saldo' && (
               <div className="pp-seccion">
-                {motivos.length > 0
-                  ? motivos.map(m => <MotivoCard key={m.id} motivo={m} />)
-                  : <div className="pp-sin-contenido">No tenés tratamientos registrados.</div>
+                <div className="pp-saldo-card">
+                  <div className="pp-saldo-titulo">Saldo pendiente</div>
+                  <div className={`pp-saldo-monto${saldo > 0 ? ' pp-saldo-deuda' : ' pp-saldo-ok'}`}>
+                    ${saldo ?? 0}
+                  </div>
+                  {saldo > 0 ? (
+                    <>
+                      <div className="pp-saldo-alias-lbl">Transferí al alias</div>
+                      <div className="pp-saldo-alias">{ALIAS}</div>
+                      <a
+                        href={`https://wa.me/${ADMIN_WA}?text=${encodeURIComponent(`Hola Augusto! Soy ${paciente.nombre} ${paciente.apellido}. Acabo de realizar el pago de $${saldo}. Alias: ${ALIAS}.`)}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="pp-deuda-btn"
+                      >
+                        Avisá que pagaste por WhatsApp
+                      </a>
+                    </>
+                  ) : (
+                    <div className="pp-saldo-al-dia">¡Estás al día!</div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* EJERCICIOS */}
+            {seccionActiva === 'ejercicios' && (
+              <div className="pp-seccion">
+                {ejercicios.length > 0
+                  ? <RutinaEjercicios ejercicios={ejercicios} onVerDetalle={setSeleccionado} />
+                  : <div className="pp-sin-contenido">No tenés ejercicios asignados aún.</div>
                 }
               </div>
             )}
           </>
         )}
+
+        {/* Bottom Navigation */}
+        <div className="pp-bottom-nav">
+          {botonesNav.map(b => (
+            <button
+              key={b.id}
+              className={`pp-bottom-nav-btn${seccionActiva === b.id ? ' pp-bottom-nav-btn-activa' : ''}`}
+              onClick={() => setSeccionActiva(b.id)}
+            >
+              <span className="pp-bottom-nav-icon">{b.icon}</span>
+              <span className="pp-bottom-nav-label">{b.label}</span>
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   )
