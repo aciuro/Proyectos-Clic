@@ -20,63 +20,6 @@ if (process.env.DATABASE_URL) {
 // ── Schema ────────────────────────────────────────────────
 
 const schemaSQL = isPostgres ? `
-CREATE TABLE IF NOT EXISTS motivos (
-  id           SERIAL PRIMARY KEY,
-  paciente_id  INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-  sintoma      TEXT NOT NULL,
-  aparicion    TEXT,
-  momento_dia  TEXT,
-  movimientos  TEXT,
-  afloja_dia   INTEGER DEFAULT 0,
-  monto_sesion REAL DEFAULT 0,
-  estado       TEXT DEFAULT 'activo',
-  created_at   TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS evoluciones (
-  id             SERIAL PRIMARY KEY,
-  motivo_id      INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
-  fecha          TEXT NOT NULL,
-  notas          TEXT,
-  dolor          INTEGER,
-  tecnicas       TEXT,
-  monto_cobrado  REAL DEFAULT 0,
-  pagado         INTEGER DEFAULT 0,
-  tecnicas_sesion TEXT,
-  ejercicios_sesion TEXT,
-  created_at     TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS estudios (
-  id          SERIAL PRIMARY KEY,
-  motivo_id   INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
-  nombre      TEXT,
-  tipo        TEXT,
-  archivo     TEXT NOT NULL,
-  created_at  TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS turnos (
-  id          SERIAL PRIMARY KEY,
-  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
-  fecha       TEXT NOT NULL,
-  hora        TEXT NOT NULL,
-  duracion    INTEGER DEFAULT 60,
-  motivo      TEXT,
-  estado      TEXT DEFAULT 'pendiente',
-  notas       TEXT,
-  created_at  TIMESTAMP DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS documentos (
-  id          SERIAL PRIMARY KEY,
-  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
-  nombre      TEXT NOT NULL,
-  tipo        TEXT,
-  archivo     TEXT NOT NULL,
-  created_at  TIMESTAMP DEFAULT NOW()
-);
-
 CREATE TABLE IF NOT EXISTS usuarios (
   id          SERIAL PRIMARY KEY,
   email       TEXT NOT NULL UNIQUE,
@@ -152,6 +95,63 @@ CREATE TABLE IF NOT EXISTS paciente_ejercicios (
   notas        TEXT,
   fecha_desde  TEXT DEFAULT (CURRENT_DATE::text),
   activo       INTEGER DEFAULT 1,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS motivos (
+  id           SERIAL PRIMARY KEY,
+  paciente_id  INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  sintoma      TEXT NOT NULL,
+  aparicion    TEXT,
+  momento_dia  TEXT,
+  movimientos  TEXT,
+  afloja_dia   INTEGER DEFAULT 0,
+  monto_sesion REAL DEFAULT 0,
+  estado       TEXT DEFAULT 'activo',
+  created_at   TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS evoluciones (
+  id              SERIAL PRIMARY KEY,
+  motivo_id       INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
+  fecha           TEXT NOT NULL,
+  notas           TEXT,
+  dolor           INTEGER,
+  tecnicas        TEXT,
+  monto_cobrado   REAL DEFAULT 0,
+  pagado          INTEGER DEFAULT 0,
+  tecnicas_sesion TEXT,
+  ejercicios_sesion TEXT,
+  created_at      TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS estudios (
+  id          SERIAL PRIMARY KEY,
+  motivo_id   INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
+  nombre      TEXT,
+  tipo        TEXT,
+  archivo     TEXT NOT NULL,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS turnos (
+  id          SERIAL PRIMARY KEY,
+  paciente_id INTEGER REFERENCES pacientes(id) ON DELETE CASCADE,
+  fecha       TEXT NOT NULL,
+  hora        TEXT NOT NULL,
+  duracion    INTEGER DEFAULT 60,
+  motivo      TEXT,
+  estado      TEXT DEFAULT 'pendiente',
+  notas       TEXT,
+  created_at  TIMESTAMP DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS documentos (
+  id          SERIAL PRIMARY KEY,
+  paciente_id INTEGER NOT NULL REFERENCES pacientes(id) ON DELETE CASCADE,
+  nombre      TEXT NOT NULL,
+  tipo        TEXT,
+  archivo     TEXT NOT NULL,
   created_at  TIMESTAMP DEFAULT NOW()
 );
 ` : `
