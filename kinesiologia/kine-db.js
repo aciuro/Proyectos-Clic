@@ -325,11 +325,18 @@ if (!colsPac.includes('celular')) db.exec(`ALTER TABLE pacientes ADD COLUMN celu
 
 // ── Crear admin por defecto si no existe ──────────────────
 
-const adminExiste = db.prepare("SELECT id FROM usuarios WHERE rol='admin' LIMIT 1").get();
+const adminEmail = process.env.ADMIN_EMAIL || 'augustociuro@gmail.com';
+const adminPassword = process.env.ADMIN_PASSWORD;
+
+const adminExiste = db.prepare("SELECT id, email FROM usuarios WHERE rol='admin' LIMIT 1").get();
 if (!adminExiste) {
-  const hash = bcrypt.hashSync('admin123', 10);
-  db.prepare("INSERT INTO usuarios (email, password, rol, nombre) VALUES (?, ?, 'admin', 'Augusto Ciuró')").run('augusto@ciuro.com', hash);
-  console.log('✅ Admin creado: augusto@ciuro.com / admin123');
+  const hash = bcrypt.hashSync(adminPassword || 'admin123', 10);
+  db.prepare("INSERT INTO usuarios (email, password, rol, nombre) VALUES (?, ?, 'admin', 'Augusto Ciuró')").run(adminEmail, hash);
+  console.log(`✅ Admin creado: ${adminEmail}`);
+} else if (adminExiste.email !== adminEmail || adminPassword) {
+  const hash = bcrypt.hashSync(adminPassword || 'admin123', 10);
+  db.prepare("UPDATE usuarios SET email=?, password=? WHERE id=?").run(adminEmail, hash, adminExiste.id);
+  console.log(`✅ Admin actualizado: ${adminEmail}`);
 }
 
 // ── Seed ejercicios ────────────────────────────────────────
