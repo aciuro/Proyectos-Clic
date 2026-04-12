@@ -18,7 +18,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 
 # Forzar invalidacion de cache en cada deploy
-ENV CACHE_BUST=2026-04-11-2215
+ENV CACHE_BUST=2026-04-11-2230
 
 # Copiar todo el código fuente
 COPY . .
