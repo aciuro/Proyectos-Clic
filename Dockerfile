@@ -29,9 +29,7 @@ RUN npm ci --omit=dev
 # Instalar dependencias del subproyecto de kinesiologia
 RUN cd kinesiologia && npm ci --omit=dev
 
-# Instalar dependencias y buildear el frontend
-RUN cd client && npm ci
-RUN cd client && npm run build
+# El frontend ya viene pre-buildeado en client/dist (commiteado en git)
 
 # Directorio para datos persistentes (montar volumen aquí en Railway)
 RUN mkdir -p /data/uploads
