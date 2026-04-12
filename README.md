@@ -7,6 +7,7 @@ Bot que registra gastos de un grupo de socios en Google Sheets directamente desd
 Si vas a trabajar sobre el modulo web de kinesiologia, arranca por aca:
 
 - [GUIA_PROYECTO_KINESIOLOGIA.md](./GUIA_PROYECTO_KINESIOLOGIA.md)
+- [ESTADO_ACTUAL_KINESIOLOGIA.md](./ESTADO_ACTUAL_KINESIOLOGIA.md)
 
 Esa guia explica:
 
@@ -15,6 +16,8 @@ Esa guia explica:
 - que rutas y tablas usa cada pantalla
 - que capas legacy y duplicadas existen
 - que riesgos hay antes de hacer cambios
+
+El archivo `ESTADO_ACTUAL_KINESIOLOGIA.md` resume los cambios mas recientes, los commits importantes y como validar hoy el sistema.
 
 ## Requisitos
 
