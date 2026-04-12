@@ -159,8 +159,9 @@ if (!colsPac.includes('medicacion')) db.exec(`ALTER TABLE pacientes ADD COLUMN m
 if (!colsPac.includes('alergias')) db.exec(`ALTER TABLE pacientes ADD COLUMN alergias TEXT`);
 
 const colsPacNuevos = db.prepare("PRAGMA table_info(pacientes)").all().map(c => c.name);
-if (!colsPacNuevos.includes('edad'))   db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
+if (!colsPacNuevos.includes('edad'))    db.exec(`ALTER TABLE pacientes ADD COLUMN edad INTEGER`);
 if (!colsPacNuevos.includes('celular')) db.exec(`ALTER TABLE pacientes ADD COLUMN celular TEXT`);
+if (!colsPacNuevos.includes('tipo'))    db.exec(`ALTER TABLE pacientes ADD COLUMN tipo TEXT`);
 
 const colsSes = db.prepare("PRAGMA table_info(sesiones)").all().map(c => c.name);
 if (!colsSes.includes('dolor')) db.exec(`ALTER TABLE sesiones ADD COLUMN dolor INTEGER`);
@@ -374,13 +375,13 @@ const getPaciente = db.prepare(`SELECT * FROM pacientes WHERE id = ?`);
 const getPacienteByUsuario = db.prepare(`SELECT * FROM pacientes WHERE usuario_id = ?`);
 
 const insertPaciente = db.prepare(`
-  INSERT INTO pacientes (nombre, apellido, edad, email, celular, dni)
-  VALUES (@nombre, @apellido, @edad, @email, @celular, @dni)
+  INSERT INTO pacientes (nombre, apellido, edad, email, celular, dni, tipo)
+  VALUES (@nombre, @apellido, @edad, @email, @celular, @dni, @tipo)
 `);
 
 const updatePaciente = db.prepare(`
   UPDATE pacientes SET nombre=@nombre, apellido=@apellido, edad=@edad,
-    email=@email, celular=@celular, dni=@dni, usuario_id=@usuario_id
+    email=@email, celular=@celular, dni=@dni, tipo=@tipo, usuario_id=@usuario_id
   WHERE id=@id
 `);
 

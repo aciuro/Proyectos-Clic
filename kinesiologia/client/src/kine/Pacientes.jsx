@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { api } from './api.js'
 import Modal from './Modal.jsx'
 
-const EMPTY = { nombre: '', apellido: '', edad: '', email: '', celular: '', dni: '' }
+const EMPTY = { nombre: '', apellido: '', edad: '', email: '', celular: '', dni: '', tipo: '' }
 
 export default function Pacientes() {
   const [pacientes, setPacientes] = useState([])
@@ -26,7 +26,7 @@ export default function Pacientes() {
 
   function abrirEditar(p, e) {
     e.stopPropagation()
-    setForm({ nombre: p.nombre, apellido: p.apellido, edad: p.edad || '', email: p.email || '', celular: p.celular || '', dni: p.dni || '' })
+    setForm({ nombre: p.nombre, apellido: p.apellido, edad: p.edad || '', email: p.email || '', celular: p.celular || '', dni: p.dni || '', tipo: p.tipo || '' })
     setEditId(p.id)
     setAccesoCreado(null)
     setModal(true)
@@ -124,7 +124,14 @@ export default function Pacientes() {
             </div>
             <div className="kine-form-row">
               <label>Email<input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></label>
-              <label>Celular<input value={form.celular} onChange={e => setForm(f => ({ ...f, celular: e.target.value }))} placeholder="Ej: 11 2345-6789" /></label>
+              <label>Tipo de paciente
+                <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+                  <option value="">— Seleccionar —</option>
+                  <option value="Particular">Particular</option>
+                  <option value="Clic">Clic</option>
+                  <option value="Friend">Friend</option>
+                </select>
+              </label>
             </div>
             {!editId && form.email && (
               <div className="kine-form-hint" style={{ background: 'var(--kine-accent-bg)', padding: '8px 12px', borderRadius: 6, fontSize: 12 }}>
