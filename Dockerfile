@@ -18,6 +18,7 @@ ENV PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium
 WORKDIR /app
 
 # Copiar todo el código fuente
+# cache-bust: 2026-04-11
 COPY . .
 
 # Instalar dependencias del servidor
