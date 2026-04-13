@@ -15,16 +15,6 @@ if (process.env.DATABASE_URL) {
   db.pragma('journal_mode = WAL');
   db.pragma('foreign_keys = ON');
 }
-const Database = require('better-sqlite3');
-const path = require('path');
-const bcrypt = require('bcryptjs');
-
-const dataDir = process.env.DATA_DIR || path.join(__dirname, '..');
-const db = new Database(path.join(dataDir, 'kine.db'));
-
-db.pragma('journal_mode = WAL');
-db.pragma('foreign_keys = ON');
-
 // ── Schema ────────────────────────────────────────────────
 
 db.exec(`
