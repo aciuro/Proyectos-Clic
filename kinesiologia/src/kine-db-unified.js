@@ -1,7 +1,7 @@
 let mod;
 
 if (process.env.DATABASE_URL) {
-  mod = require('../kinesiologia/kine-db');
+  mod = require('./kine-db-postgres');
 } else {
   mod = require('./kine-db');
 }
