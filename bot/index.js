@@ -16,7 +16,6 @@ const qrcode = require('qrcode-terminal');
 const sheets = require('./sheets');
 const { parseGasto, parseCaja, resolverSocio } = require('./parser');
 const claudeChat = require('./claude-chat');
-const kineRoutes = require('./kine-routes');
 
 const CARPETA_COMPROBANTES = process.env.CARPETA_COMPROBANTES || 'C:\\Users\\augus\\OneDrive\\Desktop\\Clic Marzo26\\Comprobantes';
 
@@ -76,18 +75,8 @@ client.on('disconnected', (reason) => {
 // ─── Servidor WebSocket para el frontend ─────────────────────
 
 const app = express();
-app.use('/api/kine', kineRoutes);
-const uploadsDir = path.join(process.env.DATA_DIR || path.join(__dirname, '..'), 'uploads');
-app.use('/uploads', express.static(uploadsDir));
-app.use(express.static(path.join(__dirname, '../client/dist')));
-// Redirigir raíz a /kine
-app.get('/', (req, res) => res.redirect('/kine'));
-// SPA fallback
-app.get('/{*splat}', (req, res) => {
-  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-});
 const PORT = process.env.PORT || 3000;
-const server = app.listen(PORT, () => console.log(`🌐 Frontend en http://localhost:${PORT}`));
+const server = app.listen(PORT, () => console.log(`🤖 Bot escuchando en puerto ${PORT}`));
 const wss = new WebSocketServer({ server });
 
 function broadcast(evento) {

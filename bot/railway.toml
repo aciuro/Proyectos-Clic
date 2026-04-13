@@ -3,7 +3,7 @@ dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "npm start"
-healthcheckPath = "/api/kine/health"
+healthcheckPath = "/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
