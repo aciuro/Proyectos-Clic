@@ -75,6 +75,7 @@ client.on('disconnected', (reason) => {
 // ─── Servidor WebSocket para el frontend ─────────────────────
 
 const app = express();
+app.get('/health', (req, res) => res.json({ status: 'ok' }));
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => console.log(`🤖 Bot escuchando en puerto ${PORT}`));
 const wss = new WebSocketServer({ server });
