@@ -7,6 +7,7 @@ import Pacientes from './Pacientes.jsx'
 import PacienteDetalle from './PacienteDetalle.jsx'
 import Ejercicios from './Ejercicios.jsx'
 import Agenda from './Agenda.jsx'
+import ProfessionalAdminDesign from './ProfessionalAdminDesign.jsx'
 import KineClaude from './KineClaude.jsx'
 import PortalPaciente from './PortalPaciente.jsx'
 import './kine.css'
@@ -116,8 +117,8 @@ export default function KineApp() {
   )
 
   if (auth.usuario.rol === 'admin') {
-    return <AdminLayout usuario={auth.usuario} onLogout={handleLogout} />
-  }
+  return <ProfessionalAdminDesign usuario={auth.usuario} onLogout={handleLogout} />
+}
 
   return <PacienteLayout usuario={auth.usuario} paciente={auth.paciente} onLogout={handleLogout} />
 }
