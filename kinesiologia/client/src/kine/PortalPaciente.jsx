@@ -38,11 +38,11 @@ const INITIAL_HISTORY = [
 ]
 
 const globalStyle = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Serif+Display&display=swap');
   .pp-root * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
   .pp-root { background: #F0F8FA; min-height: 100vh; }
   @media (max-width: 767px) {
-    .pp-main { padding-bottom: 80px; }
+    .pp-main { padding-bottom: 100px; }
     .pp-sidebar { display: none !important; }
     .pp-bottom-nav { display: flex !important; }
   }
@@ -263,8 +263,8 @@ function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDeta
     <div>
       {/* Saludo */}
       <div style={{ marginBottom:'1.5rem' }}>
-        <div style={{ fontSize:10, fontWeight:700, color:c.muted, letterSpacing:1.5, marginBottom:4 }}>{fechaStr}</div>
-        <div className="pp-saludo-nombre" style={{ fontSize:26, fontWeight:800, color:c.ink }}>Hola, {paciente.nombre} 👋</div>
+        <div style={{ fontSize:10, color:c.muted, letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:4 }}>{fechaStr}</div>
+        <div className="pp-saludo-nombre" style={{ fontFamily:"'DM Serif Display', serif", fontSize:26, color:c.ink, lineHeight:1.1 }}>Hola, {paciente.nombre}</div>
       </div>
 
       {/* Próximo turno */}
@@ -625,7 +625,7 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
       </div>
 
       {/* Nav inferior mobile */}
-      <div className="pp-bottom-nav" style={{ display:'none', position:'fixed', bottom:0, left:0, right:0, background:c.white, borderTop:`0.5px solid ${c.border}`, padding:'8px 0 env(safe-area-inset-bottom, 8px)', zIndex:100 }}>
+      <div className="pp-bottom-nav" style={{ display:'none', position:'fixed', bottom:12, left:12, right:12, background:c.white, border:`0.5px solid ${c.border}`, borderRadius:22, padding:'10px 4px env(safe-area-inset-bottom, 10px)', zIndex:100, boxShadow:'0 4px 24px rgba(13,53,64,0.08)' }}>
         {navItems.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setTab(id)} style={{
             flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:3,
