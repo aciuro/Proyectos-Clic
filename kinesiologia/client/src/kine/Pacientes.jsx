@@ -5,6 +5,29 @@ import Modal from './Modal.jsx'
 
 const EMPTY = { nombre: '', apellido: '', edad: '', email: '', celular: '', dni: '', tipo: '' }
 
+const inputStyle = {
+  width: '100%', marginTop: 4, padding: '11px 12px',
+  borderRadius: 12, border: '1px solid #e2e8f0',
+  fontSize: 14, color: '#0f172a', outline: 'none',
+  fontFamily: 'inherit', background: '#fff',
+  boxSizing: 'border-box',
+}
+
+function Field({ label, required, children }) {
+  const child = children
+  const cloned = child.type === 'input' || child.type === 'select'
+    ? { ...child, props: { ...child.props, style: { ...inputStyle, ...child.props.style } } }
+    : child
+  return (
+    <div>
+      <label style={{ fontSize: 14, color: '#475569' }}>
+        {label}{required && ' *'}
+      </label>
+      {cloned}
+    </div>
+  )
+}
+
 export default function Pacientes() {
   const [pacientes, setPacientes] = useState([])
   const [busqueda, setBusqueda] = useState('')
@@ -95,52 +118,86 @@ export default function Pacientes() {
           )
       }
 
-      <Modal open={modal} onClose={() => setModal(false)} titulo={editId ? 'Editar paciente' : 'Nuevo paciente'}>
+      <Modal
+        open={modal}
+        onClose={() => setModal(false)}
+        titulo={editId ? 'Editar paciente' : 'Nuevo paciente'}
+        subtitulo="Completá los datos básicos"
+      >
         {accesoCreado ? (
-          /* Pantalla de confirmación con datos de acceso */
-          <div className="kine-acceso-info">
-            <div className="kine-acceso-ok">✅ Paciente creado con acceso al portal</div>
-            <p style={{ fontSize: 13, color: 'var(--kine-text-2)', marginBottom: '1rem' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ background: '#ecfdf5', color: '#047857', borderRadius: 12, padding: '12px 16px', fontWeight: 600, fontSize: 14 }}>
+              ✅ Paciente creado con acceso al portal
+            </div>
+            <p style={{ fontSize: 13, color: '#64748b' }}>
               Compartí estos datos con el paciente para que pueda ver su ficha:
             </p>
-            <div className="kine-acceso-datos">
-              <div><span>URL</span><strong>/kine</strong></div>
-              <div><span>Email</span><strong>{accesoCreado.email}</strong></div>
-              <div><span>Contraseña</span><strong>{accesoCreado.password}</strong></div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {[['URL', '/kine'], ['Email', accesoCreado.email], ['Contraseña', accesoCreado.password]].map(([label, val]) => (
+                <div key={label} style={{ display: 'flex', justifyContent: 'space-between', background: '#f8fafc', borderRadius: 12, padding: '10px 14px', fontSize: 14 }}>
+                  <span style={{ color: '#64748b' }}>{label}</span>
+                  <strong style={{ color: '#0f172a' }}>{val}</strong>
+                </div>
+              ))}
             </div>
-            <button className="kine-btn-primary" style={{ marginTop: '1.25rem', width: '100%' }} onClick={() => setModal(false)}>
+            <button onClick={() => setModal(false)}
+              style={{ marginTop: 8, width: '100%', background: '#059669', color: '#fff', border: 'none', borderRadius: 14, padding: '13px', fontWeight: 700, fontSize: 15, cursor: 'pointer' }}>
               Listo
             </button>
           </div>
         ) : (
-          <form className="kine-form" onSubmit={guardar}>
-            <div className="kine-form-row">
-              <label>Nombre *<input required value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} /></label>
-              <label>Apellido *<input required value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} /></label>
+          <form onSubmit={guardar} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Nombre + Apellido */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <Field label="Nombre" required>
+                <input required placeholder="Ej: Emilia" value={form.nombre} onChange={e => setForm(f => ({ ...f, nombre: e.target.value }))} />
+              </Field>
+              <Field label="Apellido" required>
+                <input required placeholder="Ej: Santaliz" value={form.apellido} onChange={e => setForm(f => ({ ...f, apellido: e.target.value }))} />
+              </Field>
             </div>
-            <div className="kine-form-row">
-              <label>Edad<input type="number" min="0" max="120" value={form.edad} onChange={e => setForm(f => ({ ...f, edad: e.target.value }))} /></label>
-              <label>DNI<input value={form.dni} onChange={e => setForm(f => ({ ...f, dni: e.target.value }))} placeholder="Se usa como contraseña" /></label>
+
+            {/* DNI + Edad */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <Field label="DNI">
+                <input placeholder="Se usa como contraseña" value={form.dni} onChange={e => setForm(f => ({ ...f, dni: e.target.value }))} />
+              </Field>
+              <Field label="Edad">
+                <input type="number" min="0" max="120" placeholder="Ej: 35" value={form.edad} onChange={e => setForm(f => ({ ...f, edad: e.target.value }))} />
+              </Field>
             </div>
-            <div className="kine-form-row">
-              <label>Email<input type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} /></label>
-              <label>Tipo de paciente
-                <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
-                  <option value="">— Seleccionar —</option>
-                  <option value="Particular">Particular</option>
-                  <option value="Clic">Clic</option>
-                  <option value="Friend">Friend</option>
-                </select>
-              </label>
-            </div>
+
+            {/* Email */}
+            <Field label="Email">
+              <input type="email" placeholder="email@gmail.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+            </Field>
+
+            {/* Tipo */}
+            <Field label="Tipo de paciente">
+              <select value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value }))}>
+                <option value="">Seleccionar</option>
+                <option value="Particular">Particular</option>
+                <option value="Clic">Clic</option>
+                <option value="Friend">Friend</option>
+              </select>
+            </Field>
+
             {!editId && form.email && (
-              <div className="kine-form-hint" style={{ background: 'var(--kine-accent-bg)', padding: '8px 12px', borderRadius: 6, fontSize: 12 }}>
-                Se creará acceso al portal con email <strong>{form.email}</strong> y contraseña <strong>{form.dni || form.celular || '123456'}</strong>
+              <div style={{ background: '#eff6ff', border: '1px solid #dbeafe', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#1d4ed8' }}>
+                Se creará acceso con email <strong>{form.email}</strong> y contraseña <strong>{form.dni || '123456'}</strong>
               </div>
             )}
-            <div className="kine-form-footer">
-              <button type="button" className="kine-btn-secondary" onClick={() => setModal(false)}>Cancelar</button>
-              <button type="submit" className="kine-btn-primary">{editId ? 'Guardar' : 'Crear paciente'}</button>
+
+            {/* Botones */}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, marginTop: 8 }}>
+              <button type="button" onClick={() => setModal(false)}
+                style={{ padding: '10px 18px', borderRadius: 12, border: '1px solid #e2e8f0', color: '#475569', background: 'none', cursor: 'pointer', fontSize: 14, fontFamily: 'inherit' }}>
+                Cancelar
+              </button>
+              <button type="submit"
+                style={{ padding: '10px 22px', borderRadius: 12, background: '#059669', color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer', boxShadow: '0 1px 3px rgba(5,150,105,0.3)', fontFamily: 'inherit' }}>
+                {editId ? 'Guardar cambios' : 'Crear paciente'}
+              </button>
             </div>
           </form>
         )}
