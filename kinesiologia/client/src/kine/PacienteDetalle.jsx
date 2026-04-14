@@ -167,42 +167,154 @@ const mc = {
 
 const EJERCICIOS_CATALOG = [
   // 🦶 TOBILLO
-  { id: 'tobillo_dorsiflexion', nombre: 'Dorsiflexión de tobillo', zona: 'tobillo' },
-  { id: 'tobillo_eversion_banda', nombre: 'Eversión con banda', zona: 'tobillo' },
-  { id: 'tobillo_equilibrio', nombre: 'Equilibrio unipodal', zona: 'tobillo' },
+  {
+    id: 'tobillo_dorsiflexion', nombre: 'Dorsiflexión de tobillo', zona: 'tobillo',
+    imagen: '/ejercicios/tobillo_dorsiflexion.jpg', video: null,
+    descripcion: 'Sentado o de pie, llevar la punta del pie hacia la espinilla. Mejora el rango de movilidad articular del tobillo.',
+  },
+  {
+    id: 'tobillo_eversion_banda', nombre: 'Eversión con banda', zona: 'tobillo',
+    imagen: '/ejercicios/tobillo_eversion_banda.jpg', video: null,
+    descripcion: 'Con banda elástica anclada, realizar el movimiento del pie hacia afuera. Fortalece los peroneos.',
+  },
+  {
+    id: 'tobillo_equilibrio', nombre: 'Equilibrio unipodal', zona: 'tobillo',
+    imagen: '/ejercicios/tobillo_equilibrio.jpg', video: null,
+    descripcion: 'De pie sobre una sola pierna, mantener el equilibrio. Activa los estabilizadores del tobillo y mejora la propiocepción.',
+  },
   // 🦵 RODILLA
-  { id: 'cuadriceps_isometrico', nombre: 'Cuádriceps isométrico', zona: 'rodilla' },
-  { id: 'sentadilla_parcial', nombre: 'Sentadilla parcial', zona: 'rodilla' },
-  { id: 'step_up', nombre: 'Step up', zona: 'rodilla' },
+  {
+    id: 'cuadriceps_isometrico', nombre: 'Cuádriceps isométrico', zona: 'rodilla',
+    imagen: '/ejercicios/cuadriceps_isometrico.jpg', video: null,
+    descripcion: 'Sentado con la rodilla extendida, contraer el cuádriceps sin movimiento. Activa la musculatura sin carga articular.',
+  },
+  {
+    id: 'sentadilla_parcial', nombre: 'Sentadilla parcial', zona: 'rodilla',
+    imagen: '/ejercicios/sentadilla_parcial.jpg', video: null,
+    descripcion: 'Flexión de rodilla hasta 60–90°, sin que las rodillas superen la punta del pie. Fortalece cuádriceps y glúteos.',
+  },
+  {
+    id: 'step_up', nombre: 'Step up', zona: 'rodilla',
+    imagen: '/ejercicios/step_up.jpg', video: null,
+    descripcion: 'Subir y bajar de un escalón de forma controlada. Ejercicio funcional para rodilla y cadera.',
+  },
   // 🍑 CADERA
-  { id: 'puente_gluteos', nombre: 'Puente de glúteos', zona: 'cadera' },
-  { id: 'clamshell', nombre: 'Clamshell', zona: 'cadera' },
-  { id: 'abduccion_cadera', nombre: 'Abducción de cadera', zona: 'cadera' },
+  {
+    id: 'puente_gluteos', nombre: 'Puente de glúteos', zona: 'cadera',
+    imagen: '/ejercicios/puente_gluteos.jpg', video: null,
+    descripcion: 'Boca arriba con pies apoyados, elevar la cadera hasta alineación. Activa glúteo mayor e isquiotibiales.',
+  },
+  {
+    id: 'clamshell', nombre: 'Clamshell', zona: 'cadera',
+    imagen: '/ejercicios/clamshell.jpg', video: null,
+    descripcion: 'De costado con rodillas flexionadas, abrir y cerrar la pierna superior. Trabaja el glúteo medio.',
+  },
+  {
+    id: 'abduccion_cadera', nombre: 'Abducción de cadera', zona: 'cadera',
+    imagen: '/ejercicios/abduccion_cadera.jpg', video: null,
+    descripcion: 'De pie o acostado, alejar la pierna del eje del cuerpo. Fortalece los abductores de cadera.',
+  },
   // 🧠 LUMBAR
-  { id: 'gato_camello', nombre: 'Gato-camello', zona: 'lumbar' },
-  { id: 'dead_bug', nombre: 'Dead bug', zona: 'lumbar' },
-  { id: 'bird_dog', nombre: 'Bird dog', zona: 'lumbar' },
+  {
+    id: 'gato_camello', nombre: 'Gato-camello', zona: 'lumbar',
+    imagen: '/ejercicios/gato_camello.jpg', video: null,
+    descripcion: 'En cuatro apoyos, alternar flexión y extensión de columna. Moviliza la columna lumbar y torácica.',
+  },
+  {
+    id: 'dead_bug', nombre: 'Dead bug', zona: 'lumbar',
+    imagen: '/ejercicios/dead_bug.jpg', video: null,
+    descripcion: 'Boca arriba, extender brazo y pierna opuesta sin perder el contacto lumbar con el suelo. Estabilidad lumbopélvica.',
+  },
+  {
+    id: 'bird_dog', nombre: 'Bird dog', zona: 'lumbar',
+    imagen: '/ejercicios/bird_dog.jpg', video: null,
+    descripcion: 'En cuatro apoyos, extender brazo y pierna opuestos manteniendo la espalda neutra. Control motor lumbar.',
+  },
   // 💪 HOMBRO
-  { id: 'pendulares_hombro', nombre: 'Ejercicios pendulares', zona: 'hombro' },
-  { id: 'elevacion_frontal', nombre: 'Elevación frontal', zona: 'hombro' },
-  { id: 'rotacion_externa_banda', nombre: 'Rotación externa con banda', zona: 'hombro' },
-  { id: 'retraccion_escapular', nombre: 'Retracción escapular', zona: 'hombro' },
+  {
+    id: 'pendulares_hombro', nombre: 'Ejercicios pendulares', zona: 'hombro',
+    imagen: '/ejercicios/pendulares_hombro.jpg', video: null,
+    descripcion: 'Inclinado hacia adelante, dejar colgar el brazo y balancearlo suavemente. Descomprime la articulación del hombro.',
+  },
+  {
+    id: 'elevacion_frontal', nombre: 'Elevación frontal', zona: 'hombro',
+    imagen: '/ejercicios/elevacion_frontal.jpg', video: null,
+    descripcion: 'De pie, elevar el brazo extendido hacia adelante hasta la horizontal. Trabaja el deltoides anterior.',
+  },
+  {
+    id: 'rotacion_externa_banda', nombre: 'Rotación externa con banda', zona: 'hombro',
+    imagen: '/ejercicios/rotacion_externa_banda.jpg', video: null,
+    descripcion: 'Con el codo a 90°, rotar el antebrazo hacia afuera contra la banda. Fortalece el manguito rotador.',
+  },
+  {
+    id: 'retraccion_escapular', nombre: 'Retracción escapular', zona: 'hombro',
+    imagen: '/ejercicios/retraccion_escapular.jpg', video: null,
+    descripcion: 'Juntar las escápulas como si aplanara un lápiz entre ellas. Activa romboides y trapecio medio.',
+  },
   // 💪 BRAZO
-  { id: 'flexion_codo', nombre: 'Flexión de codo', zona: 'brazo' },
-  { id: 'extension_codo', nombre: 'Extensión de codo', zona: 'brazo' },
-  { id: 'pronacion_supinacion', nombre: 'Pronación / Supinación', zona: 'brazo' },
+  {
+    id: 'flexion_codo', nombre: 'Flexión de codo', zona: 'brazo',
+    imagen: '/ejercicios/flexion_codo.jpg', video: null,
+    descripcion: 'Flexión y extensión del codo con o sin carga. Trabaja bíceps braquial y braquiorradial.',
+  },
+  {
+    id: 'extension_codo', nombre: 'Extensión de codo', zona: 'brazo',
+    imagen: '/ejercicios/extension_codo.jpg', video: null,
+    descripcion: 'Extensión del codo con banda o peso. Trabaja el tríceps braquial.',
+  },
+  {
+    id: 'pronacion_supinacion', nombre: 'Pronación / Supinación', zona: 'brazo',
+    imagen: '/ejercicios/pronacion_supinacion.jpg', video: null,
+    descripcion: 'Rotar el antebrazo con el codo a 90°. Mejora la movilidad del codo y el antebrazo.',
+  },
   // 🔹 CERVICAL
-  { id: 'flexion_cervical', nombre: 'Flexión cervical', zona: 'cervical' },
-  { id: 'inclinacion_cervical', nombre: 'Inclinación lateral cervical', zona: 'cervical' },
-  { id: 'rotacion_cervical', nombre: 'Rotación cervical', zona: 'cervical' },
+  {
+    id: 'flexion_cervical', nombre: 'Flexión cervical', zona: 'cervical',
+    imagen: '/ejercicios/flexion_cervical.jpg', video: null,
+    descripcion: 'Llevar el mentón hacia el pecho lentamente. Moviliza la columna cervical en flexión.',
+  },
+  {
+    id: 'inclinacion_cervical', nombre: 'Inclinación lateral cervical', zona: 'cervical',
+    imagen: '/ejercicios/inclinacion_cervical.jpg', video: null,
+    descripcion: 'Inclinar la cabeza hacia el hombro sin rotar. Moviliza y estira la musculatura lateral del cuello.',
+  },
+  {
+    id: 'rotacion_cervical', nombre: 'Rotación cervical', zona: 'cervical',
+    imagen: '/ejercicios/rotacion_cervical.jpg', video: null,
+    descripcion: 'Girar la cabeza hacia cada lado con suavidad. Mejora la rotación cervical y libera tensión.',
+  },
   // 🧱 ZONA MEDIA
-  { id: 'plancha_frontal', nombre: 'Plancha frontal', zona: 'zona_media' },
-  { id: 'plancha_lateral', nombre: 'Plancha lateral', zona: 'zona_media' },
-  { id: 'crunch_abdominal', nombre: 'Crunch abdominal', zona: 'zona_media' },
+  {
+    id: 'plancha_frontal', nombre: 'Plancha frontal', zona: 'zona_media',
+    imagen: '/ejercicios/plancha_frontal.jpg', video: null,
+    descripcion: 'Apoyado en antebrazos y puntas, mantener el cuerpo alineado. Activa toda la musculatura del core.',
+  },
+  {
+    id: 'plancha_lateral', nombre: 'Plancha lateral', zona: 'zona_media',
+    imagen: '/ejercicios/plancha_lateral.jpg', video: null,
+    descripcion: 'Apoyado en un antebrazo y el pie lateral, mantener el cuerpo alineado. Trabaja oblicuos y cuadrado lumbar.',
+  },
+  {
+    id: 'crunch_abdominal', nombre: 'Crunch abdominal', zona: 'zona_media',
+    imagen: '/ejercicios/crunch_abdominal.jpg', video: null,
+    descripcion: 'Boca arriba, despegar levemente la cabeza y hombros del suelo. Activa el recto abdominal.',
+  },
   // 🦶 PLANTA DEL PIE
-  { id: 'rodar_pelota', nombre: 'Rodar pelota plantar', zona: 'planta_pie' },
-  { id: 'estiramiento_fascia', nombre: 'Estiramiento fascia plantar', zona: 'planta_pie' },
-  { id: 'toalla_dedos', nombre: 'Arrugar toalla con los dedos', zona: 'planta_pie' },
+  {
+    id: 'rodar_pelota', nombre: 'Rodar pelota plantar', zona: 'planta_pie',
+    imagen: '/ejercicios/rodar_pelota.jpg', video: null,
+    descripcion: 'Con la pelota bajo la planta, hacer rodar suavemente toda la fascia. Libera la tensión plantar.',
+  },
+  {
+    id: 'estiramiento_fascia', nombre: 'Estiramiento fascia plantar', zona: 'planta_pie',
+    imagen: '/ejercicios/estiramiento_fascia.jpg', video: null,
+    descripcion: 'Doblar los dedos del pie hacia atrás y sostener la posición. Estira la fascia plantar.',
+  },
+  {
+    id: 'toalla_dedos', nombre: 'Arrugar toalla con los dedos', zona: 'planta_pie',
+    imagen: '/ejercicios/toalla_dedos.jpg', video: null,
+    descripcion: 'Con una toalla en el suelo, arrugarla con los dedos del pie. Fortalece la musculatura intrínseca del pie.',
+  },
 ]
 
 const ZONAS_LABEL = {
@@ -216,6 +328,10 @@ const EJERCICIOS_POR_ZONA = EJERCICIOS_CATALOG.reduce((acc, ej) => {
   acc[ej.zona].push(ej)
   return acc
 }, {})
+
+function getEjByNombre(nombre) {
+  return EJERCICIOS_CATALOG.find(e => e.nombre === nombre) || null
+}
 
 function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
   const tecnicas = evol.tecnicas_sesion ? (() => { try { return JSON.parse(evol.tecnicas_sesion) } catch { return [] } })() : []
@@ -287,9 +403,11 @@ function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
 }
 
 function RoutineViewModal({ routine, onClose, onEdit }) {
+  const [expandedEj, setExpandedEj] = useState(null)
+
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 680, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div>
             <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>{routine.nombre}</h2>
@@ -305,14 +423,58 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
           </div>
 
           {routine.ejercicios && routine.ejercicios.length > 0 && (
-            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
-              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 12 }}>Ejercicios</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {routine.ejercicios.map((ej, i) => {
-                  const params = [ej.series && `${ej.series} series`, ej.reps && `${ej.reps} reps`, ej.tiempo && ej.tiempo].filter(Boolean).join(' · ')
-                  return <li key={i} style={{ fontSize: 14, color: '#334155' }}>• {ej.nombre}{params ? ` — ${params}` : ''}</li>
-                })}
-              </ul>
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', padding: '14px 16px', borderBottom: '1px solid #e2e8f0', margin: 0 }}>
+                Ejercicios ({routine.ejercicios.length})
+              </p>
+              {routine.ejercicios.map((ej, i) => {
+                const catalog = getEjByNombre(ej.nombre)
+                const params = [ej.series && `${ej.series} series`, ej.reps && `${ej.reps} reps`, ej.tiempo && ej.tiempo].filter(Boolean).join(' · ')
+                const isExpanded = expandedEj === i
+                return (
+                  <div key={i} style={{ borderBottom: i < routine.ejercicios.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                    <button
+                      onClick={() => setExpandedEj(isExpanded ? null : i)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit' }}
+                    >
+                      {catalog?.imagen && (
+                        <img
+                          src={catalog.imagen}
+                          alt={ej.nombre}
+                          style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', background: '#f1f5f9', flexShrink: 0 }}
+                          onError={e => { e.target.style.display = 'none' }}
+                        />
+                      )}
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontWeight: 600, fontSize: 14, color: '#0f172a', margin: 0 }}>{ej.nombre}</p>
+                        {params && <p style={{ fontSize: 13, color: '#64748b', margin: '3px 0 0' }}>{params}</p>}
+                      </div>
+                      <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{isExpanded ? '▴' : '▾'}</span>
+                    </button>
+                    {isExpanded && catalog && (
+                      <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        {catalog.imagen && (
+                          <img
+                            src={catalog.imagen}
+                            alt={ej.nombre}
+                            style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 12, background: '#f1f5f9' }}
+                            onError={e => { e.target.style.display = 'none' }}
+                          />
+                        )}
+                        {catalog.descripcion && (
+                          <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: 0 }}>{catalog.descripcion}</p>
+                        )}
+                        {catalog.video && (
+                          <a href={catalog.video} target="_blank" rel="noopener noreferrer"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#2563eb', textDecoration: 'none' }}>
+                            ▶ Ver video
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
@@ -445,6 +607,9 @@ function RoutineModalForm({ onClose, onSave }) {
                     <input style={rFld} placeholder="Reps" value={row.reps} onChange={e => updateRow(row.id, 'reps', e.target.value)} />
                     <input style={rFld} placeholder="Tiempo" value={row.tiempo} onChange={e => updateRow(row.id, 'tiempo', e.target.value)} />
                   </div>
+                  {(() => { const c = getEjByNombre(row.nombre); return c?.descripcion ? (
+                    <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>{c.descripcion}</p>
+                  ) : null })()}
                 </div>
               ))}
             </div>
