@@ -69,7 +69,6 @@ function AdminLayout({ usuario, onLogout }) {
 
   return (
     <>
-      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap" rel="stylesheet" />
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body, #root { height: 100%; }
