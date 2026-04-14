@@ -3,27 +3,26 @@ import { api } from './api.js'
 
 /* ── Paleta ──────────────────────────────────────────────── */
 const c = {
-  white:      '#ffffff',
-  blue:       '#2563eb',
-  blueDark:   '#1d4ed8',
-  blue50:     '#eff6ff',
-  blue100:    '#dbeafe',
-  blue600:    '#2563eb',
-  s50:        '#f8fafc',
-  s100:       '#f1f5f9',
-  s200:       '#e2e8f0',
-  s400:       '#94a3b8',
-  s500:       '#64748b',
-  s600:       '#475569',
-  s700:       '#334155',
-  s900:       '#0f172a',
-  emerald:    '#059669',
-  emeraldBg:  '#ecfdf5',
-  emeraldText:'#047857',
-  red:        '#dc2626',
-  redBg:      '#fef2f2',
-  redBorder:  '#fecaca',
-  redText:    '#991b1b',
+  white:       '#ffffff',
+  s50:         '#f8fafc',
+  s100:        '#f1f5f9',
+  s200:        '#e2e8f0',
+  s300:        '#cbd5e1',
+  s400:        '#94a3b8',
+  s500:        '#64748b',
+  s700:        '#334155',
+  s900:        '#0f172a',
+  blue:        '#2563eb',
+  blueDark:    '#1d4ed8',
+  blue50:      '#eff6ff',
+  blue100:     '#dbeafe',
+  emerald:     '#059669',
+  emeraldBg:   '#ecfdf5',
+  emeraldText: '#047857',
+  red:         '#dc2626',
+  redBg:       '#fef2f2',
+  redBorder:   '#fecaca',
+  redText:     '#991b1b',
 }
 
 const ALIAS    = 'clic.escobar'
@@ -38,10 +37,19 @@ const INITIAL_HISTORY = [
 const globalStyle = `
   @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
   .pp-root * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
-  .pp-root { background: #ffffff; min-height: 100vh; }
+  .pp-root { background: #f8fafc; min-height: 100vh; }
+  .pp-right-col { display: none; }
+  @media (min-width: 768px) {
+    .pp-right-col { display: block; }
+    .pp-contact-btn { display: none; }
+    .pp-bottom-nav-pill { display: none; }
+    .pp-bottom-bar { position: static !important; border-top: none !important; background: transparent !important; backdrop-filter: none !important; }
+    .pp-main-grid { display: grid !important; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
+    .pp-content { padding: 32px !important; max-width: 960px; margin: 0 auto; }
+  }
 `
 
-/* ── Helpers UI ─────────────────────────────────────────── */
+/* ── UI helpers ─────────────────────────────────────────── */
 function Card({ children, style = {} }) {
   return (
     <div style={{
@@ -64,7 +72,7 @@ function Badge({ children, tone = 'default' }) {
   }
   const t = tones[tone] || tones.default
   return (
-    <span style={{ ...t, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center' }}>
+    <span style={{ ...t, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
       {children}
     </span>
   )
@@ -82,18 +90,8 @@ function SectionTitle({ title, subtitle, action }) {
   )
 }
 
-function BottomTabBtn({ active, label, onClick }) {
-  return (
-    <button onClick={onClick} style={{
-      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-      gap: 4, padding: '6px 4px', background: 'none', border: 'none', cursor: 'pointer',
-      color: active ? c.blue : c.s500, fontSize: 11, fontWeight: active ? 600 : 400,
-      fontFamily: "'DM Sans', sans-serif",
-    }}>
-      <span style={{ width: 24, height: 24, borderRadius: '50%', background: active ? c.blue100 : c.s100, display: 'block' }} />
-      {label}
-    </button>
-  )
+function StatLabel({ children }) {
+  return <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: c.s500 }}>{children}</p>
 }
 
 function colorEscala(v) {
@@ -126,7 +124,7 @@ function VideoEmbed({ url }) {
 function EjercicioDetalle({ ej, onVolver }) {
   const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
   return (
-    <div style={{ background: c.white, minHeight:'100vh', paddingBottom:'2rem' }}>
+    <div style={{ background: c.s50, minHeight:'100vh', paddingBottom:'2rem' }}>
       <button onClick={onVolver} style={{ background:'none', border:'none', color:c.blue, fontSize:15, fontWeight:600, cursor:'pointer', padding:'1.5rem 1rem 0.5rem', display:'flex', alignItems:'center', gap:6 }}>
         ← Volver a la rutina
       </button>
@@ -139,9 +137,9 @@ function EjercicioDetalle({ ej, onVolver }) {
           <Card style={{ padding:'1rem', marginBottom:'1rem' }}>
             <div style={{ fontSize:11, color:c.s500, fontWeight:600, marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:1 }}>Tu prescripción</div>
             <div style={{ display:'flex', gap:16 }}>
-              {ej.series      && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.series}</div><div style={{ fontSize:11, color:c.s500 }}>Series</div></div>}
+              {ej.series       && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.series}</div><div style={{ fontSize:11, color:c.s500 }}>Series</div></div>}
               {ej.repeticiones && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.repeticiones}</div><div style={{ fontSize:11, color:c.s500 }}>Reps</div></div>}
-              {ej.segundos    && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.segundos}"</div><div style={{ fontSize:11, color:c.s500 }}>Seg</div></div>}
+              {ej.segundos     && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.segundos}"</div><div style={{ fontSize:11, color:c.s500 }}>Seg</div></div>}
             </div>
           </Card>
         )}
@@ -195,6 +193,7 @@ function ModalDolor({ onClose, historia, onGuardar }) {
               flex:1, padding:'8px', borderRadius:9, border:'none', cursor:'pointer', fontWeight:600, fontSize:13,
               background: tab===t ? c.white : 'transparent',
               color: tab===t ? c.blue : c.s500,
+              boxShadow: tab===t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
             }}>{t==='registrar' ? 'Registrar hoy' : 'Historial'}</button>
           ))}
         </div>
@@ -229,7 +228,7 @@ function ModalDolor({ onClose, historia, onGuardar }) {
                   const d = new Date(h.date+'T12:00')
                   const label = d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' })
                   return (
-                    <div key={i} style={{ background:c.s50, borderRadius:14, padding:'1rem' }}>
+                    <div key={i} style={{ background:c.s50, borderRadius:14, padding:'1rem', border:`1px solid ${c.s200}` }}>
                       <div style={{ fontSize:12, color:c.s500, fontWeight:600, marginBottom:'0.5rem', textTransform:'capitalize' }}>{label}</div>
                       <div style={{ display:'flex', gap:8, marginBottom:'0.5rem' }}>
                         <div style={{ flex:1, background:colorEscala(h.manana), borderRadius:10, padding:'8px', textAlign:'center' }}>
@@ -275,8 +274,64 @@ function DeudaOverlay({ paciente, saldo }) {
   )
 }
 
+/* ── Columna derecha (solo desktop) ─────────────────────── */
+function RightColumn({ motivos, onTabChange }) {
+  return (
+    <div className="pp-right-col" style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      {/* Estado del tratamiento */}
+      <Card style={{ padding:20 }}>
+        <SectionTitle title="Estado del tratamiento" />
+        <div style={{ marginTop:16, background:c.s50, borderRadius:16, padding:16 }}>
+          <p style={{ fontWeight:600, color:c.s900, fontSize:14 }}>
+            {motivos?.[0]?.sintoma ? motivos[0].sintoma.charAt(0).toUpperCase() + motivos[0].sintoma.slice(1) : 'Rehabilitación'}
+          </p>
+          <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Evolución favorable</p>
+        </div>
+        <div style={{ marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:14 }}>
+            <StatLabel>Kinesiólogo</StatLabel>
+            <p style={{ marginTop:6, fontSize:13, fontWeight:600, color:c.s900 }}>Lic. Augusto Ciuro</p>
+          </div>
+          <div style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:14 }}>
+            <StatLabel>Próximo control</StatLabel>
+            <p style={{ marginTop:6, fontSize:13, fontWeight:600, color:c.s900 }}>A definir</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Mensajes */}
+      <Card style={{ padding:20 }}>
+        <SectionTitle title="Mensajes" />
+        <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
+          <div style={{ background:c.s50, borderRadius:14, padding:14 }}>
+            <p style={{ fontWeight:500, color:c.s900, fontSize:14 }}>Recordatorio</p>
+            <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Intentá completar tu rutina al menos 4 veces por semana.</p>
+          </div>
+          <div style={{ background:c.s50, borderRadius:14, padding:14 }}>
+            <p style={{ fontWeight:500, color:c.s900, fontSize:14 }}>Indicaciones</p>
+            <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Evitá movimientos bruscos durante los próximos días.</p>
+          </div>
+        </div>
+      </Card>
+
+      {/* Accesos rápidos */}
+      <Card style={{ padding:20 }}>
+        <SectionTitle title="Accesos rápidos" />
+        <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          {[['Turnos','turnos'],['Rutinas','rutinas'],['Estudios','inicio'],['Perfil','perfil']].map(([label, id]) => (
+            <button key={label} onClick={() => onTabChange(id)}
+              style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:'14px', textAlign:'left', fontSize:13, fontWeight:500, color:c.s700, background:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+      </Card>
+    </div>
+  )
+}
+
 /* ── SeccionInicio ──────────────────────────────────────── */
-function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDetalle, onAbrirDolor, historialDolor }) {
+function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDetalle, onAbrirDolor, historialDolor, onTabChange }) {
   const hoy = new Date(); hoy.setHours(0,0,0,0)
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   const proximoTurno = turnos
@@ -285,104 +340,127 @@ function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDeta
   const dolorHoy = historialDolor[0]
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+    <div className="pp-main-grid" style={{ display:'block' }}>
+      {/* Columna izquierda */}
+      <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
 
-      {/* Turno principal */}
-      <Card style={{ padding:20, background:c.blue50, borderColor:c.blue100 }}>
-        <p style={{ fontSize:14, color:c.blue, fontWeight:500 }}>Próximo turno</p>
-        {proximoTurno ? (() => {
-          const d = new Date(proximoTurno.fecha+'T12:00')
-          return (
+        {/* Próximo turno */}
+        <Card style={{
+          overflow:'hidden',
+          borderColor: c.blue100,
+          background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
+          padding: 20,
+        }}>
+          <p style={{ fontSize:14, fontWeight:500, color:c.blue }}>Próximo turno</p>
+          {proximoTurno ? (() => {
+            const d = new Date(proximoTurno.fecha+'T12:00')
+            return (
+              <>
+                <h2 style={{ fontSize:30, fontWeight:700, color:c.s900, marginTop:8, letterSpacing:'-0.025em', lineHeight:1.1 }}>
+                  {d.getDate()} {meses[d.getMonth()]} · {proximoTurno.hora?.slice(0,5)} hs
+                </h2>
+                <p style={{ fontSize:14, color:c.s500, marginTop:8 }}>
+                  {proximoTurno.motivo || 'Sesión de kinesiología'}
+                </p>
+              </>
+            )
+          })() : (
             <>
-              <p style={{ fontSize:30, fontWeight:700, color:c.s900, marginTop:8 }}>
-                {d.getDate()} {meses[d.getMonth()]} · {proximoTurno.hora?.slice(0,5)} hs
-              </p>
-              <p style={{ fontSize:14, color:c.s600, marginTop:8 }}>
-                {proximoTurno.motivo || 'Sesión de kinesiología'}
-              </p>
+              <h2 style={{ fontSize:28, fontWeight:700, color:c.s900, marginTop:8, letterSpacing:'-0.025em' }}>Sin turnos próximos</h2>
+              <p style={{ fontSize:14, color:c.s500, marginTop:8 }}>Cuando reserves una nueva sesión, la vas a ver acá.</p>
             </>
-          )
-        })() : (
-          <p style={{ fontSize:18, fontWeight:600, color:c.s700, marginTop:8 }}>Sin turnos próximos</p>
-        )}
-        <div style={{ display:'flex', gap:12, marginTop:16 }}>
-          <button style={{ flex:1, background:c.blue, color:'#fff', padding:'12px 0', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer' }}>
-            Confirmar
-          </button>
-          <button style={{ flex:1, background:c.white, color:c.s700, padding:'12px 0', borderRadius:16, fontWeight:600, fontSize:14, border:`1px solid ${c.s200}`, cursor:'pointer' }}>
-            Cambiar
-          </button>
+          )}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:20 }}>
+            <button onClick={() => onTabChange('turnos')}
+              style={{ background:c.blue, color:'#fff', padding:'12px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer', boxShadow:'0 1px 3px rgba(37,99,235,0.25)' }}>
+              {proximoTurno ? 'Confirmar' : 'Reservar turno'}
+            </button>
+            <button onClick={() => onTabChange('turnos')}
+              style={{ background:c.white, color:c.s700, padding:'12px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:`1px solid ${c.s200}`, cursor:'pointer' }}>
+              {proximoTurno ? 'Cambiar' : 'Ver agenda'}
+            </button>
+          </div>
+        </Card>
+
+        {/* Stats */}
+        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
+          <Card style={{ padding:16 }} onClick={onAbrirDolor}>
+            <StatLabel>Dolor</StatLabel>
+            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>{dolorHoy ? `${dolorHoy.manana}/10` : '—'}</p>
+            {dolorHoy && dolorHoy.manana <= 3
+              ? <p style={{ fontSize:12, color:c.emerald, marginTop:4 }}>Mejorando</p>
+              : <p style={{ fontSize:12, color:c.s400, marginTop:4, cursor:'pointer' }}>Registrar →</p>
+            }
+          </Card>
+          <Card style={{ padding:16 }}>
+            <StatLabel>Sesión</StatLabel>
+            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>—</p>
+            <p style={{ fontSize:12, color:c.s500, marginTop:4 }}>Plan actual</p>
+          </Card>
+          <Card style={{ padding:16 }}>
+            <StatLabel>Progreso</StatLabel>
+            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>+20%</p>
+            <p style={{ fontSize:12, color:c.s500, marginTop:4 }}>Movilidad</p>
+          </Card>
         </div>
-      </Card>
 
-      {/* Stats */}
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
-        <Card style={{ padding:16, textAlign:'center', cursor:'pointer' }} onClick={onAbrirDolor}>
-          <p style={{ fontSize:12, color:c.s500 }}>Dolor</p>
-          <p style={{ fontSize:20, fontWeight:700, color:c.s900, marginTop:4 }}>{dolorHoy ? `${dolorHoy.manana}/10` : '—'}</p>
-          {dolorHoy && dolorHoy.manana <= 3 && <p style={{ fontSize:12, color:c.emerald, marginTop:2 }}>Mejorando</p>}
-          {(!dolorHoy || dolorHoy.manana > 3) && <p style={{ fontSize:11, color:c.s400, marginTop:2 }}>Registrar →</p>}
-        </Card>
-        <Card style={{ padding:16, textAlign:'center' }}>
-          <p style={{ fontSize:12, color:c.s500 }}>Sesión</p>
-          <p style={{ fontSize:20, fontWeight:700, color:c.s900, marginTop:4 }}>—</p>
-        </Card>
-        <Card style={{ padding:16, textAlign:'center' }}>
-          <p style={{ fontSize:12, color:c.s500 }}>Progreso</p>
-          <p style={{ fontSize:20, fontWeight:700, color:c.s900, marginTop:4 }}>{ejercicios.length > 0 ? '+20%' : '—'}</p>
-        </Card>
-      </div>
-
-      {/* Ejercicios */}
-      {ejercicios.length > 0 && (
+        {/* Tu evolución */}
         <Card style={{ padding:20 }}>
-          <SectionTitle title="Ejercicios"
-            action={<button onClick={() => onVerDetalle(ejercicios[0].id)} style={{ fontSize:13, fontWeight:600, color:c.blue, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Ver todos</button>}
+          <SectionTitle title="Tu evolución" subtitle="Resumen simple de cómo venís avanzando" />
+          <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
+            {[['Dolor','-35%'],['Movilidad','75%'],['Adherencia','82%']].map(([label, val]) => (
+              <div key={label} style={{ background:c.s50, borderRadius:16, padding:16, textAlign:'center' }}>
+                <StatLabel>{label}</StatLabel>
+                <p style={{ fontSize:20, fontWeight:700, color:c.s900, marginTop:8 }}>{val}</p>
+              </div>
+            ))}
+          </div>
+        </Card>
+
+        {/* Ejercicios indicados */}
+        <Card style={{ padding:20 }}>
+          <SectionTitle
+            title="Ejercicios indicados"
+            subtitle="Tu rutina actual para continuar en casa"
+            action={ejercicios.length > 0
+              ? <button onClick={() => onTabChange('rutinas')} style={{ fontSize:13, fontWeight:600, color:c.blue, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Ver todos</button>
+              : null
+            }
           />
-          <div style={{ display:'flex', flexDirection:'column', gap:10, marginTop:16 }}>
-            {ejercicios.slice(0,3).map(ej => {
+          <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
+            {ejercicios.length === 0 ? (
+              <p style={{ fontSize:13, color:c.s400, textAlign:'center', padding:'1rem' }}>Tu kinesiólogo aún no asignó ejercicios</p>
+            ) : ejercicios.slice(0,3).map((ej, i) => {
               const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-              const detalle = [ej.repeticiones && `${ej.repeticiones} reps`, ej.segundos && `${ej.segundos} seg`, ej.series && `${ej.series} series`].filter(Boolean).join(' · ')
+              const detalle = [ej.series && `${ej.series} series`, ej.repeticiones && `${ej.repeticiones} repeticiones`, ej.segundos && `${ej.segundos} segundos`].filter(Boolean).join(' · ')
               return (
                 <div key={ej.id} onClick={() => onVerDetalle(ej.id)}
-                  style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:12, background:c.s50, borderRadius:14, cursor:'pointer' }}>
-                  <div>
-                    <p style={{ fontWeight:500, color:c.s900, fontSize:14 }}>{nombre}</p>
-                    {detalle && <p style={{ fontSize:12, color:c.s500, marginTop:2 }}>{detalle}</p>}
+                  style={{ borderRadius:16, border:`1px solid ${c.s200}`, padding:16, cursor:'pointer' }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                    <div style={{ minWidth:0 }}>
+                      <p style={{ fontWeight:600, color:c.s900, fontSize:14, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{nombre}</p>
+                      {detalle && <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>{detalle}</p>}
+                    </div>
+                    <Badge tone={i === ejercicios.length - 1 && ejercicios.length > 1 ? 'info' : 'success'}>
+                      {i === ejercicios.length - 1 && ejercicios.length > 1 ? 'Nuevo' : 'Activo'}
+                    </Badge>
                   </div>
-                  <Badge tone="success">OK</Badge>
                 </div>
               )
             })}
           </div>
         </Card>
-      )}
 
-      {/* Evolución */}
-      <Card style={{ padding:20 }}>
-        <SectionTitle title="Tu evolución" />
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12, marginTop:16, textAlign:'center' }}>
-          <div>
-            <p style={{ fontSize:12, color:c.s500 }}>Dolor</p>
-            <p style={{ fontSize:16, fontWeight:700, color:c.s900, marginTop:4 }}>-35%</p>
+        {saldo > 0 && (
+          <div style={{ background:c.redBg, border:`1px solid ${c.redBorder}`, borderRadius:16, padding:'14px' }}>
+            <p style={{ fontSize:13, fontWeight:600, color:c.red }}>💳 Saldo pendiente: ${saldo}</p>
+            <p style={{ fontSize:12, color:c.redText, marginTop:4 }}>Transferí al alias <strong>{ALIAS}</strong></p>
           </div>
-          <div>
-            <p style={{ fontSize:12, color:c.s500 }}>Movilidad</p>
-            <p style={{ fontSize:16, fontWeight:700, color:c.s900, marginTop:4 }}>75%</p>
-          </div>
-          <div>
-            <p style={{ fontSize:12, color:c.s500 }}>Adherencia</p>
-            <p style={{ fontSize:16, fontWeight:700, color:c.s900, marginTop:4 }}>82%</p>
-          </div>
-        </div>
-      </Card>
+        )}
+      </div>
 
-      {saldo > 0 && (
-        <div style={{ background:c.redBg, border:`1px solid ${c.redBorder}`, borderRadius:16, padding:'14px' }}>
-          <p style={{ fontSize:13, fontWeight:600, color:c.red }}>💳 Saldo pendiente: ${saldo}</p>
-          <p style={{ fontSize:12, color:c.redText, marginTop:4 }}>Transferí al alias <strong>{ALIAS}</strong></p>
-        </div>
-      )}
+      {/* Columna derecha — solo desktop */}
+      <RightColumn motivos={motivos} onTabChange={onTabChange} />
     </div>
   )
 }
@@ -412,7 +490,7 @@ function SeccionTurnos({ turnos, paciente }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900 }}>Turnos</h1>
+      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Turnos</h1>
       {proximos.map(t => {
         const d = new Date(t.fecha+'T12:00')
         return (
@@ -422,8 +500,8 @@ function SeccionTurnos({ turnos, paciente }) {
               <div style={{ fontSize:9, fontWeight:600 }}>{meses[d.getMonth()].toUpperCase()}</div>
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:c.s900 }}>{diasSemana[d.getDay()]} · {t.hora?.slice(0,5)}</div>
-              <div style={{ fontSize:12, color:c.s500, marginTop:2 }}>{t.motivo||'Sesión de kinesiología'}</div>
+              <div style={{ fontSize:14, fontWeight:700, color:c.s900 }}>{diasSemana[d.getDay()]} · {t.hora?.slice(0,5)}</div>
+              <div style={{ fontSize:13, color:c.s500, marginTop:2 }}>{t.motivo||'Sesión de kinesiología'}</div>
             </div>
             <Badge tone="success">Confirmado</Badge>
           </Card>
@@ -470,7 +548,7 @@ function SeccionRutinas({ ejercicios, onVerDetalle }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900 }}>Rutinas</h1>
+      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Rutinas</h1>
       {ejercicios.length === 0 ? (
         <Card style={{ padding:'2rem', textAlign:'center', color:c.s400, fontSize:14 }}>
           Tu kinesiólogo aún no asignó ejercicios
@@ -526,7 +604,7 @@ function SeccionRutinas({ ejercicios, onVerDetalle }) {
 function SeccionPerfil({ paciente, usuario, onLogout }) {
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900 }}>Perfil</h1>
+      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Perfil</h1>
       <Card style={{ padding:'1.5rem', textAlign:'center' }}>
         <div style={{ width:68, height:68, borderRadius:'50%', background:c.blue, color:'#fff', fontSize:22, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
           {paciente.nombre[0]}{paciente.apellido[0]}
@@ -536,13 +614,13 @@ function SeccionPerfil({ paciente, usuario, onLogout }) {
       </Card>
       {paciente.celular && (
         <Card style={{ padding:16 }}>
-          <div style={{ fontSize:11, color:c.s500, marginBottom:2 }}>Celular</div>
-          <div style={{ fontSize:15, color:c.s900 }}>{paciente.celular}</div>
+          <StatLabel>Celular</StatLabel>
+          <div style={{ fontSize:15, color:c.s900, marginTop:6 }}>{paciente.celular}</div>
         </Card>
       )}
       <Card style={{ padding:20 }}>
-        <h2 style={{ fontSize:14, fontWeight:600, color:c.s900, marginBottom:12 }}>Accesos rápidos</h2>
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+        <SectionTitle title="Accesos rápidos" />
+        <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
           {['Estudios','Recetas','Pagos','Ayuda'].map(item => (
             <button key={item} style={{ borderRadius:12, border:`1px solid ${c.s200}`, padding:'14px', textAlign:'left', fontSize:13, fontWeight:500, color:c.s700, background:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
               {item}
@@ -581,7 +659,7 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
   }, [paciente?.id])
 
   if (!paciente) return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:c.white, gap:12, padding:'2rem' }}>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:c.s50, gap:12, padding:'2rem' }}>
       <div style={{ fontSize:40 }}>🏥</div>
       <p style={{ color:c.s500, textAlign:'center' }}>Tu cuenta aún no está vinculada a un paciente.<br />Consultá con tu kinesiólogo.</p>
     </div>
@@ -594,10 +672,10 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
 
   const tieneDeuda = saldo > 0
   const navItems = [
-    { id:'inicio',  label:'Inicio'   },
-    { id:'turnos',  label:'Turnos'   },
-    { id:'rutinas', label:'Rutinas'  },
-    { id:'perfil',  label:'Perfil'   },
+    { id:'inicio',  label:'Inicio'  },
+    { id:'turnos',  label:'Turnos'  },
+    { id:'rutinas', label:'Rutinas' },
+    { id:'perfil',  label:'Perfil'  },
   ]
 
   return (
@@ -606,21 +684,28 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
       {tieneDeuda && !loading && <DeudaOverlay paciente={paciente} saldo={saldo} />}
       {modalDolor && <ModalDolor onClose={() => setModalDolor(false)} historia={historialDolor} onGuardar={r => setHistorialDolor(prev => [r,...prev])} />}
 
-      <div style={{ maxWidth: 480, margin:'0 auto', minHeight:'100vh' }}>
+      <div className="pp-content" style={{ padding:'16px 16px 0' }}>
 
         {/* Header */}
-        <div style={{ padding:'24px 16px 16px' }}>
-          <p style={{ fontSize:14, color:c.s500 }}>Portal del paciente</p>
-          <h1 style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:2 }}>Hola, {paciente.nombre} 👋</h1>
-        </div>
+        <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
+          <div>
+            <p style={{ fontSize:14, color:c.s500 }}>Portal del paciente</p>
+            <h1 style={{ fontSize:24, fontWeight:700, color:c.s900, letterSpacing:'-0.025em', marginTop:2 }}>
+              Hola, {paciente.nombre} 👋
+            </h1>
+          </div>
+          <div style={{ width:44, height:44, background:c.blue, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:15, color:'#fff', boxShadow:'0 1px 3px rgba(37,99,235,0.3)', flexShrink:0 }}>
+            R+
+          </div>
+        </header>
 
-        {/* Contenido */}
-        <div style={{ padding:'0 16px 140px' }}>
+        {/* Contenido con padding inferior para el nav */}
+        <div style={{ paddingBottom: 130 }}>
           {loading ? (
             <div style={{ textAlign:'center', color:c.s400, padding:'3rem' }}>Cargando...</div>
           ) : (
             <>
-              {tab==='inicio'  && <SeccionInicio paciente={paciente} ejercicios={ejercicios} turnos={turnos} saldo={saldo} motivos={motivos} onVerDetalle={setSeleccionado} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} />}
+              {tab==='inicio'  && <SeccionInicio paciente={paciente} ejercicios={ejercicios} turnos={turnos} saldo={saldo} motivos={motivos} onVerDetalle={setSeleccionado} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} onTabChange={setTab} />}
               {tab==='turnos'  && <SeccionTurnos  turnos={turnos} paciente={paciente} />}
               {tab==='rutinas' && <SeccionRutinas ejercicios={ejercicios} onVerDetalle={setSeleccionado} />}
               {tab==='perfil'  && <SeccionPerfil  paciente={paciente} usuario={usuario} onLogout={onLogout} />}
@@ -629,19 +714,28 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
         </div>
       </div>
 
-      {/* Botón fijo contactar */}
-      <div style={{ position:'fixed', bottom:64, left:16, right:16, maxWidth:448, margin:'0 auto' }}>
-        <button style={{ width:'100%', background:c.blue, color:'#fff', padding:'15px', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer', boxShadow:'0 4px 16px rgba(37,99,235,0.3)', fontFamily:"'DM Sans', sans-serif" }}>
-          Contactar kinesiólogo
-        </button>
-      </div>
-
-      {/* Navbar */}
-      <div style={{ position:'fixed', bottom:0, left:0, right:0, background:c.white, borderTop:`1px solid ${c.s200}`, padding:'8px 8px calc(env(safe-area-inset-bottom, 0px) + 8px)', zIndex:100 }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', maxWidth:480, margin:'0 auto' }}>
-          {navItems.map(({ id, label }) => (
-            <BottomTabBtn key={id} active={tab===id} label={label} onClick={() => setTab(id)} />
-          ))}
+      {/* Bottom bar — fixed mobile */}
+      <div className="pp-bottom-bar" style={{ position:'fixed', bottom:0, left:0, right:0, borderTop:`1px solid ${c.s200}`, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(8px)', padding:'12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px)', zIndex:100 }}>
+        <div style={{ maxWidth:448, margin:'0 auto' }}>
+          {/* Botón contactar */}
+          <button className="pp-contact-btn"
+            style={{ width:'100%', background:c.blue, color:'#fff', padding:'14px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer', marginBottom:10, boxShadow:'0 1px 3px rgba(37,99,235,0.25)', fontFamily:"'DM Sans', sans-serif" }}>
+            Contactar kinesiólogo
+          </button>
+          {/* Tabs */}
+          <div className="pp-bottom-nav-pill" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, background:c.s50, borderRadius:24, padding:8 }}>
+            {navItems.map(({ id, label }) => (
+              <button key={id} onClick={() => setTab(id)} style={{
+                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
+                padding:'7px 4px', borderRadius:16, border:'none', cursor:'pointer',
+                background:'none', color: tab===id ? c.blue : c.s500,
+                fontSize:11, fontWeight: tab===id ? 600 : 400, fontFamily:"'DM Sans', sans-serif",
+              }}>
+                <span style={{ width:24, height:24, borderRadius:'50%', background: tab===id ? c.blue100 : c.s100, display:'block' }} />
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
     </div>
