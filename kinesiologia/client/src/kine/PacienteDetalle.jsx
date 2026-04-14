@@ -165,13 +165,57 @@ const mc = {
   pillBlue: (active) => ({ display: 'inline-block', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: active ? '#dbeafe' : '#f1f5f9', color: active ? '#1e40af' : '#475569' }),
 }
 
-const EXERCISE_OPTIONS = [
-  'Movilidad articular', 'Estiramiento de gemelos', 'Estiramiento de isquiotibiales',
-  'Puente de glúteos', 'Sentadilla parcial', 'Equilibrio unipodal',
-  'Fortalecimiento de cuádriceps', 'Dorsiflexión de tobillo', 'Eversión con banda',
-  'Inversión con banda', 'Marcha controlada', 'Propiocepción',
-  'Bicicleta suave', 'Movilidad cervical', 'Fortalecimiento escapular',
+const EJERCICIOS_CATALOG = [
+  // 🦶 TOBILLO
+  { id: 'tobillo_dorsiflexion', nombre: 'Dorsiflexión de tobillo', zona: 'tobillo' },
+  { id: 'tobillo_eversion_banda', nombre: 'Eversión con banda', zona: 'tobillo' },
+  { id: 'tobillo_equilibrio', nombre: 'Equilibrio unipodal', zona: 'tobillo' },
+  // 🦵 RODILLA
+  { id: 'cuadriceps_isometrico', nombre: 'Cuádriceps isométrico', zona: 'rodilla' },
+  { id: 'sentadilla_parcial', nombre: 'Sentadilla parcial', zona: 'rodilla' },
+  { id: 'step_up', nombre: 'Step up', zona: 'rodilla' },
+  // 🍑 CADERA
+  { id: 'puente_gluteos', nombre: 'Puente de glúteos', zona: 'cadera' },
+  { id: 'clamshell', nombre: 'Clamshell', zona: 'cadera' },
+  { id: 'abduccion_cadera', nombre: 'Abducción de cadera', zona: 'cadera' },
+  // 🧠 LUMBAR
+  { id: 'gato_camello', nombre: 'Gato-camello', zona: 'lumbar' },
+  { id: 'dead_bug', nombre: 'Dead bug', zona: 'lumbar' },
+  { id: 'bird_dog', nombre: 'Bird dog', zona: 'lumbar' },
+  // 💪 HOMBRO
+  { id: 'pendulares_hombro', nombre: 'Ejercicios pendulares', zona: 'hombro' },
+  { id: 'elevacion_frontal', nombre: 'Elevación frontal', zona: 'hombro' },
+  { id: 'rotacion_externa_banda', nombre: 'Rotación externa con banda', zona: 'hombro' },
+  { id: 'retraccion_escapular', nombre: 'Retracción escapular', zona: 'hombro' },
+  // 💪 BRAZO
+  { id: 'flexion_codo', nombre: 'Flexión de codo', zona: 'brazo' },
+  { id: 'extension_codo', nombre: 'Extensión de codo', zona: 'brazo' },
+  { id: 'pronacion_supinacion', nombre: 'Pronación / Supinación', zona: 'brazo' },
+  // 🔹 CERVICAL
+  { id: 'flexion_cervical', nombre: 'Flexión cervical', zona: 'cervical' },
+  { id: 'inclinacion_cervical', nombre: 'Inclinación lateral cervical', zona: 'cervical' },
+  { id: 'rotacion_cervical', nombre: 'Rotación cervical', zona: 'cervical' },
+  // 🧱 ZONA MEDIA
+  { id: 'plancha_frontal', nombre: 'Plancha frontal', zona: 'zona_media' },
+  { id: 'plancha_lateral', nombre: 'Plancha lateral', zona: 'zona_media' },
+  { id: 'crunch_abdominal', nombre: 'Crunch abdominal', zona: 'zona_media' },
+  // 🦶 PLANTA DEL PIE
+  { id: 'rodar_pelota', nombre: 'Rodar pelota plantar', zona: 'planta_pie' },
+  { id: 'estiramiento_fascia', nombre: 'Estiramiento fascia plantar', zona: 'planta_pie' },
+  { id: 'toalla_dedos', nombre: 'Arrugar toalla con los dedos', zona: 'planta_pie' },
 ]
+
+const ZONAS_LABEL = {
+  tobillo: '🦶 Tobillo', rodilla: '🦵 Rodilla', cadera: '🍑 Cadera',
+  lumbar: '🧠 Lumbar', hombro: '💪 Hombro', brazo: '💪 Brazo',
+  cervical: '🔹 Cervical', zona_media: '🧱 Zona media', planta_pie: '🦶 Planta del pie',
+}
+
+const EJERCICIOS_POR_ZONA = EJERCICIOS_CATALOG.reduce((acc, ej) => {
+  acc[ej.zona] = acc[ej.zona] || []
+  acc[ej.zona].push(ej)
+  return acc
+}, {})
 
 function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
   const tecnicas = evol.tecnicas_sesion ? (() => { try { return JSON.parse(evol.tecnicas_sesion) } catch { return [] } })() : []
@@ -309,7 +353,7 @@ const rFld = { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', bac
 function RoutineModalForm({ onClose, onSave }) {
   const [nombre, setNombre] = useState('')
   const [estado, setEstado] = useState('Activa')
-  const [rows, setRows] = useState([{ id: 1, nombre: 'Movilidad articular', series: '', reps: '', tiempo: '' }])
+  const [rows, setRows] = useState([{ id: 1, nombre: EJERCICIOS_CATALOG[0].nombre, series: '', reps: '', tiempo: '' }])
   const [hielo, setHielo] = useState(false)
   const [hieloMin, setHieloMin] = useState('')
   const [calor, setCalor] = useState(false)
@@ -320,7 +364,7 @@ function RoutineModalForm({ onClose, onSave }) {
   const [notas, setNotas] = useState('')
 
   function addRow() {
-    setRows(prev => [...prev, { id: prev.length + 1, nombre: 'Movilidad articular', series: '', reps: '', tiempo: '' }])
+    setRows(prev => [...prev, { id: prev.length + 1, nombre: EJERCICIOS_CATALOG[0].nombre, series: '', reps: '', tiempo: '' }])
   }
   function updateRow(id, field, val) {
     setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r))
@@ -391,7 +435,11 @@ function RoutineModalForm({ onClose, onSave }) {
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.6fr 0.6fr 0.8fr', gap: 8 }}>
                     <select style={rFld} value={row.nombre} onChange={e => updateRow(row.id, 'nombre', e.target.value)}>
-                      {EXERCISE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                      {Object.entries(EJERCICIOS_POR_ZONA).map(([zona, ejs]) => (
+                        <optgroup key={zona} label={ZONAS_LABEL[zona]}>
+                          {ejs.map(ej => <option key={ej.id} value={ej.nombre}>{ej.nombre}</option>)}
+                        </optgroup>
+                      ))}
                     </select>
                     <input style={rFld} placeholder="Series" value={row.series} onChange={e => updateRow(row.id, 'series', e.target.value)} />
                     <input style={rFld} placeholder="Reps" value={row.reps} onChange={e => updateRow(row.id, 'reps', e.target.value)} />
