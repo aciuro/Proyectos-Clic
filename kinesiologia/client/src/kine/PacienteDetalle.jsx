@@ -152,8 +152,313 @@ function SaldoChip({ saldo }) {
   )
 }
 
+/* ── Estilos inline compartidos ─────────────────────────── */
+const mc = {
+  card: { background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 1px 4px rgba(0,0,0,0.06)', overflow: 'hidden' },
+  iconBtn: { background: 'none', border: 'none', cursor: 'pointer', borderRadius: 12, padding: '6px 8px', color: '#94a3b8', fontSize: 16, transition: 'background 0.15s', lineHeight: 1 },
+  sectionTitle: { fontWeight: 700, fontSize: 16, color: '#0f172a' },
+  sectionSub: { fontSize: 14, color: '#64748b', marginTop: 2 },
+  emptyBox: { borderRadius: 24, border: '2px dashed #cbd5e1', background: '#f8fafc', padding: '40px 24px', textAlign: 'center' },
+  btnEmerald: { padding: '10px 16px', borderRadius: 16, background: '#059669', color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', boxShadow: '0 1px 3px rgba(5,150,105,0.25)', fontFamily: 'inherit' },
+  btnBlue: { padding: '10px 16px', borderRadius: 16, background: '#2563eb', color: '#fff', border: 'none', fontWeight: 600, fontSize: 13, cursor: 'pointer', boxShadow: '0 1px 3px rgba(37,99,235,0.25)', fontFamily: 'inherit' },
+  pill: (active) => ({ display: 'inline-block', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: active ? '#dcfce7' : '#f1f5f9', color: active ? '#166534' : '#475569' }),
+  pillBlue: (active) => ({ display: 'inline-block', padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 600, background: active ? '#dbeafe' : '#f1f5f9', color: active ? '#1e40af' : '#475569' }),
+}
+
+const EXERCISE_OPTIONS = [
+  'Movilidad articular', 'Estiramiento de gemelos', 'Estiramiento de isquiotibiales',
+  'Puente de glúteos', 'Sentadilla parcial', 'Equilibrio unipodal',
+  'Fortalecimiento de cuádriceps', 'Dorsiflexión de tobillo', 'Eversión con banda',
+  'Inversión con banda', 'Marcha controlada', 'Propiocepción',
+  'Bicicleta suave', 'Movilidad cervical', 'Fortalecimiento escapular',
+]
+
+function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
+  const tecnicas = evol.tecnicas_sesion ? (() => { try { return JSON.parse(evol.tecnicas_sesion) } catch { return [] } })() : []
+  const ejData = parseEjSesion(evol.ejercicios_sesion)
+  const ejerciciosNombres = ejData.map(ejd => {
+    const ej = ejerciciosList.find(e => e.id === ejd.id)
+    if (!ej) return null
+    const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
+    const params = [ejd.series && `${ejd.series}s`, ejd.repeticiones && `${ejd.repeticiones}r`, ejd.segundos && `${ejd.segundos}"`].filter(Boolean).join(' ')
+    return params ? `${nombre} (${params})` : nombre
+  }).filter(Boolean)
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>Sesión {numero}</h2>
+            <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>
+              {new Date(evol.fecha + 'T12:00').toLocaleDateString('es-AR', { weekday: 'long', day: 'numeric', month: 'long' })}
+            </p>
+          </div>
+          <button onClick={onClose} style={mc.iconBtn}>✕</button>
+        </div>
+
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div style={{ borderRadius: 16, background: '#f8fafc', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>Dolor registrado</p>
+              <p style={{ marginTop: 8, fontWeight: 700, fontSize: 18, color: '#0f172a' }}>{evol.dolor != null && evol.dolor !== '' ? `${evol.dolor}/10` : '—'}</p>
+            </div>
+            <div style={{ borderRadius: 16, background: '#f8fafc', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>Cobro</p>
+              <p style={{ marginTop: 8, fontWeight: 700, fontSize: 18, color: '#0f172a' }}>
+                {evol.monto_cobrado > 0 ? `$${Number(evol.monto_cobrado).toLocaleString('es-AR')} ${evol.pagado ? '✓' : '⏳'}` : '—'}
+              </p>
+            </div>
+          </div>
+
+          {(tecnicas.length > 0 || ejerciciosNombres.length > 0) && (
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 12 }}>Qué se realizó</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {tecnicas.map(t => <li key={t} style={{ fontSize: 14, color: '#334155' }}>• {t}</li>)}
+                {ejerciciosNombres.map(e => <li key={e} style={{ fontSize: 14, color: '#334155' }}>• {e}</li>)}
+              </ul>
+            </div>
+          )}
+
+          {evol.notas && (
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 8 }}>Notas</p>
+              <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.6 }}>{evol.notas}</p>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 24px', borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: '11px 20px', borderRadius: 14, border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Cerrar
+          </button>
+          <button onClick={onEdit} style={{ ...mc.btnEmerald, padding: '11px 20px', fontSize: 14 }}>
+            Editar sesión
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RoutineViewModal({ routine, onClose, onEdit }) {
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 640, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <div>
+            <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a' }}>{routine.nombre}</h2>
+            <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>{routine.resumen || ''}</p>
+          </div>
+          <button onClick={onClose} style={mc.iconBtn}>✕</button>
+        </div>
+
+        <div style={{ padding: '24px', overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b' }}>Estado</p>
+            <p style={{ marginTop: 8, fontWeight: 700, color: '#0f172a' }}>{routine.estado}</p>
+          </div>
+
+          {routine.ejercicios && routine.ejercicios.length > 0 && (
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 12 }}>Ejercicios</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {routine.ejercicios.map((ej, i) => {
+                  const params = [ej.series && `${ej.series} series`, ej.reps && `${ej.reps} reps`, ej.tiempo && ej.tiempo].filter(Boolean).join(' · ')
+                  return <li key={i} style={{ fontSize: 14, color: '#334155' }}>• {ej.nombre}{params ? ` — ${params}` : ''}</li>
+                })}
+              </ul>
+            </div>
+          )}
+
+          {(routine.hielo || routine.calor || routine.contraste) && (
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 12 }}>Agentes físicos</p>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {routine.hielo && <li style={{ fontSize: 14, color: '#334155' }}>• Hielo — {routine.hielo} min</li>}
+                {routine.calor && <li style={{ fontSize: 14, color: '#334155' }}>• Calor — {routine.calor} min</li>}
+                {routine.contraste && <li style={{ fontSize: 14, color: '#334155' }}>• Baños de contraste — {routine.contraste}</li>}
+              </ul>
+            </div>
+          )}
+
+          {routine.notas && (
+            <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+              <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 8 }}>Notas</p>
+              <p style={{ fontSize: 14, color: '#334155', lineHeight: 1.6 }}>{routine.notas}</p>
+            </div>
+          )}
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 24px', borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <button onClick={onClose} style={{ padding: '11px 20px', borderRadius: 14, border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Cerrar
+          </button>
+          <button onClick={onEdit} style={{ ...mc.btnBlue, padding: '11px 20px', fontSize: 14 }}>
+            Editar rutina
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const rFld = { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: '10px 14px', color: '#0f172a', outline: 'none', fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }
+
+function RoutineModalForm({ onClose, onSave }) {
+  const [nombre, setNombre] = useState('')
+  const [estado, setEstado] = useState('Activa')
+  const [rows, setRows] = useState([{ id: 1, nombre: 'Movilidad articular', series: '', reps: '', tiempo: '' }])
+  const [hielo, setHielo] = useState(false)
+  const [hieloMin, setHieloMin] = useState('')
+  const [calor, setCalor] = useState(false)
+  const [calorMin, setCalorMin] = useState('')
+  const [contraste, setContraste] = useState(false)
+  const [contrasteMin, setContrasteMin] = useState('')
+  const [contrasteCiclos, setContrasteCiclos] = useState('')
+  const [notas, setNotas] = useState('')
+
+  function addRow() {
+    setRows(prev => [...prev, { id: prev.length + 1, nombre: 'Movilidad articular', series: '', reps: '', tiempo: '' }])
+  }
+  function updateRow(id, field, val) {
+    setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r))
+  }
+  function removeRow(id) {
+    setRows(prev => prev.filter(r => r.id !== id))
+  }
+
+  function handleSave(e) {
+    e.preventDefault()
+    const resumen = [
+      rows.length > 0 && `${rows.length} ejercicio${rows.length !== 1 ? 's' : ''}`,
+      hielo && `hielo ${hieloMin} min`,
+      calor && `calor ${calorMin} min`,
+    ].filter(Boolean).join(' + ')
+    onSave({
+      id: Date.now(),
+      nombre: nombre || 'Rutina sin nombre',
+      estado,
+      resumen,
+      ejercicios: rows,
+      hielo: hielo ? hieloMin : null,
+      calor: calor ? calorMin : null,
+      contraste: contraste ? `${contrasteMin} min · ${contrasteCiclos} ciclos` : null,
+      notas,
+    })
+  }
+
+  const secH = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', marginBottom: 12 }
+
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 760, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <div>
+            <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Nueva rutina</h2>
+            <p style={{ fontSize: 14, color: '#64748b', marginTop: 4 }}>Seleccioná ejercicios, agentes físicos e indicaciones domiciliarias</p>
+          </div>
+          <button onClick={onClose} style={mc.iconBtn}>✕</button>
+        </div>
+
+        <form id="form-rutina" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div>
+              <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Nombre de la rutina</label>
+              <input style={rFld} placeholder="Ej: Rutina tobillo fase 1" value={nombre} onChange={e => setNombre(e.target.value)} />
+            </div>
+            <div>
+              <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Estado</label>
+              <select style={rFld} value={estado} onChange={e => setEstado(e.target.value)}>
+                <option>Activa</option>
+                <option>Inactiva</option>
+              </select>
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <p style={secH}>Ejercicios</p>
+              <button type="button" onClick={addRow} style={mc.btnBlue}>+ Agregar ejercicio</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {rows.map((row, i) => (
+                <div key={row.id} style={{ borderRadius: 16, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Ejercicio {i + 1}</span>
+                    {rows.length > 1 && <button type="button" onClick={() => removeRow(row.id)} style={{ ...mc.iconBtn, fontSize: 13 }}>✕</button>}
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.6fr 0.6fr 0.8fr', gap: 8 }}>
+                    <select style={rFld} value={row.nombre} onChange={e => updateRow(row.id, 'nombre', e.target.value)}>
+                      {EXERCISE_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                    </select>
+                    <input style={rFld} placeholder="Series" value={row.series} onChange={e => updateRow(row.id, 'series', e.target.value)} />
+                    <input style={rFld} placeholder="Reps" value={row.reps} onChange={e => updateRow(row.id, 'reps', e.target.value)} />
+                    <input style={rFld} placeholder="Tiempo" value={row.tiempo} onChange={e => updateRow(row.id, 'tiempo', e.target.value)} />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p style={secH}>Agentes físicos</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+              {[
+                { label: 'Hielo', enabled: hielo, setEnabled: setHielo, val: hieloMin, setVal: setHieloMin, placeholder: 'Minutos' },
+                { label: 'Calor', enabled: calor, setEnabled: setCalor, val: calorMin, setVal: setCalorMin, placeholder: 'Minutos' },
+              ].map(({ label, enabled, setEnabled, val, setVal, placeholder }) => (
+                <div key={label} style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={enabled} onChange={() => setEnabled(v => !v)} style={{ width: 16, height: 16 }} />
+                    {label}
+                  </label>
+                  <input type="number" min="0" placeholder={placeholder} disabled={!enabled}
+                    style={{ ...rFld, marginTop: 10, background: enabled ? '#fff' : '#f8fafc', color: enabled ? '#0f172a' : '#94a3b8' }}
+                    value={val} onChange={e => setVal(e.target.value)} />
+                </div>
+              ))}
+              <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer' }}>
+                  <input type="checkbox" checked={contraste} onChange={() => setContraste(v => !v)} style={{ width: 16, height: 16 }} />
+                  Baños de contraste
+                </label>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginTop: 10 }}>
+                  <input type="number" min="0" placeholder="Min." disabled={!contraste}
+                    style={{ ...rFld, background: contraste ? '#fff' : '#f8fafc', color: contraste ? '#0f172a' : '#94a3b8' }}
+                    value={contrasteMin} onChange={e => setContrasteMin(e.target.value)} />
+                  <input type="number" min="0" placeholder="Ciclos" disabled={!contraste}
+                    style={{ ...rFld, background: contraste ? '#fff' : '#f8fafc', color: contraste ? '#0f172a' : '#94a3b8' }}
+                    value={contrasteCiclos} onChange={e => setContrasteCiclos(e.target.value)} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Notas</label>
+            <textarea rows={4} placeholder="Ej: realizar 4 veces por semana, no superar dolor 4/10..."
+              style={{ ...rFld, resize: 'none', lineHeight: 1.5 }}
+              value={notas} onChange={e => setNotas(e.target.value)} />
+          </div>
+        </form>
+
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 24px', borderTop: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <button type="button" onClick={onClose} style={{ padding: '11px 20px', borderRadius: 14, border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
+            Cancelar
+          </button>
+          <button type="submit" form="form-rutina" style={{ ...mc.btnEmerald, padding: '11px 22px', fontSize: 14 }}>
+            Guardar rutina
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function MotivoCard({ motivo, onUpdated }) {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(true)
   const [evoluciones, setEvoluciones] = useState([])
   const [estudios, setEstudios] = useState([])
   const [loadingEvol, setLoadingEvol] = useState(false)
@@ -166,21 +471,15 @@ function MotivoCard({ motivo, onUpdated }) {
   const [modalEditMotivo, setModalEditMotivo] = useState(false)
   const [formMotivo, setFormMotivo] = useState({ ...motivo, afloja_dia: !!motivo.afloja_dia })
   const [ejercicios, setEjercicios] = useState([])
+  const [selectedEvol, setSelectedEvol] = useState(null)
+  const [routines, setRoutines] = useState([])
+  const [selectedRoutine, setSelectedRoutine] = useState(null)
+  const [showRoutineModal, setShowRoutineModal] = useState(false)
 
   useEffect(() => {
-    if (open) {
-      cargarDetalle()
-      if (ejercicios.length === 0) {
-        api.getEjercicios().then(setEjercicios).catch(() => {})
-      }
-    }
-  }, [open])
-
-  useEffect(() => {
-    if (modalEvol && ejercicios.length === 0) {
-      api.getEjercicios().then(setEjercicios).catch(() => {})
-    }
-  }, [modalEvol])
+    cargarDetalle()
+    api.getEjercicios().then(setEjercicios).catch(() => {})
+  }, [])
 
   async function cargarDetalle() {
     setLoadingEvol(true)
@@ -274,73 +573,103 @@ function MotivoCard({ motivo, onUpdated }) {
 
   const chartData = [...evoluciones].reverse().filter(e => e.dolor != null).map(e => ({ fecha: e.fecha, dolor: e.dolor }))
 
+  function getSesionResumen(ev) {
+    const tecnicas = ev.tecnicas_sesion ? (() => { try { return JSON.parse(ev.tecnicas_sesion) } catch { return [] } })() : []
+    if (ev.notas) return ev.notas.length > 70 ? ev.notas.slice(0, 70) + '…' : ev.notas
+    if (tecnicas.length > 0) return tecnicas.slice(0, 3).join(' + ')
+    return 'Sin descripción'
+  }
+
   return (
-    <div className={`motivo-card ${open ? 'open' : ''}`}>
-      <div className="motivo-card-header" onClick={() => setOpen(o => !o)}>
-        <div className="motivo-card-left">
-          <span className={`motivo-estado-dot estado-${motivo.estado}`} />
-          <div>
-            <div className="motivo-sintoma">{motivo.sintoma}</div>
-            <div className="motivo-meta">
-              {motivo.total_evoluciones} sesión{motivo.total_evoluciones !== 1 ? 'es' : ''}
-              {motivo.monto_sesion > 0 && ` · $${motivo.monto_sesion.toLocaleString('es-AR')}/sesión`}
-              {motivo.saldo_pendiente > 0 && <span className="motivo-deuda"> · Debe ${motivo.saldo_pendiente.toLocaleString('es-AR')}</span>}
+    <div style={mc.card}>
+      {/* ── Header ─────────────────────────────────── */}
+      <div style={{ borderBottom: '1px solid #e2e8f0', padding: '24px' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16, flex: 1, minWidth: 0 }}>
+            <div style={{ marginTop: 10, width: 14, height: 14, borderRadius: '50%', background: motivo.estado === 'activo' ? '#10b981' : motivo.estado === 'resuelto' ? '#94a3b8' : '#f59e0b', flexShrink: 0 }} />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 12 }}>
+                <h2 style={{ fontSize: 22, fontWeight: 700, color: '#0f172a', margin: 0 }}>{motivo.sintoma}</h2>
+                <span style={mc.pill(motivo.estado === 'activo')}>
+                  {motivo.estado === 'activo' ? 'Activo' : motivo.estado === 'resuelto' ? 'Resuelto' : 'Derivado'}
+                </span>
+              </div>
+              <p style={{ marginTop: 8, fontSize: 15, color: '#64748b' }}>
+                {motivo.total_evoluciones} sesión{motivo.total_evoluciones !== 1 ? 'es' : ''} registradas
+                {motivo.saldo_pendiente > 0 && <span style={{ color: '#ef4444' }}> · Debe ${Number(motivo.saldo_pendiente).toLocaleString('es-AR')}</span>}
+              </p>
             </div>
           </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+            <button onClick={() => { setFormMotivo({ ...motivo, afloja_dia: !!motivo.afloja_dia }); setModalEditMotivo(true) }} style={mc.iconBtn} title="Editar">✎</button>
+            <button onClick={eliminarMotivo} style={mc.iconBtn} title="Eliminar">⌫</button>
+            <button onClick={() => setOpen(o => !o)} style={mc.iconBtn} title={open ? 'Colapsar' : 'Expandir'}>{open ? '▴' : '▾'}</button>
+          </div>
         </div>
-        <div className="motivo-card-acciones" onClick={e => e.stopPropagation()}>
-          <button className="kine-btn-icon-sm" onClick={() => { setFormMotivo({ ...motivo, afloja_dia: !!motivo.afloja_dia }); setModalEditMotivo(true) }}>✎</button>
-          <button className="kine-btn-icon-sm danger" onClick={eliminarMotivo}>✕</button>
-          <span className="motivo-chevron">{open ? '▲' : '▼'}</span>
+
+        {/* Stats pills */}
+        <div className="mc-stats-grid">
+          {[
+            ['Evolución', motivo.aparicion || '—'],
+            ['Momento del dolor', motivo.momento_dia || '—'],
+            ['Grado', motivo.grado || 'No aplica'],
+            ['Monto por sesión', motivo.monto_sesion ? `$${Number(motivo.monto_sesion).toLocaleString('es-AR')}` : '—'],
+            ['Estado', motivo.estado === 'activo' ? 'Activo' : motivo.estado === 'resuelto' ? 'Resuelto' : 'Derivado'],
+          ].map(([label, value]) => (
+            <div key={label} style={{ borderRadius: 16, background: '#f8fafc', padding: '14px 12px', textAlign: 'center' }}>
+              <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em', color: '#64748b', margin: 0 }}>{label}</p>
+              <p style={{ marginTop: 8, fontSize: 16, fontWeight: 700, color: '#0f172a', margin: '8px 0 0' }}>{value}</p>
+            </div>
+          ))}
         </div>
       </div>
 
       {open && (
-        <div className="motivo-body">
-          <div className="motivo-ficha">
-            {motivo.aparicion && <div className="motivo-ficha-item"><span>Aparición</span>{motivo.aparicion}</div>}
-            {motivo.momento_dia && <div className="motivo-ficha-item"><span>Momento del día</span>{motivo.momento_dia}</div>}
-            {motivo.movimientos && <div className="motivo-ficha-item"><span>Movimientos que duelen</span>{motivo.movimientos}</div>}
-            <div className="motivo-ficha-item"><span>Afloja con el día</span>{motivo.afloja_dia ? 'Sí' : 'No'}</div>
-          </div>
+        <div style={{ padding: '24px', display: 'flex', flexDirection: 'column', gap: 32 }}>
 
-          {/* Estudios */}
-          <div className="motivo-seccion">
-            <div className="motivo-seccion-header">
-              <span>Estudios</span>
-              <button className="kine-btn-sm" onClick={() => setModalEstudio(true)}>+ Subir</button>
+          {/* ── Estudios ─────────────────────────── */}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <p style={mc.sectionTitle}>Estudios</p>
+                <p style={mc.sectionSub}>Adjuntos y resultados del paciente</p>
+              </div>
+              <button onClick={() => setModalEstudio(true)} style={mc.btnEmerald}>+ Subir estudio</button>
             </div>
-            {loadingEvol
-              ? null
-              : estudios.length === 0
-                ? <div className="kine-empty-sm">Sin estudios cargados</div>
-                : (
-                  <div className="estudios-grid">
-                    {estudios.map(est => (
-                      <div key={est.id} className="estudio-item">
-                        {est.tipo === 'imagen'
-                          ? <img src={`/uploads/${est.archivo}`} alt={est.nombre} className="estudio-img" onClick={() => window.open(`/uploads/${est.archivo}`)} />
-                          : <a href={`/api/kine/estudios/${est.id}/descargar`} className="estudio-doc">📄 {est.nombre}</a>
-                        }
-                        <div className="estudio-nombre">{est.nombre}</div>
-                        <button className="kine-btn-icon-sm danger estudio-del" onClick={() => eliminarEstudio(est.id)}>✕</button>
-                      </div>
-                    ))}
+            {estudios.length === 0 ? (
+              <div style={mc.emptyBox}>
+                <p style={{ fontSize: 16, fontWeight: 500, color: '#64748b', margin: 0 }}>Sin estudios cargados</p>
+                <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>Podés subir imágenes, informes o archivos PDF.</p>
+              </div>
+            ) : (
+              <div className="estudios-grid">
+                {estudios.map(est => (
+                  <div key={est.id} className="estudio-item">
+                    {est.tipo === 'imagen'
+                      ? <img src={`/uploads/${est.archivo}`} alt={est.nombre} className="estudio-img" onClick={() => window.open(`/uploads/${est.archivo}`)} />
+                      : <a href={`/api/kine/estudios/${est.id}/descargar`} className="estudio-doc">📄 {est.nombre}</a>
+                    }
+                    <div className="estudio-nombre">{est.nombre}</div>
+                    <button className="kine-btn-icon-sm danger estudio-del" onClick={() => eliminarEstudio(est.id)}>✕</button>
                   </div>
-                )
-            }
-          </div>
+                ))}
+              </div>
+            )}
+          </section>
 
-          {/* Evolución */}
-          <div className="motivo-seccion">
-            <div className="motivo-seccion-header">
-              <span>Evolución ({motivo.total_evoluciones} sesiones)</span>
-              <button className="kine-btn-sm" onClick={abrirNuevaEvol}>+ Nueva sesión</button>
+          {/* ── Sesiones ─────────────────────────── */}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <p style={mc.sectionTitle}>Sesiones ({evoluciones.length})</p>
+                <p style={mc.sectionSub}>Historial de atención y seguimiento</p>
+              </div>
+              <button onClick={abrirNuevaEvol} style={mc.btnEmerald}>+ Nueva sesión</button>
             </div>
 
             {chartData.length > 1 && (
-              <div className="evol-chart">
-                <ResponsiveContainer width="100%" height={120}>
+              <div style={{ marginBottom: 16 }} className="evol-chart">
+                <ResponsiveContainer width="100%" height={100}>
                   <LineChart data={chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                     <XAxis dataKey="fecha" tick={{ fontSize: 10 }} />
@@ -352,66 +681,99 @@ function MotivoCard({ motivo, onUpdated }) {
               </div>
             )}
 
-            {loadingEvol
-              ? <div className="kine-loading">Cargando...</div>
-              : evoluciones.length === 0
-                ? <div className="kine-empty-sm">Sin sesiones registradas</div>
-                : (
-                  <div className="evol-lista">
-                    {evoluciones.map(ev => {
-                      const tecnicas = ev.tecnicas_sesion ? JSON.parse(ev.tecnicas_sesion) : []
-                      const ejData = parseEjSesion(ev.ejercicios_sesion)
-                      const ejerciciosNombres = ejData.map(ejd => {
-                        const ej = ejercicios.find(e => e.id === ejd.id)
-                        if (!ej) return null
-                        const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-                        const params = [ejd.series && `${ejd.series}s`, ejd.repeticiones && `${ejd.repeticiones}r`, ejd.segundos && `${ejd.segundos}"`].filter(Boolean).join(' ')
-                        return params ? `${nombre} (${params})` : nombre
-                      }).filter(Boolean)
-                      return (
-                        <div key={ev.id} className="evol-item">
-                          <div className="evol-fecha">{new Date(ev.fecha + 'T12:00').toLocaleDateString('es-AR', { weekday: 'short', day: 'numeric', month: 'short' })}</div>
-                          <div className="evol-contenido">
-                            {ev.dolor != null && ev.dolor !== '' && <span className="evol-dolor">Dolor: {ev.dolor}/10</span>}
-                            {tecnicas.length > 0 && (
-                              <div className="evol-tags">
-                                {tecnicas.map(t => <span key={t} className="evol-tag tecnica">{t}</span>)}
-                              </div>
-                            )}
-                            {ejerciciosNombres.length > 0 && (
-                              <div className="evol-tags">
-                                {ejerciciosNombres.map(e => <span key={e} className="evol-tag ejercicio">{e}</span>)}
-                              </div>
-                            )}
-                            {ev.notas && <div className="evol-notas">{ev.notas}</div>}
-                          </div>
-                          <div className="evol-pago">
-                            {ev.monto_cobrado > 0 && (
-                              <button
-                                className={`evol-pago-btn ${ev.pagado ? 'pagado' : 'pendiente'}`}
-                                onClick={async () => {
-                                  await api.togglePagado(ev.id)
-                                  setEvoluciones(await api.getEvoluciones(motivo.id))
-                                  onUpdated()
-                                }}
-                                title={ev.pagado ? 'Marcar como pendiente' : 'Marcar como pagado'}
-                              >
-                                ${Number(ev.monto_cobrado).toLocaleString('es-AR')} {ev.pagado ? '✓' : '⏳'}
-                              </button>
-                            )}
-                          </div>
-                          <div className="evol-btns">
-                            <button className="kine-btn-icon-sm" onClick={() => abrirEditarEvol(ev)}>✎</button>
-                            <button className="kine-btn-icon-sm danger" onClick={() => eliminarEvol(ev.id)}>✕</button>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-                )
-            }
-          </div>
+            {loadingEvol ? (
+              <div className="kine-loading">Cargando...</div>
+            ) : evoluciones.length === 0 ? (
+              <div style={mc.emptyBox}>
+                <p style={{ fontSize: 16, fontWeight: 500, color: '#64748b', margin: 0 }}>Sin sesiones registradas</p>
+                <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>Registrá la primera sesión con el botón de arriba.</p>
+              </div>
+            ) : (
+              <div className="mc-sessions-grid">
+                {evoluciones.map((ev, i) => (
+                  <button key={ev.id} onClick={() => setSelectedEvol(ev)} className="mc-session-card">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: 16, color: '#0f172a', margin: 0 }}>Sesión {evoluciones.length - i}</p>
+                        <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>
+                          {new Date(ev.fecha + 'T12:00').toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <span style={ev.monto_cobrado > 0 ? mc.pill(ev.pagado) : mc.pill(false)}>
+                        {ev.monto_cobrado > 0 ? (ev.pagado ? 'Pagado' : 'Pendiente') : 'Sin cobro'}
+                      </span>
+                    </div>
+                    <p style={{ marginTop: 14, fontSize: 13, color: '#334155', lineHeight: 1.5 }}>{getSesionResumen(ev)}</p>
+                    {ev.dolor != null && ev.dolor !== '' && (
+                      <p style={{ marginTop: 8, fontSize: 12, color: '#94a3b8' }}>Dolor: {ev.dolor}/10</p>
+                    )}
+                    <p style={{ marginTop: 12, fontSize: 13, fontWeight: 600, color: '#059669' }}>Ver detalle</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {/* ── Rutinas ──────────────────────────── */}
+          <section>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
+              <div>
+                <p style={mc.sectionTitle}>Rutinas ({routines.length})</p>
+                <p style={mc.sectionSub}>Indicaciones domiciliarias y seguimiento</p>
+              </div>
+              <button onClick={() => setShowRoutineModal(true)} style={mc.btnBlue}>+ Nueva rutina</button>
+            </div>
+            {routines.length === 0 ? (
+              <div style={mc.emptyBox}>
+                <p style={{ fontSize: 16, fontWeight: 500, color: '#64748b', margin: 0 }}>Sin rutinas creadas</p>
+                <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>Creá una rutina domiciliaria para el paciente.</p>
+              </div>
+            ) : (
+              <div className="mc-routines-grid">
+                {routines.map(r => (
+                  <button key={r.id} onClick={() => setSelectedRoutine(r)} className="mc-routine-card">
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                      <div>
+                        <p style={{ fontWeight: 700, fontSize: 16, color: '#0f172a', margin: 0 }}>{r.nombre}</p>
+                        <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>{r.resumen}</p>
+                      </div>
+                      <span style={mc.pillBlue(r.estado === 'Activa')}>{r.estado}</span>
+                    </div>
+                    <p style={{ marginTop: 14, fontSize: 13, fontWeight: 600, color: '#2563eb' }}>Abrir rutina</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </section>
         </div>
+      )}
+
+      {/* Session view modal */}
+      {selectedEvol && (
+        <SessionViewModal
+          evol={selectedEvol}
+          numero={evoluciones.length - evoluciones.indexOf(selectedEvol)}
+          ejerciciosList={ejercicios}
+          onClose={() => setSelectedEvol(null)}
+          onEdit={() => { setSelectedEvol(null); abrirEditarEvol(selectedEvol) }}
+        />
+      )}
+
+      {/* Routine view modal */}
+      {selectedRoutine && (
+        <RoutineViewModal
+          routine={selectedRoutine}
+          onClose={() => setSelectedRoutine(null)}
+          onEdit={() => { setSelectedRoutine(null); setShowRoutineModal(true) }}
+        />
+      )}
+
+      {/* Routine create modal */}
+      {showRoutineModal && (
+        <RoutineModalForm
+          onClose={() => setShowRoutineModal(false)}
+          onSave={(r) => { setRoutines(prev => [...prev, r]); setShowRoutineModal(false) }}
+        />
       )}
 
       {/* Modal editar motivo */}
@@ -449,7 +811,7 @@ function MotivoCard({ motivo, onUpdated }) {
             <label>Fecha *<input type="date" required value={formEvol.fecha} onChange={e => setFormEvol(f => ({ ...f, fecha: e.target.value }))} /></label>
             <label>Dolor (0-10)<input type="number" min="0" max="10" value={formEvol.dolor} onChange={e => setFormEvol(f => ({ ...f, dolor: e.target.value }))} placeholder="0-10" /></label>
           </div>
-          
+
           <label>Técnicas de la sesión
             <div className="kine-checkbox-group">
               {TECNICAS_OPCIONES.map(tec => (
@@ -562,6 +924,20 @@ export default function PacienteDetalle() {
 
   return (
     <div className="kine-page">
+      <style>{`
+        .mc-stats-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-top: 24px; }
+        .mc-sessions-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+        .mc-routines-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .mc-session-card { width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; font-family: inherit; }
+        .mc-session-card:hover { transform: translateY(-2px); border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .mc-routine-card { width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; font-family: inherit; }
+        .mc-routine-card:hover { transform: translateY(-2px); border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        @media (max-width: 768px) {
+          .mc-stats-grid { grid-template-columns: repeat(2, 1fr); }
+          .mc-sessions-grid { grid-template-columns: 1fr; }
+          .mc-routines-grid { grid-template-columns: 1fr; }
+        }
+      `}</style>
       <div className="kine-page-header">
         <div className="paciente-header-left">
           <button className="kine-btn-back" onClick={() => navigate('/kine/pacientes')}>← Volver</button>
