@@ -4,7 +4,21 @@ import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { api } from './api.js'
 import Modal from './Modal.jsx'
 
-const MOTIVO_EMPTY = { sintoma: '', aparicion: '', momento_dia: '', movimientos: '', afloja_dia: false, monto_sesion: '', estado: 'activo' }
+const MOTIVO_EMPTY = {
+  lesion: '', grado: 'No aplica', diagnostico: '',
+  tiempo_evolucion: '', unidad_tiempo: 'Semanas',
+  momento_dia: '', movimientos: '',
+  afloja_dia: false, monto_sesion: '', estado: 'activo',
+}
+
+/* ── Estilos para formulario de motivo ─────────────────── */
+const mFld = {
+  width: '100%', borderRadius: 14, border: '1px solid #e2e8f0',
+  background: '#fff', padding: '11px 16px', color: '#0f172a',
+  outline: 'none', fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box',
+}
+const mLbl = { display: 'block', fontSize: 14, fontWeight: 500, color: '#334155', marginBottom: 8 }
+const mSecH = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', marginBottom: 16 }
 const EVOL_EMPTY = { fecha: new Date().toISOString().slice(0, 10), notas: '', dolor: '', tecnicas: '', monto_cobrado: '', pagado: false, tecnicas_sesion: [], ejercicios_sesion: [] }
 
 // Normaliza el JSON de ejercicios_sesion al formato [{id, series, repeticiones, segundos}]
@@ -522,7 +536,23 @@ export default function PacienteDetalle() {
 
   async function crearMotivo(e) {
     e.preventDefault()
-    await api.createMotivo(id, { ...formMotivo, afloja_dia: formMotivo.afloja_dia ? 1 : 0 })
+    const partes = [
+      formMotivo.lesion,
+      formMotivo.grado !== 'No aplica' ? `Grado ${formMotivo.grado}` : '',
+    ].filter(Boolean).join(' ')
+    const sintoma = [partes, formMotivo.diagnostico].filter(Boolean).join(' — ') || formMotivo.diagnostico
+    const aparicion = formMotivo.tiempo_evolucion
+      ? `${formMotivo.tiempo_evolucion} ${formMotivo.unidad_tiempo}`
+      : ''
+    await api.createMotivo(id, {
+      sintoma,
+      aparicion,
+      momento_dia: formMotivo.momento_dia,
+      movimientos: formMotivo.movimientos,
+      afloja_dia: 0,
+      monto_sesion: formMotivo.monto_sesion,
+      estado: formMotivo.estado,
+    })
     setModalMotivo(false)
     cargar()
   }
@@ -590,23 +620,116 @@ export default function PacienteDetalle() {
         )
       }
 
-      <Modal open={modalMotivo} onClose={() => setModalMotivo(false)} titulo="Nuevo motivo de consulta">
-        <form className="kine-form" onSubmit={crearMotivo}>
-          <label>Síntoma *<input required value={formMotivo.sintoma} onChange={e => setFormMotivo(f => ({ ...f, sintoma: e.target.value }))} placeholder="Ej: Dolor lumbar, gonalgia, cervicalgia..." /></label>
-          <label>Aparición del síntoma<input value={formMotivo.aparicion} onChange={e => setFormMotivo(f => ({ ...f, aparicion: e.target.value }))} placeholder="¿Cuándo empezó?" /></label>
-          <label>Momento del día que duele<input value={formMotivo.momento_dia} onChange={e => setFormMotivo(f => ({ ...f, momento_dia: e.target.value }))} placeholder="Ej: Al levantarse, de noche..." /></label>
-          <label>Movimientos que duelen<textarea rows={2} value={formMotivo.movimientos} onChange={e => setFormMotivo(f => ({ ...f, movimientos: e.target.value }))} /></label>
-          <div className="kine-form-row">
-            <label className="kine-form-check">
-              <input type="checkbox" checked={formMotivo.afloja_dia} onChange={e => setFormMotivo(f => ({ ...f, afloja_dia: e.target.checked }))} />
-              Afloja con el paso del día
-            </label>
-            <label>Monto por sesión ($)<input type="number" min="0" step="100" value={formMotivo.monto_sesion} onChange={e => setFormMotivo(f => ({ ...f, monto_sesion: e.target.value }))} /></label>
+      <Modal
+        open={modalMotivo}
+        onClose={() => setModalMotivo(false)}
+        titulo="Nueva sesión"
+        subtitulo="Cargá la información clínica y administrativa"
+        maxWidth={720}
+        footer={
+          <>
+            <button type="button" onClick={() => setModalMotivo(false)}
+              style={{ padding: '11px 20px', borderRadius: 14, border: '1px solid #e2e8f0', color: '#334155', background: '#fff', cursor: 'pointer', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>
+              Cancelar
+            </button>
+            <button type="submit" form="form-motivo"
+              style={{ padding: '11px 22px', borderRadius: 14, background: '#059669', color: '#fff', border: 'none', fontWeight: 600, fontSize: 14, cursor: 'pointer', boxShadow: '0 1px 3px rgba(5,150,105,0.3)', fontFamily: 'inherit' }}>
+              Guardar sesión
+            </button>
+          </>
+        }
+      >
+        <form id="form-motivo" onSubmit={crearMotivo} style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+          {/* ── Información clínica ─────────────────────── */}
+          <div>
+            <p style={mSecH}>Información clínica</p>
+
+            {/* Lesión + Grado */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={mLbl}>Lesión</label>
+                <select style={mFld} value={formMotivo.lesion} onChange={e => setFormMotivo(f => ({ ...f, lesion: e.target.value }))}>
+                  <option value="">Seleccionar</option>
+                  {['Muscular','Tendinosa','Ligamentaria','Ósea','Articular','Neurológica','Postquirúrgica'].map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+              <div>
+                <label style={mLbl}>Grado</label>
+                <select style={mFld} value={formMotivo.grado} onChange={e => setFormMotivo(f => ({ ...f, grado: e.target.value }))}>
+                  {['No aplica','I','II','III'].map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Diagnóstico */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={mLbl}>Diagnóstico *</label>
+              <input required style={mFld} placeholder="Ej: Esguince lateral de tobillo derecho"
+                value={formMotivo.diagnostico} onChange={e => setFormMotivo(f => ({ ...f, diagnostico: e.target.value }))} />
+            </div>
+
+            {/* Tiempo de evolución + Unidad */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={mLbl}>Tiempo de evolución</label>
+                <input type="number" min="0" placeholder="Ej: 2" style={mFld}
+                  value={formMotivo.tiempo_evolucion} onChange={e => setFormMotivo(f => ({ ...f, tiempo_evolucion: e.target.value }))} />
+              </div>
+              <div>
+                <label style={mLbl}>Unidad</label>
+                <select style={mFld} value={formMotivo.unidad_tiempo} onChange={e => setFormMotivo(f => ({ ...f, unidad_tiempo: e.target.value }))}>
+                  {['Días','Semanas','Meses','Años'].map(o => <option key={o}>{o}</option>)}
+                </select>
+              </div>
+            </div>
+
+            {/* Momento del dolor */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={mLbl}>Momento del dolor</label>
+              <select style={mFld} value={formMotivo.momento_dia} onChange={e => setFormMotivo(f => ({ ...f, momento_dia: e.target.value }))}>
+                <option value="">Seleccionar</option>
+                {['Al despertar','Por la mañana','Por la tarde','Por la noche','Durante el esfuerzo','Después del esfuerzo','Al caminar','En reposo','Constante'].map(o => <option key={o}>{o}</option>)}
+              </select>
+            </div>
+
+            {/* Movimientos */}
+            <div>
+              <label style={mLbl}>Movimientos que duelen</label>
+              <textarea rows={4} placeholder="Ej: flexión plantar, inversión, marcha prolongada..."
+                style={{ ...mFld, resize: 'none', lineHeight: 1.5 }}
+                value={formMotivo.movimientos} onChange={e => setFormMotivo(f => ({ ...f, movimientos: e.target.value }))} />
+              <p style={{ fontSize: 12, color: '#94a3b8', marginTop: 6 }}>
+                Este campo puede completarse ahora o más adelante con información del paciente.
+              </p>
+            </div>
           </div>
-          <div className="kine-form-footer">
-            <button type="button" className="kine-btn-secondary" onClick={() => setModalMotivo(false)}>Cancelar</button>
-            <button type="submit" className="kine-btn-primary">Crear</button>
+
+          {/* ── Datos administrativos ───────────────────── */}
+          <div>
+            <p style={mSecH}>Datos administrativos</p>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div>
+                <label style={mLbl}>Monto de sesión</label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', pointerEvents: 'none' }}>$</span>
+                  <input type="number" min="0" step="100" placeholder="35000"
+                    style={{ ...mFld, paddingLeft: 28 }}
+                    value={formMotivo.monto_sesion} onChange={e => setFormMotivo(f => ({ ...f, monto_sesion: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label style={mLbl}>Estado</label>
+                <select style={mFld} value={formMotivo.estado} onChange={e => setFormMotivo(f => ({ ...f, estado: e.target.value }))}>
+                  <option value="activo">Activo</option>
+                  <option value="resuelto">Resuelto</option>
+                  <option value="derivado">Derivado</option>
+                </select>
+              </div>
+            </div>
           </div>
+
         </form>
       </Modal>
     </div>
