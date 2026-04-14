@@ -428,8 +428,12 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                 Ejercicios ({routine.ejercicios.length})
               </p>
               {routine.ejercicios.map((ej, i) => {
-                const catalog = getEjByNombre(ej.nombre)
-                const params = [ej.series && `${ej.series} series`, ej.reps && `${ej.reps} reps`, ej.tiempo && ej.tiempo].filter(Boolean).join(' · ')
+                const catalog = EJ_MAP[ej.exerciseId] || null
+                const params = [
+                  ej.series && ej.series !== 'No aplica' && `${ej.series} series`,
+                  ej.reps && ej.reps !== 'No aplica' && `${ej.reps} reps`,
+                  ej.seconds && ej.seconds !== 'No aplica' && `${ej.seconds} seg`,
+                ].filter(Boolean).join(' · ')
                 const isExpanded = expandedEj === i
                 return (
                   <div key={i} style={{ borderBottom: i < routine.ejercicios.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
@@ -440,13 +444,13 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                       {catalog?.imagen && (
                         <img
                           src={catalog.imagen}
-                          alt={ej.nombre}
+                          alt={catalog?.nombre}
                           style={{ width: 48, height: 48, borderRadius: 10, objectFit: 'cover', background: '#f1f5f9', flexShrink: 0 }}
                           onError={e => { e.target.style.display = 'none' }}
                         />
                       )}
                       <div style={{ flex: 1, minWidth: 0 }}>
-                        <p style={{ fontWeight: 600, fontSize: 14, color: '#0f172a', margin: 0 }}>{ej.nombre}</p>
+                        <p style={{ fontWeight: 600, fontSize: 14, color: '#0f172a', margin: 0 }}>{catalog?.nombre || ej.exerciseId}</p>
                         {params && <p style={{ fontSize: 13, color: '#64748b', margin: '3px 0 0' }}>{params}</p>}
                       </div>
                       <span style={{ fontSize: 12, color: '#94a3b8', flexShrink: 0 }}>{isExpanded ? '▴' : '▾'}</span>
@@ -456,7 +460,7 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                         {catalog.imagen && (
                           <img
                             src={catalog.imagen}
-                            alt={ej.nombre}
+                            alt={catalog.nombre}
                             style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 12, background: '#f1f5f9' }}
                             onError={e => { e.target.style.display = 'none' }}
                           />
@@ -511,11 +515,17 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
 }
 
 const rFld = { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: '10px 14px', color: '#0f172a', outline: 'none', fontSize: 14, fontFamily: 'inherit', boxSizing: 'border-box' }
+const REP_OPTIONS = ['No aplica', '5', '8', '10', '12', '15', '20']
+const SEC_OPTIONS = ['No aplica', '10', '15', '20', '30', '45', '60']
+const SERIES_OPTIONS = ['1', '2', '3', '4', '5']
+const EJ_MAP = Object.fromEntries(EJERCICIOS_CATALOG.map(e => [e.id, e]))
 
 function RoutineModalForm({ onClose, onSave }) {
   const [nombre, setNombre] = useState('')
   const [estado, setEstado] = useState('Activa')
-  const [rows, setRows] = useState([{ id: 1, nombre: EJERCICIOS_CATALOG[0].nombre, series: '', reps: '', tiempo: '' }])
+  const [ejercicios, setEjercicios] = useState([])   // [{key, exerciseId, reps, seconds, series}]
+  const [search, setSearch] = useState('')
+  const [zonaFilter, setZonaFilter] = useState('todas')
   const [hielo, setHielo] = useState(false)
   const [hieloMin, setHieloMin] = useState('')
   const [calor, setCalor] = useState(false)
@@ -525,20 +535,28 @@ function RoutineModalForm({ onClose, onSave }) {
   const [contrasteCiclos, setContrasteCiclos] = useState('')
   const [notas, setNotas] = useState('')
 
-  function addRow() {
-    setRows(prev => [...prev, { id: prev.length + 1, nombre: EJERCICIOS_CATALOG[0].nombre, series: '', reps: '', tiempo: '' }])
+  const filtrados = EJERCICIOS_CATALOG.filter(ej => {
+    const matchZona = zonaFilter === 'todas' || ej.zona === zonaFilter
+    const q = search.toLowerCase()
+    const matchSearch = !q || ej.nombre.toLowerCase().includes(q) || ej.descripcion.toLowerCase().includes(q)
+    return matchZona && matchSearch
+  })
+
+  function addEjercicio(exerciseId) {
+    if (ejercicios.find(e => e.exerciseId === exerciseId)) return
+    setEjercicios(prev => [...prev, { key: Date.now(), exerciseId, reps: '10', seconds: 'No aplica', series: '3' }])
   }
-  function updateRow(id, field, val) {
-    setRows(prev => prev.map(r => r.id === id ? { ...r, [field]: val } : r))
+  function updateEj(key, field, val) {
+    setEjercicios(prev => prev.map(e => e.key === key ? { ...e, [field]: val } : e))
   }
-  function removeRow(id) {
-    setRows(prev => prev.filter(r => r.id !== id))
+  function removeEj(key) {
+    setEjercicios(prev => prev.filter(e => e.key !== key))
   }
 
   function handleSave(e) {
     e.preventDefault()
     const resumen = [
-      rows.length > 0 && `${rows.length} ejercicio${rows.length !== 1 ? 's' : ''}`,
+      ejercicios.length > 0 && `${ejercicios.length} ejercicio${ejercicios.length !== 1 ? 's' : ''}`,
       hielo && `hielo ${hieloMin} min`,
       calor && `calor ${calorMin} min`,
     ].filter(Boolean).join(' + ')
@@ -547,7 +565,7 @@ function RoutineModalForm({ onClose, onSave }) {
       nombre: nombre || 'Rutina sin nombre',
       estado,
       resumen,
-      ejercicios: rows,
+      ejercicios,
       hielo: hielo ? hieloMin : null,
       calor: calor ? calorMin : null,
       contraste: contraste ? `${contrasteMin} min · ${contrasteCiclos} ciclos` : null,
@@ -555,11 +573,12 @@ function RoutineModalForm({ onClose, onSave }) {
     })
   }
 
-  const secH = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', marginBottom: 12 }
+  const secH = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', margin: 0 }
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 760, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 820, background: '#fff', borderRadius: 28, border: '1px solid #e2e8f0', boxShadow: '0 20px 60px rgba(0,0,0,0.15)', maxHeight: '92vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 24px', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
           <div>
             <h2 style={{ fontSize: 20, fontWeight: 700, color: '#0f172a' }}>Nueva rutina</h2>
@@ -569,13 +588,15 @@ function RoutineModalForm({ onClose, onSave }) {
         </div>
 
         <form id="form-rutina" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: '24px', display: 'flex', flexDirection: 'column', gap: 24 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+
+          {/* Nombre + Estado */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 16 }}>
             <div>
-              <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Nombre de la rutina</label>
+              <label style={{ ...secH, display: 'block', marginBottom: 8 }}>Nombre de la rutina</label>
               <input style={rFld} placeholder="Ej: Rutina tobillo fase 1" value={nombre} onChange={e => setNombre(e.target.value)} />
             </div>
             <div>
-              <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Estado</label>
+              <label style={{ ...secH, display: 'block', marginBottom: 8 }}>Estado</label>
               <select style={rFld} value={estado} onChange={e => setEstado(e.target.value)}>
                 <option>Activa</option>
                 <option>Inactiva</option>
@@ -583,51 +604,107 @@ function RoutineModalForm({ onClose, onSave }) {
             </div>
           </div>
 
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-              <p style={secH}>Ejercicios</p>
-              <button type="button" onClick={addRow} style={mc.btnBlue}>+ Agregar ejercicio</button>
+          {/* Biblioteca de ejercicios */}
+          <div style={{ borderRadius: 20, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+            <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
+              <p style={{ ...secH, marginBottom: 12 }}>Biblioteca de ejercicios</p>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 10 }}>
+                <input style={rFld} placeholder="Buscar ejercicio..." value={search} onChange={e => setSearch(e.target.value)} />
+                <select style={rFld} value={zonaFilter} onChange={e => setZonaFilter(e.target.value)}>
+                  <option value="todas">Todas las zonas</option>
+                  {Object.keys(EJERCICIOS_POR_ZONA).map(z => (
+                    <option key={z} value={z}>{ZONAS_LABEL[z]}</option>
+                  ))}
+                </select>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-              {rows.map((row, i) => (
-                <div key={row.id} style={{ borderRadius: 16, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: '#334155' }}>Ejercicio {i + 1}</span>
-                    {rows.length > 1 && <button type="button" onClick={() => removeRow(row.id)} style={{ ...mc.iconBtn, fontSize: 13 }}>✕</button>}
+            <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, maxHeight: 280, overflowY: 'auto' }}>
+              {filtrados.map(ej => {
+                const added = ejercicios.some(e => e.exerciseId === ej.id)
+                return (
+                  <div key={ej.id} style={{ borderRadius: 16, border: `1px solid ${added ? '#d1fae5' : '#e2e8f0'}`, background: added ? '#f0fdf4' : '#fff', padding: '12px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', margin: 0 }}>{ej.nombre}</p>
+                      <p style={{ fontSize: 12, color: '#64748b', marginTop: 3, lineHeight: 1.4 }}>{ej.descripcion}</p>
+                      <span style={{ display: 'inline-block', marginTop: 6, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: '#f1f5f9', color: '#475569' }}>{ZONAS_LABEL[ej.zona]}</span>
+                    </div>
+                    <button type="button" onClick={() => addEjercicio(ej.id)} disabled={added}
+                      style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 10, border: 'none', fontWeight: 600, fontSize: 12, cursor: added ? 'default' : 'pointer', fontFamily: 'inherit',
+                        background: added ? '#d1fae5' : '#059669', color: added ? '#059669' : '#fff' }}>
+                      {added ? '✓' : '+ Agregar'}
+                    </button>
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1.6fr 0.6fr 0.6fr 0.8fr', gap: 8 }}>
-                    <select style={rFld} value={row.nombre} onChange={e => updateRow(row.id, 'nombre', e.target.value)}>
-                      {Object.entries(EJERCICIOS_POR_ZONA).map(([zona, ejs]) => (
-                        <optgroup key={zona} label={ZONAS_LABEL[zona]}>
-                          {ejs.map(ej => <option key={ej.id} value={ej.nombre}>{ej.nombre}</option>)}
-                        </optgroup>
-                      ))}
-                    </select>
-                    <input style={rFld} placeholder="Series" value={row.series} onChange={e => updateRow(row.id, 'series', e.target.value)} />
-                    <input style={rFld} placeholder="Reps" value={row.reps} onChange={e => updateRow(row.id, 'reps', e.target.value)} />
-                    <input style={rFld} placeholder="Tiempo" value={row.tiempo} onChange={e => updateRow(row.id, 'tiempo', e.target.value)} />
-                  </div>
-                  {(() => { const c = getEjByNombre(row.nombre); return c?.descripcion ? (
-                    <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, lineHeight: 1.5 }}>{c.descripcion}</p>
-                  ) : null })()}
-                </div>
-              ))}
+                )
+              })}
+              {filtrados.length === 0 && (
+                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 14 }}>Sin resultados para "{search}"</div>
+              )}
             </div>
           </div>
 
+          {/* Ejercicios de la rutina */}
+          {ejercicios.length > 0 && (
+            <div>
+              <p style={{ ...secH, marginBottom: 14 }}>Ejercicios de la rutina ({ejercicios.length})</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {ejercicios.map((item, i) => {
+                  const ej = EJ_MAP[item.exerciseId]
+                  return (
+                    <div key={item.key} style={{ borderRadius: 16, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
+                        <div>
+                          <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>Ejercicio {i + 1}: {ej?.nombre}</p>
+                          {ej?.descripcion && <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>{ej.descripcion}</p>}
+                        </div>
+                        <button type="button" onClick={() => removeEj(item.key)}
+                          style={{ padding: '5px 12px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                          Quitar
+                        </button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.8fr 0.8fr 0.8fr', gap: 8 }}>
+                        <select style={rFld} value={item.exerciseId} onChange={e => updateEj(item.key, 'exerciseId', e.target.value)}>
+                          {Object.entries(EJERCICIOS_POR_ZONA).map(([zona, ejs]) => (
+                            <optgroup key={zona} label={ZONAS_LABEL[zona]}>
+                              {ejs.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                            </optgroup>
+                          ))}
+                        </select>
+                        <select style={rFld} value={item.reps} onChange={e => updateEj(item.key, 'reps', e.target.value)}>
+                          {REP_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                        </select>
+                        <select style={rFld} value={item.seconds} onChange={e => updateEj(item.key, 'seconds', e.target.value)}>
+                          {SEC_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                        </select>
+                        <select style={rFld} value={item.series} onChange={e => updateEj(item.key, 'series', e.target.value)}>
+                          {SERIES_OPTIONS.map(o => <option key={o}>{o}</option>)}
+                        </select>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.8fr 0.8fr 0.8fr', gap: 8, marginTop: 4 }}>
+                        {['Ejercicio', 'Repeticiones', 'Segundos', 'Series'].map(l => (
+                          <span key={l} style={{ fontSize: 11, color: '#94a3b8', fontWeight: 500 }}>{l}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Agentes físicos */}
           <div>
-            <p style={secH}>Agentes físicos</p>
+            <p style={{ ...secH, marginBottom: 14 }}>Agentes físicos</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
               {[
-                { label: 'Hielo', enabled: hielo, setEnabled: setHielo, val: hieloMin, setVal: setHieloMin, placeholder: 'Minutos' },
-                { label: 'Calor', enabled: calor, setEnabled: setCalor, val: calorMin, setVal: setCalorMin, placeholder: 'Minutos' },
-              ].map(({ label, enabled, setEnabled, val, setVal, placeholder }) => (
+                { label: 'Hielo', enabled: hielo, setEnabled: setHielo, val: hieloMin, setVal: setHieloMin },
+                { label: 'Calor', enabled: calor, setEnabled: setCalor, val: calorMin, setVal: setCalorMin },
+              ].map(({ label, enabled, setEnabled, val, setVal }) => (
                 <div key={label} style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, fontWeight: 500, color: '#334155', cursor: 'pointer' }}>
                     <input type="checkbox" checked={enabled} onChange={() => setEnabled(v => !v)} style={{ width: 16, height: 16 }} />
                     {label}
                   </label>
-                  <input type="number" min="0" placeholder={placeholder} disabled={!enabled}
+                  <input type="number" min="0" placeholder="Minutos" disabled={!enabled}
                     style={{ ...rFld, marginTop: 10, background: enabled ? '#fff' : '#f8fafc', color: enabled ? '#0f172a' : '#94a3b8' }}
                     value={val} onChange={e => setVal(e.target.value)} />
                 </div>
@@ -649,9 +726,10 @@ function RoutineModalForm({ onClose, onSave }) {
             </div>
           </div>
 
+          {/* Notas */}
           <div>
-            <label style={{ ...secH, display: 'block', marginBottom: 6 }}>Notas</label>
-            <textarea rows={4} placeholder="Ej: realizar 4 veces por semana, no superar dolor 4/10..."
+            <label style={{ ...secH, display: 'block', marginBottom: 8 }}>Notas</label>
+            <textarea rows={3} placeholder="Ej: realizar 4 veces por semana, no superar dolor 4/10..."
               style={{ ...rFld, resize: 'none', lineHeight: 1.5 }}
               value={notas} onChange={e => setNotas(e.target.value)} />
           </div>

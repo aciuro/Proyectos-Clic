@@ -540,60 +540,115 @@ function SeccionTurnos({ turnos, paciente }) {
 }
 
 /* ── SeccionRutinas ─────────────────────────────────────── */
-function SeccionRutinas({ ejercicios, onVerDetalle }) {
-  const [completados, setCompletados] = useState({})
-  const total  = ejercicios.length
-  const hechos = Object.values(completados).filter(Boolean).length
-  const pct    = total > 0 ? Math.round((hechos/total)*100) : 0
+function SeccionRutinas({ ejercicios }) {
+  const [done, setDone] = useState({})
+
+  const total     = ejercicios.length
+  const completados = Object.values(done).filter(Boolean).length
+  const pendientes  = total - completados
+  const todoHecho   = total > 0 && completados === total
+
+  function toggleDone(id) {
+    setDone(prev => ({ ...prev, [id]: !prev[id] }))
+  }
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
       <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Rutinas</h1>
+
       {ejercicios.length === 0 ? (
-        <Card style={{ padding:'2rem', textAlign:'center', color:c.s400, fontSize:14 }}>
+        <Card style={{ padding:'2.5rem', textAlign:'center', color:c.s400, fontSize:14 }}>
           Tu kinesiólogo aún no asignó ejercicios
         </Card>
       ) : (
-        <Card style={{ padding:20 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:10 }}>
-            <div>
-              <div style={{ fontSize:15, fontWeight:600, color:c.s900 }}>Rutina de hoy</div>
-              <div style={{ fontSize:12, color:c.s500, marginTop:2 }}>{hechos} de {total} ejercicios</div>
-            </div>
-            <div style={{ fontSize:26, fontWeight:800, color:c.blue }}>{pct}%</div>
-          </div>
-          <div style={{ height:6, background:c.s100, borderRadius:4, marginBottom:16, overflow:'hidden' }}>
-            <div style={{ width:`${pct}%`, height:'100%', background:c.blue, borderRadius:4, transition:'width 0.3s' }} />
-          </div>
-          {ejercicios.map((ej, i) => {
-            const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-            const hecho  = completados[ej.id]
-            return (
-              <div key={ej.id} onClick={() => onVerDetalle(ej.id)}
-                style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 0', borderBottom:`1px solid ${c.s100}`, cursor:'pointer', opacity:hecho?0.5:1 }}>
-                <button onClick={e => { e.stopPropagation(); setCompletados(p=>({...p,[ej.id]:!p[ej.id]})) }}
-                  style={{ width:26, height:26, borderRadius:8, border:`2px solid ${hecho?c.emerald:c.s200}`, background:hecho?c.emerald:'transparent', color:'#fff', fontSize:13, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  {hecho && '✓'}
-                </button>
-                <div style={{ width:22, height:22, borderRadius:7, background:c.blue50, display:'flex', alignItems:'center', justifyContent:'center', fontSize:11, fontWeight:700, color:c.blue, flexShrink:0 }}>{i+1}</div>
-                <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ fontSize:14, fontWeight:500, color:c.s900, textDecoration:hecho?'line-through':'none', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{nombre}</div>
-                  <div style={{ fontSize:11, color:c.s500 }}>{ej.categoria}</div>
-                </div>
-                <div style={{ fontSize:12, color:c.s400, display:'flex', gap:6, flexShrink:0 }}>
-                  {ej.series       && <span>{ej.series}<small style={{opacity:0.7}}>s</small></span>}
-                  {ej.repeticiones && <span>{ej.repeticiones}<small style={{opacity:0.7}}>r</small></span>}
-                  {ej.segundos     && <span>{ej.segundos}<small style={{opacity:0.7}}>"</small></span>}
-                </div>
-                <span style={{ color:c.s300, fontSize:18 }}>›</span>
+        <Card style={{ overflow:'hidden' }}>
+          {/* Header con gradiente */}
+          <div style={{ background:`linear-gradient(135deg, ${c.blue50} 0%, #fff 100%)`, padding:'20px 20px 16px', borderBottom:`1px solid ${c.s200}` }}>
+            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:16 }}>
+              <div>
+                <p style={{ fontSize:12, fontWeight:600, color:c.blue, textTransform:'uppercase', letterSpacing:'0.06em', margin:0 }}>Rutina del paciente</p>
+                <h2 style={{ fontSize:20, fontWeight:700, color:c.s900, margin:'4px 0 0' }}>Rutina de hoy</h2>
               </div>
-            )
-          })}
-          {pct === 100 && (
-            <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:12, padding:'0.75rem', textAlign:'center', fontWeight:700, marginTop:12 }}>
-              🎉 ¡Excelente! Completaste toda la rutina
+              <span style={{ padding:'4px 12px', borderRadius:100, fontSize:12, fontWeight:600,
+                background: todoHecho ? c.emeraldBg : c.blue50,
+                color: todoHecho ? c.emeraldText : c.blue }}>
+                {todoHecho ? 'Completada' : 'Activa'}
+              </span>
             </div>
-          )}
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
+              {[['Ejercicios', total], ['Completados', completados], ['Pendientes', pendientes]].map(([label, val]) => (
+                <div key={label} style={{ borderRadius:14, background:'#fff', padding:'12px', textAlign:'center',
+                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)' }}>
+                  <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
+                  <p style={{ fontSize:20, fontWeight:700, color:c.s900, margin:'6px 0 0' }}>{val}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Lista de ejercicios */}
+          <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
+            {ejercicios.map((ej, i) => {
+              const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
+              const hecho  = !!done[ej.id]
+              return (
+                <div key={ej.id} style={{
+                  borderRadius:20, border:`1px solid ${hecho ? '#d1fae5' : c.s200}`,
+                  background: hecho ? '#f0fdf4' : '#fff',
+                  padding:16, transition:'border-color 0.2s, background 0.2s',
+                }}>
+                  <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
+                    {/* Checkmark */}
+                    <button onClick={() => toggleDone(ej.id)} style={{
+                      marginTop:2, width:26, height:26, borderRadius:'50%', flexShrink:0,
+                      border:`2px solid ${hecho ? c.emerald : c.s300}`,
+                      background: hecho ? c.emerald : '#fff',
+                      color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                    }}>
+                      {hecho ? '✓' : ''}
+                    </button>
+
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10 }}>
+                        <div>
+                          <p style={{ fontWeight:700, fontSize:14, color:c.s900,
+                            textDecoration: hecho ? 'line-through' : 'none', margin:0 }}>{nombre}</p>
+                          {ej.descripcion && <p style={{ fontSize:12, color:c.s500, marginTop:3 }}>{ej.descripcion}</p>}
+                        </div>
+                        {ej.categoria && (
+                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:100,
+                            background:c.blue50, color:c.blue, flexShrink:0 }}>
+                            {ej.categoria.split(' · ')[1] || ej.categoria}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Pills reps/seg/series */}
+                      <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
+                        {[
+                          ej.repeticiones && ['Reps', ej.repeticiones],
+                          ej.segundos     && ['Seg.', ej.segundos],
+                          ej.series       && ['Series', ej.series],
+                        ].filter(Boolean).map(([label, val]) => (
+                          <div key={label} style={{ borderRadius:12, background:c.s100, padding:'8px 12px', textAlign:'center', minWidth:56 }}>
+                            <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
+                            <p style={{ fontSize:15, fontWeight:700, color:c.s900, margin:'3px 0 0' }}>{val}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+
+            {todoHecho && (
+              <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:16, padding:'14px', textAlign:'center', fontWeight:700, fontSize:15, marginTop:4 }}>
+                ¡Excelente! Completaste toda la rutina de hoy
+              </div>
+            )}
+          </div>
         </Card>
       )}
     </div>
