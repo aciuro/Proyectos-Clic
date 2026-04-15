@@ -497,22 +497,30 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                     </button>
                     {isExpanded && catalog && (
                       <div style={{ padding: '0 16px 16px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                        {catalog.imagen && (
-                          <img
-                            src={catalog.imagen}
-                            alt={catalog.nombre}
-                            style={{ width: '100%', maxHeight: 180, objectFit: 'cover', borderRadius: 12, background: '#f1f5f9' }}
-                            onError={e => { e.target.style.display = 'none' }}
-                          />
-                        )}
-                        {catalog.descripcion && (
-                          <p style={{ fontSize: 14, color: '#475569', lineHeight: 1.6, margin: 0 }}>{catalog.descripcion}</p>
-                        )}
-                        {catalog.video && (
-                          <a href={catalog.video} target="_blank" rel="noopener noreferrer"
-                            style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: '#2563eb', textDecoration: 'none' }}>
-                            ▶ Ver video
-                          </a>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                          {catalog.imagen && (
+                            <img
+                              src={catalog.imagen}
+                              alt={`${catalog.nombre} A`}
+                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6 }}
+                              onError={e => { e.target.style.display = 'none' }}
+                            />
+                          )}
+                          {catalog.imagenB && (
+                            <img
+                              src={catalog.imagenB}
+                              alt={`${catalog.nombre} B`}
+                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6 }}
+                              onError={e => { e.target.style.display = 'none' }}
+                            />
+                          )}
+                        </div>
+                        {params && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                            {ej.series && ej.series !== 'No aplica' && <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 }}>{ej.series} series</span>}
+                            {ej.reps && ej.reps !== 'No aplica' && <span style={{ background: '#eff6ff', color: '#1d4ed8', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 }}>{ej.reps} reps</span>}
+                            {ej.seconds && ej.seconds !== 'No aplica' && <span style={{ background: '#f0fdf4', color: '#15803d', borderRadius: 20, padding: '4px 12px', fontSize: 12, fontWeight: 600 }}>{ej.seconds} seg</span>}
+                          </div>
                         )}
                       </div>
                     )}
@@ -522,14 +530,26 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
             </div>
           )}
 
-          {(routine.hielo || routine.calor || routine.contraste) && (
+          {(routine.hielo?.min || routine.calor?.min || routine.contraste?.vecesAlDia) && (
             <div style={{ borderRadius: 16, border: '1px solid #e2e8f0', padding: 16 }}>
               <p style={{ fontSize: 13, fontWeight: 500, color: '#64748b', marginBottom: 12 }}>Agentes físicos</p>
-              <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {routine.hielo && <li style={{ fontSize: 14, color: '#334155' }}>• Hielo — {routine.hielo} min</li>}
-                {routine.calor && <li style={{ fontSize: 14, color: '#334155' }}>• Calor — {routine.calor} min</li>}
-                {routine.contraste && <li style={{ fontSize: 14, color: '#334155' }}>• Baños de contraste — {routine.contraste}</li>}
-              </ul>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {routine.hielo?.min && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#eff6ff', color: '#1d4ed8', borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600 }}>
+                    🧊 Hielo — {routine.hielo.min} min{routine.hielo.vecesAlDia ? ` · ${routine.hielo.vecesAlDia}x/día` : ''}
+                  </span>
+                )}
+                {routine.calor?.min && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#fff7ed', color: '#c2410c', borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600 }}>
+                    🔥 Calor — {routine.calor.min} min{routine.calor.vecesAlDia ? ` · ${routine.calor.vecesAlDia}x/día` : ''}
+                  </span>
+                )}
+                {routine.contraste?.vecesAlDia && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdf4', color: '#15803d', borderRadius: 20, padding: '6px 14px', fontSize: 13, fontWeight: 600 }}>
+                    🌊 Contraste — {routine.contraste.vecesAlDia}x/día
+                  </span>
+                )}
+              </div>
             </div>
           )}
 
