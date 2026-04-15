@@ -1130,32 +1130,87 @@ function MotivoCard({ motivo, onUpdated }) {
           <section>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, marginBottom: 16 }}>
               <div>
-                <p style={mc.sectionTitle}>Rutinas ({routines.length})</p>
+                <p style={mc.sectionTitle}>Rutinas</p>
                 <p style={mc.sectionSub}>Indicaciones domiciliarias y seguimiento</p>
               </div>
               <button onClick={() => setShowRoutineModal(true)} style={mc.btnBlue}>+ Nueva rutina</button>
             </div>
+
             {routines.length === 0 ? (
               <div style={mc.emptyBox}>
                 <p style={{ fontSize: 16, fontWeight: 500, color: '#64748b', margin: 0 }}>Sin rutinas creadas</p>
                 <p style={{ fontSize: 14, color: '#94a3b8', marginTop: 8, marginBottom: 0 }}>Creá una rutina domiciliaria para el paciente.</p>
               </div>
-            ) : (
-              <div className="mc-routines-grid">
-                {routines.map(r => (
-                  <button key={r.id} onClick={() => setSelectedRoutine(r)} className="mc-routine-card">
-                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                      <div>
-                        <p style={{ fontWeight: 700, fontSize: 16, color: '#0f172a', margin: 0 }}>{r.nombre}</p>
-                        <p style={{ fontSize: 13, color: '#64748b', marginTop: 4, marginBottom: 0 }}>{r.resumen}</p>
+            ) : (() => {
+              const activas   = routines.filter(r => r.estado === 'Activa')
+              const inactivas = routines.filter(r => r.estado !== 'Activa')
+              return (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+
+                  {/* Activas */}
+                  {activas.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#10b981', flexShrink: 0, display: 'inline-block' }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#059669' }}>
+                          Activas ({activas.length})
+                        </span>
                       </div>
-                      <span style={mc.pillBlue(r.estado === 'Activa')}>{r.estado}</span>
+                      <div className="mc-routines-grid">
+                        {activas.map(r => (
+                          <button key={r.id} onClick={() => setSelectedRoutine(r)} style={{
+                            width: '100%', textAlign: 'left', borderRadius: 24, border: '1px solid #a7f3d0',
+                            background: 'linear-gradient(135deg, #f0fdf4 0%, #fff 100%)',
+                            padding: 20, cursor: 'pointer', fontFamily: 'inherit',
+                            transition: 'transform 0.15s, box-shadow 0.15s',
+                            boxShadow: '0 1px 4px rgba(16,185,129,0.08)',
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                              <p style={{ fontWeight: 700, fontSize: 15, color: '#0f172a', margin: 0, lineHeight: 1.3 }}>{r.nombre}</p>
+                              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 100, background: '#d1fae5', color: '#059669' }}>Activa</span>
+                            </div>
+                            {r.resumen && <p style={{ fontSize: 13, color: '#475569', marginTop: 6, marginBottom: 0 }}>{r.resumen}</p>}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 14 }}>
+                              <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>Ver rutina →</span>
+                            </div>
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                    <p style={{ marginTop: 14, fontSize: 13, fontWeight: 600, color: '#2563eb' }}>Abrir rutina</p>
-                  </button>
-                ))}
-              </div>
-            )}
+                  )}
+
+                  {/* Inactivas */}
+                  {inactivas.length > 0 && (
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: '50%', background: '#94a3b8', flexShrink: 0, display: 'inline-block' }} />
+                        <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8' }}>
+                          Anteriores ({inactivas.length})
+                        </span>
+                      </div>
+                      <div className="mc-routines-grid">
+                        {inactivas.map(r => (
+                          <button key={r.id} onClick={() => setSelectedRoutine(r)} style={{
+                            width: '100%', textAlign: 'left', borderRadius: 24, border: '1px solid #e2e8f0',
+                            background: '#f8fafc', padding: 20, cursor: 'pointer', fontFamily: 'inherit',
+                            transition: 'transform 0.15s, box-shadow 0.15s',
+                            opacity: 0.85,
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                              <p style={{ fontWeight: 600, fontSize: 15, color: '#475569', margin: 0, lineHeight: 1.3 }}>{r.nombre}</p>
+                              <span style={{ flexShrink: 0, fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 100, background: '#f1f5f9', color: '#64748b' }}>Inactiva</span>
+                            </div>
+                            {r.resumen && <p style={{ fontSize: 13, color: '#94a3b8', marginTop: 6, marginBottom: 0 }}>{r.resumen}</p>}
+                            <p style={{ fontSize: 13, fontWeight: 500, color: '#94a3b8', marginTop: 14, marginBottom: 0 }}>Ver →</p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )
+            })()}
           </section>
         </div>
       )}
