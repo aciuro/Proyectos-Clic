@@ -41,6 +41,8 @@ const TECNICAS_OPCIONES = [
   'Masoterapia',
   'Movilidad',
   'Gun',
+  'Electro',
+  'Presoterapia',
 ]
 
 // Selector visual de ejercicios usando la biblioteca local con imágenes
@@ -1214,12 +1216,6 @@ function MotivoCard({ motivo, onUpdated }) {
               ))}
             </div>
           </label>
-
-          {/* Ejercicios de la sesión */}
-          <EjercicioSelectorVisual
-            seleccionados={formEvol.ejercicios_sesion || []}
-            onChange={lista => setFormEvol(f => ({ ...f, ejercicios_sesion: lista }))}
-          />
 
           <label>Notas de la sesión<textarea rows={3} value={formEvol.notas} onChange={e => setFormEvol(f => ({ ...f, notas: e.target.value }))} /></label>
           <div className="kine-form-row">
