@@ -112,6 +112,12 @@ export const api = {
     }).then(r => r.json())
   },
 
+  // Rutinas
+  getRutinas:    (motivoId) => req('GET', `/motivos/${motivoId}/rutinas`),
+  createRutina:  (motivoId, data) => req('POST', `/motivos/${motivoId}/rutinas`, data),
+  updateRutina:  (id, data) => req('PUT', `/rutinas/${id}`, data),
+  deleteRutina:  (id) => req('DELETE', `/rutinas/${id}`),
+
   // Dolor
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
 }

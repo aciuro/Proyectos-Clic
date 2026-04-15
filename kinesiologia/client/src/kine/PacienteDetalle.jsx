@@ -566,16 +566,26 @@ const EJ_MAP = Object.fromEntries(
   ]))
 )
 
-function RoutineModalForm({ onClose, onSave }) {
-  const [nombre, setNombre] = useState('')
-  const [estado, setEstado] = useState('Activa')
-  const [ejercicios, setEjercicios] = useState([])   // [{key, exerciseId, images, reps, seconds, series}]
+function RoutineModalForm({ onClose, onSave, initialData }) {
+  const init = initialData || {}
+  // Normalizar ejercicios guardados (pueden no tener images si vienen de la DB)
+  const initEjs = (init.ejercicios || []).map(e => ({
+    key: e.key || Date.now() + Math.random(),
+    exerciseId: e.exerciseId,
+    images: e.images || EJ_MAP[e.exerciseId]?.imagen ? [EJ_MAP[e.exerciseId]?.imagen, EJ_MAP[e.exerciseId]?.imagenB] : ['', ''],
+    reps: e.reps || '10',
+    seconds: e.seconds || 'No aplica',
+    series: e.series || '3',
+  }))
+  const [nombre, setNombre] = useState(init.nombre || '')
+  const [estado, setEstado] = useState(init.estado || 'Activa')
+  const [ejercicios, setEjercicios] = useState(initEjs)
   const [search, setSearch] = useState('')
   const [grupo, setGrupo] = useState('Todos')
-  const [ice, setIce] = useState({ enabled: false, minutes: '', timesPerDay: '' })
-  const [heat, setHeat] = useState({ enabled: false, minutes: '', timesPerDay: '' })
-  const [contrast, setContrast] = useState({ enabled: false, timesPerDay: '' })
-  const [notas, setNotas] = useState('')
+  const [ice, setIce] = useState(init.hielo ? { enabled: true, minutes: init.hielo.min || '', timesPerDay: init.hielo.vecesAlDia || '' } : { enabled: false, minutes: '', timesPerDay: '' })
+  const [heat, setHeat] = useState(init.calor ? { enabled: true, minutes: init.calor.min || '', timesPerDay: init.calor.vecesAlDia || '' } : { enabled: false, minutes: '', timesPerDay: '' })
+  const [contrast, setContrast] = useState(init.contraste ? { enabled: true, timesPerDay: init.contraste.vecesAlDia || '' } : { enabled: false, timesPerDay: '' })
+  const [notas, setNotas] = useState(init.notas || '')
 
   const allGroups = ['Todos', ...exerciseLibrary.map(g => g.title)]
 
@@ -636,7 +646,7 @@ function RoutineModalForm({ onClose, onSave }) {
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #e2e8f0', background: '#fff', borderRadius: '32px 32px 0 0', flexShrink: 0 }}>
           <div>
             <span style={{ display: 'inline-block', background: '#ecfdf5', color: '#059669', fontWeight: 600, fontSize: 12, padding: '4px 12px', borderRadius: 100 }}>Rutina domiciliaria</span>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', marginTop: 10, marginBottom: 4 }}>Nueva rutina</h2>
+            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', marginTop: 10, marginBottom: 4 }}>{initialData ? 'Editar rutina' : 'Nueva rutina'}</h2>
             <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Armá la rutina con ejercicios de tu biblioteca y agentes físicos claros para el paciente.</p>
           </div>
           <button onClick={onClose} style={{ ...mc.iconBtn, marginTop: 4 }}>✕</button>
@@ -859,6 +869,7 @@ function MotivoCard({ motivo, onUpdated }) {
   const [routines, setRoutines] = useState([])
   const [selectedRoutine, setSelectedRoutine] = useState(null)
   const [showRoutineModal, setShowRoutineModal] = useState(false)
+  const [editingRoutine, setEditingRoutine] = useState(null)  // rutina a editar
 
   useEffect(() => {
     cargarDetalle()
@@ -868,15 +879,32 @@ function MotivoCard({ motivo, onUpdated }) {
   async function cargarDetalle() {
     setLoadingEvol(true)
     try {
-      const [evols, ests, ejs] = await Promise.all([
+      const [evols, ests, ejs, ruts] = await Promise.all([
         api.getEvoluciones(motivo.id),
         api.getEstudios(motivo.id),
         api.getEjercicios(),
+        api.getRutinas(motivo.id),
       ])
       setEvoluciones(evols)
       setEstudios(ests)
       setEjercicios(ejs)
+      setRoutines(ruts)
     } finally { setLoadingEvol(false) }
+  }
+
+  async function guardarRutina(data) {
+    try {
+      if (editingRoutine) {
+        const updated = await api.updateRutina(editingRoutine.id, data)
+        setRoutines(prev => prev.map(r => r.id === updated.id ? updated : r))
+        if (selectedRoutine?.id === updated.id) setSelectedRoutine(updated)
+      } else {
+        const created = await api.createRutina(motivo.id, data)
+        setRoutines(prev => [created, ...prev])
+      }
+    } catch (e) { alert('Error al guardar rutina: ' + e.message) }
+    setShowRoutineModal(false)
+    setEditingRoutine(null)
   }
 
   async function guardarEvol(e) {
@@ -1148,15 +1176,16 @@ function MotivoCard({ motivo, onUpdated }) {
         <RoutineViewModal
           routine={selectedRoutine}
           onClose={() => setSelectedRoutine(null)}
-          onEdit={() => { setSelectedRoutine(null); setShowRoutineModal(true) }}
+          onEdit={() => { setEditingRoutine(selectedRoutine); setSelectedRoutine(null); setShowRoutineModal(true) }}
         />
       )}
 
-      {/* Routine create modal */}
+      {/* Routine create/edit modal */}
       {showRoutineModal && (
         <RoutineModalForm
-          onClose={() => setShowRoutineModal(false)}
-          onSave={(r) => { setRoutines(prev => [...prev, r]); setShowRoutineModal(false) }}
+          onClose={() => { setShowRoutineModal(false); setEditingRoutine(null) }}
+          onSave={guardarRutina}
+          initialData={editingRoutine}
         />
       )}
 

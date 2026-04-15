@@ -437,6 +437,55 @@ router.delete('/estudios/:id', auth, soloAdmin, (req, res) => {
   res.json({ ok: true });
 });
 
+// ── Rutinas ───────────────────────────────────────────────
+
+router.get('/motivos/:id/rutinas', auth, (req, res) => {
+  if (!puedeAccederMotivo(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
+  const rutinas = db.getRutinasByMotivo(req.params.id).map(r => ({
+    ...r,
+    ejercicios: r.ejercicios ? JSON.parse(r.ejercicios) : [],
+    hielo:      r.hielo ? JSON.parse(r.hielo) : null,
+    calor:      r.calor ? JSON.parse(r.calor) : null,
+    contraste:  r.contraste ? JSON.parse(r.contraste) : null,
+  }));
+  res.json(rutinas);
+});
+
+router.post('/motivos/:id/rutinas', auth, soloAdmin, (req, res) => {
+  try {
+    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas } = req.body;
+    const r = db.insertRutina({
+      motivo_id: req.params.id, nombre, estado, resumen,
+      ejercicios: JSON.stringify(ejercicios || []),
+      hielo:      hielo ? JSON.stringify(hielo) : null,
+      calor:      calor ? JSON.stringify(calor) : null,
+      contraste:  contraste ? JSON.stringify(contraste) : null,
+      notas,
+    });
+    res.status(201).json({ ...r, ejercicios: ejercicios || [], hielo, calor, contraste });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+router.put('/rutinas/:id', auth, soloAdmin, (req, res) => {
+  try {
+    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas } = req.body;
+    const r = db.updateRutina({
+      id: req.params.id, nombre, estado, resumen,
+      ejercicios: JSON.stringify(ejercicios || []),
+      hielo:      hielo ? JSON.stringify(hielo) : null,
+      calor:      calor ? JSON.stringify(calor) : null,
+      contraste:  contraste ? JSON.stringify(contraste) : null,
+      notas,
+    });
+    res.json({ ...r, ejercicios: ejercicios || [], hielo, calor, contraste });
+  } catch (e) { res.status(400).json({ error: e.message }); }
+});
+
+router.delete('/rutinas/:id', auth, soloAdmin, (req, res) => {
+  db.deleteRutina(req.params.id);
+  res.json({ ok: true });
+});
+
 // ── Ejercicios por paciente ───────────────────────────────
 
 router.get('/pacientes/:id/ejercicios', auth, (req, res) => {

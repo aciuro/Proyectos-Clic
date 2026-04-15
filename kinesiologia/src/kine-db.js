@@ -173,6 +173,22 @@ if (!colsEvol.includes('ejercicios_sesion')) db.exec(`ALTER TABLE evoluciones AD
 const colsEj = db.prepare("PRAGMA table_info(ejercicios)").all().map(c => c.name);
 if (!colsEj.includes('imagen_url')) db.exec(`ALTER TABLE ejercicios ADD COLUMN imagen_url TEXT`);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS rutinas (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    motivo_id  INTEGER NOT NULL REFERENCES motivos(id) ON DELETE CASCADE,
+    nombre     TEXT NOT NULL,
+    estado     TEXT DEFAULT 'Activa',
+    resumen    TEXT,
+    ejercicios TEXT,
+    hielo      TEXT,
+    calor      TEXT,
+    contraste  TEXT,
+    notas      TEXT,
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
+
 // ── Crear admin por defecto si no existe ──────────────────
 
 const adminEmail = process.env.ADMIN_EMAIL || 'augustociuro@gmail.com';
@@ -648,6 +664,13 @@ module.exports = {
   insertEstudio:       (data) => insertEstudio.run(data),
   deleteEstudio:       (id) => deleteEstudio.run(id),
   getEstudio:          (id) => getEstudio.get(id),
+
+  // Rutinas
+  getRutinasByMotivo:  (id) => db.prepare(`SELECT * FROM rutinas WHERE motivo_id = ? ORDER BY created_at DESC`).all(id),
+  getRutina:           (id) => db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(id),
+  insertRutina:        (data) => { const r = db.prepare(`INSERT INTO rutinas (motivo_id, nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas) VALUES (@motivo_id, @nombre, @estado, @resumen, @ejercicios, @hielo, @calor, @contraste, @notas)`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(r.lastInsertRowid); },
+  updateRutina:        (data) => { db.prepare(`UPDATE rutinas SET nombre=@nombre, estado=@estado, resumen=@resumen, ejercicios=@ejercicios, hielo=@hielo, calor=@calor, contraste=@contraste, notas=@notas WHERE id=@id`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(data.id); },
+  deleteRutina:        (id) => db.prepare(`DELETE FROM rutinas WHERE id = ?`).run(id),
 
   // Dashboard
   getDashboardStats:   () => getDashboardStats.get(),
