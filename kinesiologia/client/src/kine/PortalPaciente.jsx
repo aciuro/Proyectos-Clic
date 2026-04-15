@@ -331,7 +331,7 @@ function RightColumn({ motivos, onTabChange }) {
 }
 
 /* ── SeccionInicio ──────────────────────────────────────── */
-function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDetalle, onAbrirDolor, historialDolor, onTabChange }) {
+function SeccionInicio({ paciente, ejercicios, rutinas, turnos, saldo, motivos, onVerDetalle, onAbrirDolor, historialDolor, onTabChange }) {
   const hoy = new Date(); hoy.setHours(0,0,0,0)
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   const proximoTurno = turnos
@@ -417,37 +417,32 @@ function SeccionInicio({ paciente, ejercicios, turnos, saldo, motivos, onVerDeta
           </div>
         </Card>
 
-        {/* Ejercicios indicados */}
+        {/* Rutinas activas */}
         <Card style={{ padding:20 }}>
           <SectionTitle
-            title="Ejercicios indicados"
-            subtitle="Tu rutina actual para continuar en casa"
-            action={ejercicios.length > 0
-              ? <button onClick={() => onTabChange('rutinas')} style={{ fontSize:13, fontWeight:600, color:c.blue, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Ver todos</button>
+            title="Mis rutinas"
+            subtitle="Indicaciones domiciliarias de tu kinesiólogo"
+            action={rutinas.length > 0
+              ? <button onClick={() => onTabChange('rutinas')} style={{ fontSize:13, fontWeight:600, color:c.blue, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Ver todas</button>
               : null
             }
           />
           <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
-            {ejercicios.length === 0 ? (
-              <p style={{ fontSize:13, color:c.s400, textAlign:'center', padding:'1rem' }}>Tu kinesiólogo aún no asignó ejercicios</p>
-            ) : ejercicios.slice(0,3).map((ej, i) => {
-              const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-              const detalle = [ej.series && `${ej.series} series`, ej.repeticiones && `${ej.repeticiones} repeticiones`, ej.segundos && `${ej.segundos} segundos`].filter(Boolean).join(' · ')
-              return (
-                <div key={ej.id} onClick={() => onVerDetalle(ej.id)}
-                  style={{ borderRadius:16, border:`1px solid ${c.s200}`, padding:16, cursor:'pointer' }}>
-                  <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-                    <div style={{ minWidth:0 }}>
-                      <p style={{ fontWeight:600, color:c.s900, fontSize:14, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{nombre}</p>
-                      {detalle && <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>{detalle}</p>}
-                    </div>
-                    <Badge tone={i === ejercicios.length - 1 && ejercicios.length > 1 ? 'info' : 'success'}>
-                      {i === ejercicios.length - 1 && ejercicios.length > 1 ? 'Nuevo' : 'Activo'}
-                    </Badge>
+            {rutinas.filter(r => r.estado === 'Activa').length === 0 ? (
+              <p style={{ fontSize:13, color:c.s400, textAlign:'center', padding:'1rem' }}>Tu kinesiólogo aún no asignó rutinas</p>
+            ) : rutinas.filter(r => r.estado === 'Activa').slice(0,2).map(r => (
+              <button key={r.id} onClick={() => onTabChange('rutinas')}
+                style={{ borderRadius:16, border:`1px solid #a7f3d0`, background:'linear-gradient(135deg,#f0fdf4 0%,#fff 100%)', padding:16, cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans', sans-serif", width:'100%' }}>
+                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                  <div style={{ minWidth:0 }}>
+                    <p style={{ fontWeight:700, color:c.s900, fontSize:14, margin:0 }}>{r.nombre}</p>
+                    {r.resumen && <p style={{ fontSize:13, color:c.s500, marginTop:4, marginBottom:0 }}>{r.resumen}</p>}
                   </div>
+                  <Badge tone="success">Activa</Badge>
                 </div>
-              )
-            })}
+                <p style={{ fontSize:13, fontWeight:600, color:'#059669', marginTop:12, marginBottom:0 }}>Ver rutina →</p>
+              </button>
+            ))}
           </div>
         </Card>
 
@@ -539,117 +534,153 @@ function SeccionTurnos({ turnos, paciente }) {
   )
 }
 
-/* ── SeccionRutinas ─────────────────────────────────────── */
-function SeccionRutinas({ ejercicios }) {
+/* ── RutinaCard ─────────────────────────────────────────── */
+function RutinaCard({ rutina }) {
   const [done, setDone] = useState({})
+  const [expanded, setExpanded] = useState(true)
 
-  const total     = ejercicios.length
-  const completados = Object.values(done).filter(Boolean).length
-  const pendientes  = total - completados
-  const todoHecho   = total > 0 && completados === total
-
-  function toggleDone(id) {
-    setDone(prev => ({ ...prev, [id]: !prev[id] }))
-  }
+  const ejs = rutina.ejercicios || []
+  const completados = ejs.filter((_, i) => done[i]).length
+  const todoHecho = ejs.length > 0 && completados === ejs.length
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Rutinas</h1>
-
-      {ejercicios.length === 0 ? (
-        <Card style={{ padding:'2.5rem', textAlign:'center', color:c.s400, fontSize:14 }}>
-          Tu kinesiólogo aún no asignó ejercicios
-        </Card>
-      ) : (
-        <Card style={{ overflow:'hidden' }}>
-          {/* Header con gradiente */}
-          <div style={{ background:`linear-gradient(135deg, ${c.blue50} 0%, #fff 100%)`, padding:'20px 20px 16px', borderBottom:`1px solid ${c.s200}` }}>
-            <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12, marginBottom:16 }}>
-              <div>
-                <p style={{ fontSize:12, fontWeight:600, color:c.blue, textTransform:'uppercase', letterSpacing:'0.06em', margin:0 }}>Rutina del paciente</p>
-                <h2 style={{ fontSize:20, fontWeight:700, color:c.s900, margin:'4px 0 0' }}>Rutina de hoy</h2>
-              </div>
-              <span style={{ padding:'4px 12px', borderRadius:100, fontSize:12, fontWeight:600,
-                background: todoHecho ? c.emeraldBg : c.blue50,
-                color: todoHecho ? c.emeraldText : c.blue }}>
-                {todoHecho ? 'Completada' : 'Activa'}
-              </span>
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:10 }}>
-              {[['Ejercicios', total], ['Completados', completados], ['Pendientes', pendientes]].map(([label, val]) => (
-                <div key={label} style={{ borderRadius:14, background:'#fff', padding:'12px', textAlign:'center',
-                  boxShadow:'0 1px 2px rgba(0,0,0,0.04)' }}>
-                  <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
-                  <p style={{ fontSize:20, fontWeight:700, color:c.s900, margin:'6px 0 0' }}>{val}</p>
-                </div>
-              ))}
-            </div>
+    <Card style={{ overflow:'hidden' }}>
+      {/* Header */}
+      <div style={{ background:'linear-gradient(135deg,#f0fdf4 0%,#fff 100%)', padding:'18px 20px', borderBottom:`1px solid ${c.s200}` }}>
+        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+          <div style={{ flex:1 }}>
+            <p style={{ fontSize:11, fontWeight:700, color:'#059669', textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
+              {rutina.motivo_sintoma || 'Rutina domiciliaria'}
+            </p>
+            <h2 style={{ fontSize:18, fontWeight:700, color:c.s900, margin:'6px 0 0', lineHeight:1.2 }}>{rutina.nombre}</h2>
+            {rutina.notas && <p style={{ fontSize:13, color:c.s500, marginTop:6, marginBottom:0, lineHeight:1.5 }}>{rutina.notas}</p>}
           </div>
+          <button onClick={() => setExpanded(v => !v)}
+            style={{ background:'none', border:'none', cursor:'pointer', color:c.s400, fontSize:20, padding:'4px', flexShrink:0 }}>
+            {expanded ? '▴' : '▾'}
+          </button>
+        </div>
 
-          {/* Lista de ejercicios */}
-          <div style={{ padding:'12px 16px', display:'flex', flexDirection:'column', gap:10 }}>
-            {ejercicios.map((ej, i) => {
-              const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
-              const hecho  = !!done[ej.id]
-              return (
-                <div key={ej.id} style={{
-                  borderRadius:20, border:`1px solid ${hecho ? '#d1fae5' : c.s200}`,
-                  background: hecho ? '#f0fdf4' : '#fff',
-                  padding:16, transition:'border-color 0.2s, background 0.2s',
-                }}>
-                  <div style={{ display:'flex', alignItems:'flex-start', gap:12 }}>
-                    {/* Checkmark */}
-                    <button onClick={() => toggleDone(ej.id)} style={{
-                      marginTop:2, width:26, height:26, borderRadius:'50%', flexShrink:0,
-                      border:`2px solid ${hecho ? c.emerald : c.s300}`,
-                      background: hecho ? c.emerald : '#fff',
-                      color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer',
-                      display:'flex', alignItems:'center', justifyContent:'center',
-                    }}>
-                      {hecho ? '✓' : ''}
-                    </button>
+        {ejs.length > 0 && (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:14 }}>
+            {[['Ejercicios', ejs.length], ['Completados', completados], ['Pendientes', ejs.length - completados]].map(([label, val]) => (
+              <div key={label} style={{ borderRadius:12, background:'#fff', padding:'10px', textAlign:'center', boxShadow:'0 1px 2px rgba(0,0,0,0.04)' }}>
+                <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
+                <p style={{ fontSize:18, fontWeight:700, color:c.s900, margin:'4px 0 0' }}>{val}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:10 }}>
-                        <div>
-                          <p style={{ fontWeight:700, fontSize:14, color:c.s900,
-                            textDecoration: hecho ? 'line-through' : 'none', margin:0 }}>{nombre}</p>
-                          {ej.descripcion && <p style={{ fontSize:12, color:c.s500, marginTop:3 }}>{ej.descripcion}</p>}
+      {/* Ejercicios */}
+      {expanded && (
+        <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:12 }}>
+          {ejs.map((ej, i) => {
+            const hecho = !!done[i]
+            return (
+              <div key={i} style={{ borderRadius:20, border:`1px solid ${hecho ? '#a7f3d0' : c.s200}`, background: hecho ? '#f0fdf4' : '#fff', padding:14, transition:'all 0.2s' }}>
+                <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
+                  <button onClick={() => setDone(prev => ({ ...prev, [i]: !prev[i] }))} style={{
+                    marginTop:2, width:26, height:26, borderRadius:'50%', flexShrink:0,
+                    border:`2px solid ${hecho ? '#059669' : c.s300}`,
+                    background: hecho ? '#059669' : '#fff', color:'#fff',
+                    fontSize:13, fontWeight:700, cursor:'pointer',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                  }}>
+                    {hecho ? '✓' : ''}
+                  </button>
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontWeight:700, fontSize:14, color: hecho ? '#059669' : c.s900, margin:0, textDecoration: hecho ? 'line-through' : 'none' }}>{ej.exerciseId}</p>
+                    {/* Imágenes */}
+                    {ej.images && ej.images[0] && (
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
+                        <img src={ej.images[0]} alt={ej.exerciseId + ' A'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:12, border:`1px solid ${c.s200}`, background:c.s50, padding:4 }} loading="lazy" />
+                        <img src={ej.images[1]} alt={ej.exerciseId + ' B'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:12, border:`1px solid ${c.s200}`, background:c.s50, padding:4 }} loading="lazy" />
+                      </div>
+                    )}
+                    {/* Pills */}
+                    <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
+                      {[
+                        ej.reps && ej.reps !== 'No aplica' && ['Reps', ej.reps],
+                        ej.seconds && ej.seconds !== 'No aplica' && ['Seg.', ej.seconds],
+                        ej.series && ['Series', ej.series],
+                      ].filter(Boolean).map(([label, val]) => (
+                        <div key={label} style={{ borderRadius:10, background:c.s100, padding:'7px 12px', textAlign:'center', minWidth:52 }}>
+                          <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
+                          <p style={{ fontSize:15, fontWeight:700, color:c.s900, margin:'2px 0 0' }}>{val}</p>
                         </div>
-                        {ej.categoria && (
-                          <span style={{ fontSize:11, fontWeight:600, padding:'2px 8px', borderRadius:100,
-                            background:c.blue50, color:c.blue, flexShrink:0 }}>
-                            {ej.categoria.split(' · ')[1] || ej.categoria}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Pills reps/seg/series */}
-                      <div style={{ display:'flex', gap:8, marginTop:12, flexWrap:'wrap' }}>
-                        {[
-                          ej.repeticiones && ['Reps', ej.repeticiones],
-                          ej.segundos     && ['Seg.', ej.segundos],
-                          ej.series       && ['Series', ej.series],
-                        ].filter(Boolean).map(([label, val]) => (
-                          <div key={label} style={{ borderRadius:12, background:c.s100, padding:'8px 12px', textAlign:'center', minWidth:56 }}>
-                            <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
-                            <p style={{ fontSize:15, fontWeight:700, color:c.s900, margin:'3px 0 0' }}>{val}</p>
-                          </div>
-                        ))}
-                      </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              )
-            })}
-
-            {todoHecho && (
-              <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:16, padding:'14px', textAlign:'center', fontWeight:700, fontSize:15, marginTop:4 }}>
-                ¡Excelente! Completaste toda la rutina de hoy
               </div>
-            )}
-          </div>
+            )
+          })}
+
+          {/* Agentes físicos */}
+          {(rutina.hielo || rutina.calor || rutina.contraste) && (
+            <div style={{ borderRadius:16, background:c.s50, border:`1px solid ${c.s200}`, padding:14 }}>
+              <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s500, margin:'0 0 10px' }}>Agentes físicos</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                {rutina.hielo && <span style={{ borderRadius:100, background:c.blue50, color:c.blue, fontSize:12, fontWeight:600, padding:'5px 12px' }}>Hielo {rutina.hielo.min} min · {rutina.hielo.vecesAlDia}x/día</span>}
+                {rutina.calor && <span style={{ borderRadius:100, background:'#fffbeb', color:'#92400e', fontSize:12, fontWeight:600, padding:'5px 12px' }}>Calor {rutina.calor.min} min · {rutina.calor.vecesAlDia}x/día</span>}
+                {rutina.contraste && <span style={{ borderRadius:100, background:c.s100, color:c.s700, fontSize:12, fontWeight:600, padding:'5px 12px' }}>Contraste · {rutina.contraste.vecesAlDia}x/día</span>}
+              </div>
+            </div>
+          )}
+
+          {todoHecho && (
+            <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:14, padding:'12px', textAlign:'center', fontWeight:700, fontSize:14 }}>
+              ¡Excelente! Completaste esta rutina
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  )
+}
+
+/* ── SeccionRutinas ─────────────────────────────────────── */
+function SeccionRutinas({ rutinas }) {
+  const activas   = rutinas.filter(r => r.estado === 'Activa')
+  const inactivas = rutinas.filter(r => r.estado !== 'Activa')
+
+  return (
+    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em', margin:0 }}>Mis rutinas</h1>
+
+      {rutinas.length === 0 ? (
+        <Card style={{ padding:'2.5rem', textAlign:'center', color:c.s400, fontSize:14 }}>
+          Tu kinesiólogo aún no asignó rutinas
         </Card>
+      ) : (
+        <>
+          {activas.length > 0 && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:8, height:8, borderRadius:'50%', background:'#10b981', display:'inline-block' }} />
+                <span style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'#059669' }}>Activas ({activas.length})</span>
+              </div>
+              {activas.map(r => <RutinaCard key={r.id} rutina={r} />)}
+            </div>
+          )}
+
+          {inactivas.length > 0 && (
+            <div style={{ display:'flex', flexDirection:'column', gap:14, marginTop:8 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                <span style={{ width:8, height:8, borderRadius:'50%', background:c.s400, display:'inline-block' }} />
+                <span style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:c.s400 }}>Anteriores ({inactivas.length})</span>
+              </div>
+              {inactivas.map(r => (
+                <Card key={r.id} style={{ padding:16, opacity:0.7 }}>
+                  <p style={{ fontWeight:600, fontSize:14, color:c.s700, margin:0 }}>{r.nombre}</p>
+                  {r.resumen && <p style={{ fontSize:13, color:c.s400, marginTop:4, marginBottom:0 }}>{r.resumen}</p>}
+                </Card>
+              ))}
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -694,6 +725,7 @@ function SeccionPerfil({ paciente, usuario, onLogout }) {
 export default function PortalPaciente({ paciente, usuario, onLogout }) {
   const [tab,            setTab]            = useState('inicio')
   const [ejercicios,     setEjercicios]     = useState([])
+  const [rutinas,        setRutinas]        = useState([])
   const [turnos,         setTurnos]         = useState([])
   const [motivos,        setMotivos]        = useState([])
   const [saldo,          setSaldo]          = useState(0)
@@ -710,6 +742,7 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
       api.getSaldo(paciente.id).then(s => setSaldo(s.saldo_pendiente||0)).catch(()=>{}),
       api.getTurnos().then(ts => setTurnos(ts||[])).catch(()=>{}),
       api.getMotivos(paciente.id).then(setMotivos).catch(()=>{}),
+      api.getRutinasPaciente(paciente.id).then(setRutinas).catch(()=>{}),
     ]).finally(() => setLoading(false))
   }, [paciente?.id])
 
@@ -760,9 +793,9 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
             <div style={{ textAlign:'center', color:c.s400, padding:'3rem' }}>Cargando...</div>
           ) : (
             <>
-              {tab==='inicio'  && <SeccionInicio paciente={paciente} ejercicios={ejercicios} turnos={turnos} saldo={saldo} motivos={motivos} onVerDetalle={setSeleccionado} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} onTabChange={setTab} />}
+              {tab==='inicio'  && <SeccionInicio paciente={paciente} ejercicios={ejercicios} rutinas={rutinas} turnos={turnos} saldo={saldo} motivos={motivos} onVerDetalle={setSeleccionado} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} onTabChange={setTab} />}
               {tab==='turnos'  && <SeccionTurnos  turnos={turnos} paciente={paciente} />}
-              {tab==='rutinas' && <SeccionRutinas ejercicios={ejercicios} onVerDetalle={setSeleccionado} />}
+              {tab==='rutinas' && <SeccionRutinas rutinas={rutinas} />}
               {tab==='perfil'  && <SeccionPerfil  paciente={paciente} usuario={usuario} onLogout={onLogout} />}
             </>
           )}

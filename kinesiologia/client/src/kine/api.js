@@ -113,6 +113,7 @@ export const api = {
   },
 
   // Rutinas
+  getRutinasPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/rutinas`),
   getRutinas:    (motivoId) => req('GET', `/motivos/${motivoId}/rutinas`),
   createRutina:  (motivoId, data) => req('POST', `/motivos/${motivoId}/rutinas`, data),
   updateRutina:  (id, data) => req('PUT', `/rutinas/${id}`, data),

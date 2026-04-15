@@ -439,6 +439,25 @@ router.delete('/estudios/:id', auth, soloAdmin, (req, res) => {
 
 // ── Rutinas ───────────────────────────────────────────────
 
+// Todas las rutinas de un paciente (para el portal)
+router.get('/pacientes/:id/rutinas', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
+  const motivos = db.getMotivosByPaciente(req.params.id);
+  const rutinas = motivos.flatMap(m =>
+    db.getRutinasByMotivo(m.id).map(r => ({
+      ...r,
+      motivo_sintoma: m.sintoma,
+      ejercicios: r.ejercicios ? JSON.parse(r.ejercicios) : [],
+      hielo:      r.hielo ? JSON.parse(r.hielo) : null,
+      calor:      r.calor ? JSON.parse(r.calor) : null,
+      contraste:  r.contraste ? JSON.parse(r.contraste) : null,
+    }))
+  );
+  // activas primero
+  rutinas.sort((a, b) => (a.estado === 'Activa' ? -1 : 1));
+  res.json(rutinas);
+});
+
 router.get('/motivos/:id/rutinas', auth, (req, res) => {
   if (!puedeAccederMotivo(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   const rutinas = db.getRutinasByMotivo(req.params.id).map(r => ({
