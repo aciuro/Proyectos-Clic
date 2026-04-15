@@ -463,6 +463,7 @@ function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
 
 function RoutineViewModal({ routine, onClose, onEdit }) {
   const [expandedEj, setExpandedEj] = useState(null)
+  const [zoomImg, setZoomImg] = useState(null)
 
   return (
     <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
@@ -521,7 +522,8 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                             <img
                               src={catalog.imagen}
                               alt={`${catalog.nombre} A`}
-                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6 }}
+                              onClick={() => setZoomImg(catalog.imagen)}
+                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6, cursor: 'zoom-in' }}
                               onError={e => { e.target.style.display = 'none' }}
                             />
                           )}
@@ -529,7 +531,8 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
                             <img
                               src={catalog.imagenB}
                               alt={`${catalog.nombre} B`}
-                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6 }}
+                              onClick={() => setZoomImg(catalog.imagenB)}
+                              style={{ width: '100%', aspectRatio: '1', objectFit: 'contain', borderRadius: 12, background: '#f8fafc', border: '1px solid #e2e8f0', padding: 6, cursor: 'zoom-in' }}
                               onError={e => { e.target.style.display = 'none' }}
                             />
                           )}
@@ -589,6 +592,16 @@ function RoutineViewModal({ routine, onClose, onEdit }) {
           </button>
         </div>
       </div>
+
+      {/* Popup chiquito de imagen */}
+      {zoomImg && (
+        <div onClick={() => setZoomImg(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 70, padding: 24 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 20, padding: 12, boxShadow: '0 20px 60px rgba(0,0,0,0.25)', maxWidth: 320, width: '100%', position: 'relative' }}>
+            <button onClick={() => setZoomImg(null)} style={{ position: 'absolute', top: 8, right: 8, width: 28, height: 28, borderRadius: '50%', background: '#f1f5f9', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+            <img src={zoomImg} alt="ejercicio" style={{ width: '100%', borderRadius: 12, objectFit: 'contain', display: 'block' }} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }
