@@ -1,9 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Component } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { api } from './api.js'
 import Modal from './Modal.jsx'
 import { exerciseLibrary } from './exerciseLibrary.js'
+
+class ModalErrorBoundary extends Component {
+  constructor(props) { super(props); this.state = { hasError: false, error: null } }
+  static getDerivedStateFromError(error) { return { hasError: true, error } }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div onClick={this.props.onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 24, padding: 32, maxWidth: 400, width: '100%', textAlign: 'center' }}>
+            <p style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', marginBottom: 8 }}>Error al cargar la rutina</p>
+            <p style={{ fontSize: 14, color: '#64748b', marginBottom: 20 }}>Ocurrió un problema al mostrar esta rutina. Intentá editarla o recargá la página.</p>
+            <button onClick={this.props.onClose} style={{ padding: '10px 24px', borderRadius: 12, background: '#0f172a', color: '#fff', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 600 }}>Cerrar</button>
+          </div>
+        </div>
+      )
+    }
+    return this.props.children
+  }
+}
 
 const MOTIVO_EMPTY = {
   lesion: '', grado: 'No aplica', diagnostico: '',
@@ -1248,11 +1267,13 @@ function MotivoCard({ motivo, onUpdated }) {
 
       {/* Routine view modal */}
       {selectedRoutine && (
-        <RoutineViewModal
-          routine={selectedRoutine}
-          onClose={() => setSelectedRoutine(null)}
-          onEdit={() => { setEditingRoutine(selectedRoutine); setSelectedRoutine(null); setShowRoutineModal(true) }}
-        />
+        <ModalErrorBoundary onClose={() => setSelectedRoutine(null)}>
+          <RoutineViewModal
+            routine={selectedRoutine}
+            onClose={() => setSelectedRoutine(null)}
+            onEdit={() => { setEditingRoutine(selectedRoutine); setSelectedRoutine(null); setShowRoutineModal(true) }}
+          />
+        </ModalErrorBoundary>
       )}
 
       {/* Routine create/edit modal */}
