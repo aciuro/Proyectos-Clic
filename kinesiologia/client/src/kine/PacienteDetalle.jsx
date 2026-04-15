@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { api } from './api.js'
 import Modal from './Modal.jsx'
+import { exerciseLibrary } from './exerciseLibrary.js'
 
 const MOTIVO_EMPTY = {
   lesion: '', grado: 'No aplica', diagnostico: '',
@@ -21,15 +22,16 @@ const mLbl = { display: 'block', fontSize: 14, fontWeight: 500, color: '#334155'
 const mSecH = { fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', marginBottom: 16 }
 const EVOL_EMPTY = { fecha: new Date().toISOString().slice(0, 10), notas: '', dolor: '', tecnicas: '', monto_cobrado: '', pagado: false, tecnicas_sesion: [], ejercicios_sesion: [] }
 
-// Normaliza el JSON de ejercicios_sesion al formato [{id, series, repeticiones, segundos}]
+// Normaliza el JSON de ejercicios_sesion — soporta formato viejo {id} y nuevo {nombre}
 function parseEjSesion(json) {
   if (!json) return []
   try {
     const arr = JSON.parse(json)
-    return arr.map(x => typeof x === 'number' || typeof x === 'string'
-      ? { id: Number(x), series: '', repeticiones: '', segundos: '' }
-      : { id: x.id, series: x.series ?? '', repeticiones: x.repeticiones ?? '', segundos: x.segundos ?? '' }
-    )
+    return arr.map(x => {
+      if (typeof x === 'number' || typeof x === 'string') return { id: Number(x), nombre: null, series: '', repeticiones: '', segundos: '' }
+      if (x.nombre) return { nombre: x.nombre, series: x.series ?? '', repeticiones: x.repeticiones ?? '', segundos: x.segundos ?? '' }
+      return { id: x.id, nombre: null, series: x.series ?? '', repeticiones: x.repeticiones ?? '', segundos: x.segundos ?? '' }
+    })
   } catch { return [] }
 }
 
@@ -41,103 +43,133 @@ const TECNICAS_OPCIONES = [
   'Gun',
 ]
 
-// Selector de ejercicios por sector → músculo → ejercicios
-function EjercicioSelector({ ejercicios, seleccionados, onChange }) {
-  const [sector, setSector] = useState(null)
-  const [musculo, setMusculo] = useState(null)
+// Selector visual de ejercicios usando la biblioteca local con imágenes
+function EjercicioSelectorVisual({ seleccionados, onChange }) {
+  const [activeGroup, setActiveGroup] = useState(null)
+  const [search, setSearch] = useState('')
 
-  // Extraer sectores y músculos de la categoría "Sector · Músculo"
-  const sectores = [...new Set(ejercicios.map(e => (e.categoria || '').split(' · ')[0]))].filter(Boolean).sort()
-  const musculos = sector
-    ? [...new Set(ejercicios.filter(e => (e.categoria || '').startsWith(sector + ' · ')).map(e => (e.categoria || '').split(' · ')[1]))].filter(Boolean)
-    : []
-  const ejsMusculo = musculo
-    ? ejercicios.filter(e => e.categoria === `${sector} · ${musculo}`)
-    : []
+  const groups = exerciseLibrary.map(g => g.title)
 
-  function toggleEj(ej) {
-    const ya = seleccionados.some(x => x.id === ej.id)
-    if (ya) onChange(seleccionados.filter(x => x.id !== ej.id))
-    else onChange([...seleccionados, { id: ej.id, series: '', repeticiones: '', segundos: '' }])
+  const filteredSections = exerciseLibrary
+    .filter(g => !activeGroup || g.title === activeGroup)
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item =>
+        !search || item.name.toLowerCase().includes(search.toLowerCase())
+      )
+    }))
+    .filter(g => g.items.length > 0)
+
+  function toggleEj(item) {
+    const ya = seleccionados.some(x => x.nombre === item.name)
+    if (ya) onChange(seleccionados.filter(x => x.nombre !== item.name))
+    else onChange([...seleccionados, { nombre: item.name, series: '', repeticiones: '', segundos: '' }])
   }
 
-  function upd(id, field, val) {
-    onChange(seleccionados.map(x => x.id === id ? { ...x, [field]: val } : x))
+  function upd(nombre, field, val) {
+    onChange(seleccionados.map(x => x.nombre === nombre ? { ...x, [field]: val } : x))
+  }
+
+  const sS = {
+    wrap: { border: '1px solid #e2e8f0', borderRadius: 18, overflow: 'hidden', background: '#f8fafc' },
+    header: { padding: '14px 16px', borderBottom: '1px solid #e2e8f0', background: '#fff' },
+    title: { fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 10 },
+    groups: { display: 'flex', gap: 6, flexWrap: 'wrap' },
+    groupBtn: (active) => ({
+      padding: '5px 12px', borderRadius: 20, border: '1px solid ' + (active ? '#0ea5e9' : '#e2e8f0'),
+      background: active ? '#0ea5e9' : '#fff', color: active ? '#fff' : '#475569',
+      fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s'
+    }),
+    search: { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: '8px 12px', fontSize: 13, color: '#0f172a', outline: 'none', boxSizing: 'border-box', marginTop: 8, fontFamily: 'inherit' },
+    body: { maxHeight: 340, overflowY: 'auto', padding: 12 },
+    groupLabel: { fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 8, marginTop: 4 },
+    grid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 14 },
+    card: (selected) => ({
+      borderRadius: 14, border: '2px solid ' + (selected ? '#0ea5e9' : '#e2e8f0'),
+      background: selected ? '#f0f9ff' : '#fff', cursor: 'pointer',
+      overflow: 'hidden', transition: 'all 0.15s', padding: 0,
+      display: 'flex', flexDirection: 'column', alignItems: 'center', fontFamily: 'inherit',
+    }),
+    cardImg: { width: '100%', aspectRatio: '1/1', objectFit: 'contain', background: '#f8fafc', padding: 4 },
+    cardName: { fontSize: 11, fontWeight: 600, color: '#334155', textAlign: 'center', padding: '6px 6px 8px', lineHeight: 1.3 },
+    selList: { borderTop: '1px solid #e2e8f0', padding: 12, display: 'flex', flexDirection: 'column', gap: 8, background: '#fff' },
+    selRow: { display: 'flex', alignItems: 'center', gap: 8, borderRadius: 12, border: '1px solid #e2e8f0', padding: '8px 10px', background: '#f8fafc' },
+    selName: { flex: 1, fontSize: 13, fontWeight: 600, color: '#0f172a', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' },
+    selInputs: { display: 'flex', gap: 6, flexShrink: 0 },
+    selField: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 },
+    selFieldLbl: { fontSize: 10, fontWeight: 600, color: '#94a3b8', textTransform: 'uppercase' },
+    selInput: { width: 46, borderRadius: 8, border: '1px solid #e2e8f0', background: '#fff', padding: '4px 6px', fontSize: 12, textAlign: 'center', outline: 'none', fontFamily: 'inherit', color: '#0f172a' },
+    rmBtn: { background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 18, lineHeight: 1, padding: '0 2px', flexShrink: 0 },
   }
 
   return (
-    <div className="kine-ej-selector">
-      <div className="kine-ej-selector-titulo">Ejercicios de gimnasio</div>
-
-      {/* Ejercicios seleccionados */}
-      {seleccionados.length > 0 && (
-        <div className="kine-ej-sel-lista">
-          {seleccionados.map(ejd => {
-            const ej = ejercicios.find(e => e.id === ejd.id)
-            if (!ej) return null
-            return (
-              <div key={ejd.id} className="kine-ej-sel-row">
-                <div className="kine-ej-sel-nombre">{ej.nombre}</div>
-                <div className="kine-ej-sel-inputs">
-                  <label><span>Series</span><input type="number" min="1" max="10" value={ejd.series} onChange={e => upd(ejd.id, 'series', e.target.value)} placeholder="—" /></label>
-                  <label><span>Reps</span><input type="number" min="1" max="100" value={ejd.repeticiones} onChange={e => upd(ejd.id, 'repeticiones', e.target.value)} placeholder="—" /></label>
-                  <label><span>Seg</span><input type="number" min="1" max="300" value={ejd.segundos} onChange={e => upd(ejd.id, 'segundos', e.target.value)} placeholder="—" /></label>
-                </div>
-                <button type="button" className="kine-ej-sel-rm" onClick={() => onChange(seleccionados.filter(x => x.id !== ejd.id))}>×</button>
-              </div>
-            )
-          })}
+    <div style={sS.wrap}>
+      <div style={sS.header}>
+        <div style={sS.title}>Ejercicios de la sesión</div>
+        <div style={sS.groups}>
+          <button type="button" style={sS.groupBtn(!activeGroup)} onClick={() => setActiveGroup(null)}>Todos</button>
+          {groups.map(g => (
+            <button key={g} type="button" style={sS.groupBtn(activeGroup === g)} onClick={() => setActiveGroup(g === activeGroup ? null : g)}>{g}</button>
+          ))}
         </div>
-      )}
+        <input
+          type="text"
+          placeholder="Buscar ejercicio…"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          style={sS.search}
+        />
+      </div>
 
-      {/* Navegación sector → músculo → ejercicios */}
-      <div className="kine-ej-nav">
-        {/* Paso 1: Sectores */}
-        {!sector && (
-          <div className="kine-ej-nav-grid">
-            {sectores.map(s => (
-              <button key={s} type="button" className="kine-ej-nav-btn" onClick={() => { setSector(s); setMusculo(null) }}>{s}</button>
-            ))}
-          </div>
-        )}
-
-        {/* Paso 2: Músculos del sector */}
-        {sector && !musculo && (
-          <>
-            <div className="kine-ej-nav-back">
-              <button type="button" className="kine-ej-nav-volver" onClick={() => setSector(null)}>← {sector}</button>
-            </div>
-            <div className="kine-ej-nav-grid">
-              {musculos.map(m => (
-                <button key={m} type="button" className="kine-ej-nav-btn" onClick={() => setMusculo(m)}>{m}</button>
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* Paso 3: Ejercicios del músculo */}
-        {sector && musculo && (
-          <>
-            <div className="kine-ej-nav-back">
-              <button type="button" className="kine-ej-nav-volver" onClick={() => setMusculo(null)}>← {musculo}</button>
-            </div>
-            <div className="kine-ej-ej-lista">
-              {ejsMusculo.map(ej => {
-                const sel = seleccionados.some(x => x.id === ej.id)
+      <div style={sS.body}>
+        {filteredSections.map(section => (
+          <div key={section.title}>
+            {!activeGroup && <div style={sS.groupLabel}>{section.title}</div>}
+            <div style={sS.grid}>
+              {section.items.map(item => {
+                const selected = seleccionados.some(x => x.nombre === item.name)
                 return (
-                  <label key={ej.id} className={`kine-ej-opcion ${sel ? 'selected' : ''}`}>
-                    <input type="checkbox" checked={sel} onChange={() => toggleEj(ej)} />
-                    <div className="kine-ej-opcion-info">
-                      <div className="kine-ej-opcion-nombre">{ej.nombre}</div>
-                      {ej.descripcion && <div className="kine-ej-opcion-desc">{ej.descripcion}</div>}
-                    </div>
-                  </label>
+                  <button key={item.name} type="button" style={sS.card(selected)} onClick={() => toggleEj(item)}>
+                    <img src={item.images[0]} alt={item.name} style={sS.cardImg} loading="lazy" />
+                    <div style={sS.cardName}>{item.name}</div>
+                  </button>
                 )
               })}
             </div>
-          </>
+          </div>
+        ))}
+        {filteredSections.length === 0 && (
+          <div style={{ padding: '20px 0', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>Sin resultados</div>
         )}
       </div>
+
+      {seleccionados.length > 0 && (
+        <div style={sS.selList}>
+          <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#64748b', marginBottom: 2 }}>
+            Seleccionados ({seleccionados.length})
+          </div>
+          {seleccionados.map(ejd => (
+            <div key={ejd.nombre} style={sS.selRow}>
+              <div style={sS.selName}>{ejd.nombre}</div>
+              <div style={sS.selInputs}>
+                <div style={sS.selField}>
+                  <span style={sS.selFieldLbl}>Series</span>
+                  <input type="number" min="1" max="10" value={ejd.series} onChange={e => upd(ejd.nombre, 'series', e.target.value)} placeholder="—" style={sS.selInput} />
+                </div>
+                <div style={sS.selField}>
+                  <span style={sS.selFieldLbl}>Reps</span>
+                  <input type="number" min="1" max="100" value={ejd.repeticiones} onChange={e => upd(ejd.nombre, 'repeticiones', e.target.value)} placeholder="—" style={sS.selInput} />
+                </div>
+                <div style={sS.selField}>
+                  <span style={sS.selFieldLbl}>Seg</span>
+                  <input type="number" min="1" max="300" value={ejd.segundos} onChange={e => upd(ejd.nombre, 'segundos', e.target.value)} placeholder="—" style={sS.selInput} />
+                </div>
+              </div>
+              <button type="button" style={sS.rmBtn} onClick={() => onChange(seleccionados.filter(x => x.nombre !== ejd.nombre))}>×</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -337,6 +369,12 @@ function SessionViewModal({ evol, numero, ejerciciosList, onClose, onEdit }) {
   const tecnicas = evol.tecnicas_sesion ? (() => { try { return JSON.parse(evol.tecnicas_sesion) } catch { return [] } })() : []
   const ejData = parseEjSesion(evol.ejercicios_sesion)
   const ejerciciosNombres = ejData.map(ejd => {
+    // Nuevo formato: {nombre}
+    if (ejd.nombre) {
+      const params = [ejd.series && `${ejd.series}s`, ejd.repeticiones && `${ejd.repeticiones}r`, ejd.segundos && `${ejd.segundos}"`].filter(Boolean).join(' ')
+      return params ? `${ejd.nombre} (${params})` : ejd.nombre
+    }
+    // Formato viejo: {id} → lookup en lista de backend
     const ej = ejerciciosList.find(e => e.id === ejd.id)
     if (!ej) return null
     const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
@@ -1124,9 +1162,8 @@ function MotivoCard({ motivo, onUpdated }) {
             </div>
           </label>
 
-          {/* Ejercicios de gimnasio */}
-          <EjercicioSelector
-            ejercicios={ejercicios}
+          {/* Ejercicios de la sesión */}
+          <EjercicioSelectorVisual
             seleccionados={formEvol.ejercicios_sesion || []}
             onChange={lista => setFormEvol(f => ({ ...f, ejercicios_sesion: lista }))}
           />
