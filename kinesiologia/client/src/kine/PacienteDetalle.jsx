@@ -556,7 +556,13 @@ const rFld = { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', bac
 const REP_OPTIONS = ['No aplica', '5', '8', '10', '12', '15', '20']
 const SEC_OPTIONS = ['No aplica', '10', '15', '20', '30', '45', '60']
 const SERIES_OPTIONS = ['1', '2', '3', '4', '5']
-const EJ_MAP = Object.fromEntries(EJERCICIOS_CATALOG.map(e => [e.id, e]))
+// Mapa nombre → {nombre, imagen, grupo} construido desde exerciseLibrary
+const EJ_MAP = Object.fromEntries(
+  exerciseLibrary.flatMap(g => g.items.map(item => [
+    item.name,
+    { nombre: item.name, imagen: item.images[0], imagenB: item.images[1], grupo: g.title }
+  ]))
+)
 
 function RoutineModalForm({ onClose, onSave }) {
   const [nombre, setNombre] = useState('')
@@ -573,16 +579,17 @@ function RoutineModalForm({ onClose, onSave }) {
   const [contrasteCiclos, setContrasteCiclos] = useState('')
   const [notas, setNotas] = useState('')
 
-  const filtrados = EJERCICIOS_CATALOG.filter(ej => {
-    const matchZona = zonaFilter === 'todas' || ej.zona === zonaFilter
-    const q = search.toLowerCase()
-    const matchSearch = !q || ej.nombre.toLowerCase().includes(q) || ej.descripcion.toLowerCase().includes(q)
-    return matchZona && matchSearch
-  })
+  const filteredSections = exerciseLibrary
+    .filter(g => zonaFilter === 'todas' || g.title === zonaFilter)
+    .map(g => ({
+      ...g,
+      items: g.items.filter(item => !search || item.name.toLowerCase().includes(search.toLowerCase()))
+    }))
+    .filter(g => g.items.length > 0)
 
-  function addEjercicio(exerciseId) {
-    if (ejercicios.find(e => e.exerciseId === exerciseId)) return
-    setEjercicios(prev => [...prev, { key: Date.now(), exerciseId, reps: '10', seconds: 'No aplica', series: '3' }])
+  function addEjercicio(name) {
+    if (ejercicios.find(e => e.exerciseId === name)) return
+    setEjercicios(prev => [...prev, { key: Date.now(), exerciseId: name, reps: '10', seconds: 'No aplica', series: '3' }])
   }
   function updateEj(key, field, val) {
     setEjercicios(prev => prev.map(e => e.key === key ? { ...e, [field]: val } : e))
@@ -646,37 +653,47 @@ function RoutineModalForm({ onClose, onSave }) {
           <div style={{ borderRadius: 20, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: '1px solid #f1f5f9', background: '#f8fafc' }}>
               <p style={{ ...secH, marginBottom: 12 }}>Biblioteca de ejercicios</p>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 180px', gap: 10 }}>
-                <input style={rFld} placeholder="Buscar ejercicio..." value={search} onChange={e => setSearch(e.target.value)} />
-                <select style={rFld} value={zonaFilter} onChange={e => setZonaFilter(e.target.value)}>
-                  <option value="todas">Todas las zonas</option>
-                  {Object.keys(EJERCICIOS_POR_ZONA).map(z => (
-                    <option key={z} value={z}>{ZONAS_LABEL[z]}</option>
-                  ))}
-                </select>
+              <input style={{ ...rFld, marginBottom: 10 }} placeholder="Buscar ejercicio..." value={search} onChange={e => setSearch(e.target.value)} />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                <button type="button"
+                  onClick={() => setZonaFilter('todas')}
+                  style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid ' + (zonaFilter === 'todas' ? '#0ea5e9' : '#e2e8f0'), background: zonaFilter === 'todas' ? '#0ea5e9' : '#fff', color: zonaFilter === 'todas' ? '#fff' : '#475569', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Todos
+                </button>
+                {exerciseLibrary.map(g => (
+                  <button key={g.title} type="button"
+                    onClick={() => setZonaFilter(g.title === zonaFilter ? 'todas' : g.title)}
+                    style={{ padding: '5px 12px', borderRadius: 20, border: '1px solid ' + (zonaFilter === g.title ? '#0ea5e9' : '#e2e8f0'), background: zonaFilter === g.title ? '#0ea5e9' : '#fff', color: zonaFilter === g.title ? '#fff' : '#475569', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit' }}>
+                    {g.title}
+                  </button>
+                ))}
               </div>
             </div>
-            <div style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, maxHeight: 280, overflowY: 'auto' }}>
-              {filtrados.map(ej => {
-                const added = ejercicios.some(e => e.exerciseId === ej.id)
-                return (
-                  <div key={ej.id} style={{ borderRadius: 16, border: `1px solid ${added ? '#d1fae5' : '#e2e8f0'}`, background: added ? '#f0fdf4' : '#fff', padding: '12px 14px', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10 }}>
-                    <div style={{ minWidth: 0 }}>
-                      <p style={{ fontWeight: 600, fontSize: 13, color: '#0f172a', margin: 0 }}>{ej.nombre}</p>
-                      <p style={{ fontSize: 12, color: '#64748b', marginTop: 3, lineHeight: 1.4 }}>{ej.descripcion}</p>
-                      <span style={{ display: 'inline-block', marginTop: 6, fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 100, background: '#f1f5f9', color: '#475569' }}>{ZONAS_LABEL[ej.zona]}</span>
-                    </div>
-                    <button type="button" onClick={() => addEjercicio(ej.id)} disabled={added}
-                      style={{ flexShrink: 0, padding: '6px 12px', borderRadius: 10, border: 'none', fontWeight: 600, fontSize: 12, cursor: added ? 'default' : 'pointer', fontFamily: 'inherit',
-                        background: added ? '#d1fae5' : '#059669', color: added ? '#059669' : '#fff' }}>
-                      {added ? '✓' : '+ Agregar'}
-                    </button>
-                  </div>
-                )
-              })}
-              {filtrados.length === 0 && (
-                <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 14 }}>Sin resultados para "{search}"</div>
+            <div style={{ padding: 16, maxHeight: 320, overflowY: 'auto' }}>
+              {filteredSections.length === 0 && (
+                <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 14 }}>Sin resultados</div>
               )}
+              {filteredSections.map(section => (
+                <div key={section.title}>
+                  {zonaFilter === 'todas' && (
+                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', margin: '8px 0 10px' }}>{section.title}</p>
+                  )}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginBottom: 12 }}>
+                    {section.items.map(item => {
+                      const added = ejercicios.some(e => e.exerciseId === item.name)
+                      return (
+                        <button key={item.name} type="button" onClick={() => addEjercicio(item.name)}
+                          style={{ borderRadius: 14, border: `2px solid ${added ? '#10b981' : '#e2e8f0'}`, background: added ? '#f0fdf4' : '#fff', cursor: added ? 'default' : 'pointer', padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', fontFamily: 'inherit', transition: 'all 0.15s' }}>
+                          <img src={item.images[0]} alt={item.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', background: '#f8fafc', padding: 4 }} loading="lazy" />
+                          <div style={{ padding: '5px 6px 7px', fontSize: 11, fontWeight: 600, color: added ? '#059669' : '#334155', textAlign: 'center', lineHeight: 1.3 }}>
+                            {added ? '✓ Agregado' : item.name}
+                          </div>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -690,9 +707,12 @@ function RoutineModalForm({ onClose, onSave }) {
                   return (
                     <div key={item.key} style={{ borderRadius: 16, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 16 }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 12 }}>
-                        <div>
-                          <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>Ejercicio {i + 1}: {ej?.nombre}</p>
-                          {ej?.descripcion && <p style={{ fontSize: 12, color: '#64748b', marginTop: 3 }}>{ej.descripcion}</p>}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                          {ej?.imagen && <img src={ej.imagen} alt={ej.nombre} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'contain', background: '#f1f5f9', flexShrink: 0 }} />}
+                          <div>
+                            <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>Ejercicio {i + 1}: {ej?.nombre || item.exerciseId}</p>
+                            {ej?.grupo && <p style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>{ej.grupo}</p>}
+                          </div>
                         </div>
                         <button type="button" onClick={() => removeEj(item.key)}
                           style={{ padding: '5px 12px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
@@ -701,9 +721,9 @@ function RoutineModalForm({ onClose, onSave }) {
                       </div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1.8fr 0.8fr 0.8fr 0.8fr', gap: 8 }}>
                         <select style={rFld} value={item.exerciseId} onChange={e => updateEj(item.key, 'exerciseId', e.target.value)}>
-                          {Object.entries(EJERCICIOS_POR_ZONA).map(([zona, ejs]) => (
-                            <optgroup key={zona} label={ZONAS_LABEL[zona]}>
-                              {ejs.map(o => <option key={o.id} value={o.id}>{o.nombre}</option>)}
+                          {exerciseLibrary.map(g => (
+                            <optgroup key={g.title} label={g.title}>
+                              {g.items.map(o => <option key={o.name} value={o.name}>{o.name}</option>)}
                             </optgroup>
                           ))}
                         </select>
