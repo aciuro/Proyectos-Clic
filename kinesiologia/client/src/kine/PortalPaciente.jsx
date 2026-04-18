@@ -537,18 +537,22 @@ function SeccionTurnos({ turnos, paciente }) {
 /* ── RutinaCard ─────────────────────────────────────────── */
 function RutinaCard({ rutina }) {
   const [done, setDone] = useState({})
+  const [libresHecho, setLibresHecho] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const [vecesCompletadas, setVecesCompletadas] = useState(0)
 
   const ejs = rutina.ejercicios || []
+  const tieneLibres = !!rutina.ejercicios_libres
   const totalVeces = rutina.veces || 1
   const completados = ejs.filter((_, i) => done[i]).length
-  const todoHecho = ejs.length > 0 && completados === ejs.length
+  const ejsCompletos = ejs.length === 0 || completados === ejs.length
+  const todoHecho = ejsCompletos && (!tieneLibres || libresHecho)
   const rutinaFinalizada = vecesCompletadas >= totalVeces
 
   function marcarVuelta() {
     setVecesCompletadas(v => v + 1)
     setDone({})
+    setLibresHecho(false)
   }
 
   return (
@@ -592,9 +596,13 @@ function RutinaCard({ rutina }) {
           </div>
         )}
 
-        {ejs.length > 0 && (
+        {(ejs.length > 0 || tieneLibres) && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:14 }}>
-            {[['Ejercicios', ejs.length], ['Completados', completados], ['Pendientes', ejs.length - completados]].map(([label, val]) => (
+            {[
+              ['Total', ejs.length + (tieneLibres ? 1 : 0)],
+              ['Hechos', completados + (libresHecho ? 1 : 0)],
+              ['Pendientes', (ejs.length - completados) + (!libresHecho && tieneLibres ? 1 : 0)],
+            ].map(([label, val]) => (
               <div key={label} style={{ borderRadius:12, background:'#fff', padding:'10px', textAlign:'center', boxShadow:'0 1px 2px rgba(0,0,0,0.04)' }}>
                 <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
                 <p style={{ fontSize:18, fontWeight:700, color:c.s900, margin:'4px 0 0' }}>{val}</p>
@@ -636,6 +644,7 @@ function RutinaCard({ rutina }) {
                         ej.reps && ej.reps !== 'No aplica' && ['Reps', ej.reps],
                         ej.seconds && ej.seconds !== 'No aplica' && ['Seg.', ej.seconds],
                         ej.series && ['Series', ej.series],
+                        ej.peso && ['Peso', ej.peso],
                       ].filter(Boolean).map(([label, val]) => (
                         <div key={label} style={{ borderRadius:10, background:c.s100, padding:'7px 12px', textAlign:'center', minWidth:52 }}>
                           <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
@@ -661,11 +670,23 @@ function RutinaCard({ rutina }) {
             </div>
           )}
 
-          {/* Ejercicios adicionales escritos */}
-          {rutina.ejercicios_libres && (
-            <div style={{ borderRadius:16, background:'#f0fdf4', border:'1px solid #bbf7d0', padding:16 }}>
-              <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'#059669', margin:'0 0 10px' }}>Ejercicios adicionales</p>
-              <p style={{ fontSize:14, color:c.s700, margin:0, lineHeight:1.7, whiteSpace:'pre-wrap' }}>{rutina.ejercicios_libres}</p>
+          {/* Ejercicios adicionales escritos (Claude) */}
+          {tieneLibres && (
+            <div onClick={() => !rutinaFinalizada && setLibresHecho(v => !v)}
+              style={{ borderRadius:16, background: libresHecho ? '#f0fdf4' : '#fff', border: libresHecho ? '1px solid #a7f3d0' : `1px solid ${c.s200}`, padding:16, cursor: rutinaFinalizada ? 'default' : 'pointer', transition:'all 0.2s' }}>
+              <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                <div style={{
+                  width:26, height:26, borderRadius:'50%', flexShrink:0,
+                  border:`2px solid ${libresHecho ? '#059669' : c.s300}`,
+                  background: libresHecho ? '#059669' : '#fff',
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:13, fontWeight:700, color:'#fff',
+                }}>
+                  {libresHecho ? '✓' : ''}
+                </div>
+                <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color: libresHecho ? '#059669' : c.s500, margin:0 }}>Ejercicios adicionales</p>
+              </div>
+              <p style={{ fontSize:14, color: libresHecho ? '#059669' : c.s700, margin:0, lineHeight:1.7, whiteSpace:'pre-wrap', textDecoration: libresHecho ? 'line-through' : 'none', opacity: libresHecho ? 0.7 : 1 }}>{rutina.ejercicios_libres}</p>
             </div>
           )}
 

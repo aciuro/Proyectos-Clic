@@ -610,6 +610,14 @@ const rFld = { width: '100%', borderRadius: 12, border: '1px solid #e2e8f0', bac
 const REP_OPTIONS = ['No aplica', '5', '8', '10', '12', '15', '20']
 const SEC_OPTIONS = ['No aplica', '10', '15', '20', '30', '45', '60']
 const SERIES_OPTIONS = ['1', '2', '3', '4', '5']
+const PESO_OPTIONS = [
+  { val: '', label: 'Sin peso' },
+  { val: '→', label: '→  Peso moderado' },
+  { val: '↑', label: '↑  Peso fuerte' },
+  { val: '↗', label: '↗  Ir subiendo' },
+  { val: '↘', label: '↘  Ir bajando' },
+  { val: '↓', label: '↓  Poco peso' },
+]
 // Mapa nombre → {nombre, imagen, grupo} construido desde exerciseLibrary
 const EJ_MAP = Object.fromEntries(
   exerciseLibrary.flatMap(g => g.items.map(item => [
@@ -628,6 +636,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
     reps: e.reps || '10',
     seconds: e.seconds || 'No aplica',
     series: e.series || '3',
+    peso: e.peso || '',
   }))
   const [nombre, setNombre] = useState(init.nombre || '')
   const [estado, setEstado] = useState(init.estado || 'Activa')
@@ -656,7 +665,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
 
   function addEjercicio(item) {
     if (ejercicios.find(e => e.exerciseId === item.name)) return
-    setEjercicios(prev => [...prev, { key: Date.now(), exerciseId: item.name, images: item.images, reps: '10', seconds: 'No aplica', series: '3' }])
+    setEjercicios(prev => [...prev, { key: Date.now(), exerciseId: item.name, images: item.images, reps: '10', seconds: 'No aplica', series: '3', peso: '' }])
   }
   function updateEj(key, field, val) {
     setEjercicios(prev => prev.map(e => e.key === key ? { ...e, [field]: val } : e))
@@ -796,6 +805,37 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
                 </div>
               </div>
 
+              {/* Ejercicios con Claude */}
+              <div style={card}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 4 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>✦</div>
+                  <div>
+                    <p style={secTitle}>Ejercicios adicionales (Claude)</p>
+                    <p style={secSub}>Describí ejercicios que no están en la biblioteca y Claude los escribe para el paciente.</p>
+                  </div>
+                </div>
+                <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                  <textarea rows={3} placeholder="Ej: propiocepción para tobillo, 3 series, trabajo en una pierna y tabla inestable"
+                    style={{ ...fld, flex: 1, resize: 'none', lineHeight: 1.5 }}
+                    value={claudeDesc} onChange={e => setClaudeDesc(e.target.value)} />
+                  <button type="button" onClick={generarConClaude} disabled={claudeLoading || !claudeDesc.trim()}
+                    style={{ padding: '12px 20px', borderRadius: 16, border: 'none', background: claudeLoading || !claudeDesc.trim() ? '#e2e8f0' : '#059669', color: claudeLoading || !claudeDesc.trim() ? '#94a3b8' : '#fff', fontWeight: 600, fontSize: 14, cursor: claudeLoading || !claudeDesc.trim() ? 'default' : 'pointer', fontFamily: 'inherit', flexShrink: 0, minWidth: 110 }}>
+                    {claudeLoading ? 'Generando...' : 'Generar'}
+                  </button>
+                </div>
+                {claudeError && <p style={{ fontSize: 13, color: '#ef4444', marginTop: 8 }}>{claudeError}</p>}
+                {ejerciciosLibres && (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>Texto generado</span>
+                      <button type="button" onClick={() => setEjerciciosLibres('')} style={{ background: 'none', border: 'none', fontSize: 12, color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>Eliminar</button>
+                    </div>
+                    <textarea rows={7} style={{ ...fld, resize: 'vertical', lineHeight: 1.6, background: '#f0fdf4', borderColor: '#bbf7d0' }}
+                      value={ejerciciosLibres} onChange={e => setEjerciciosLibres(e.target.value)} />
+                  </div>
+                )}
+              </div>
+
               {/* Agentes físicos */}
               <div style={card}>
                 <p style={secTitle}>Agentes físicos</p>
@@ -851,36 +891,6 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
                   value={notas} onChange={e => setNotas(e.target.value)} />
               </div>
 
-              {/* Ejercicios con Claude */}
-              <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 4 }}>
-                  <div style={{ width: 32, height: 32, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>✦</div>
-                  <div>
-                    <p style={secTitle}>Ejercicios con Claude</p>
-                    <p style={secSub}>Describí los ejercicios que querés incluir y Claude los formatea en una rutina prolija para el paciente.</p>
-                  </div>
-                </div>
-                <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
-                  <textarea rows={3} placeholder="Ej: ejercicios de propiocepción para tobillo, 3 series cada uno, incluir trabajo en una pierna y en tabla inestable"
-                    style={{ ...fld, flex: 1, resize: 'none', lineHeight: 1.5 }}
-                    value={claudeDesc} onChange={e => setClaudeDesc(e.target.value)} />
-                  <button type="button" onClick={generarConClaude} disabled={claudeLoading || !claudeDesc.trim()}
-                    style={{ padding: '12px 20px', borderRadius: 16, border: 'none', background: claudeLoading || !claudeDesc.trim() ? '#e2e8f0' : '#059669', color: claudeLoading || !claudeDesc.trim() ? '#94a3b8' : '#fff', fontWeight: 600, fontSize: 14, cursor: claudeLoading || !claudeDesc.trim() ? 'default' : 'pointer', fontFamily: 'inherit', flexShrink: 0, minWidth: 120 }}>
-                    {claudeLoading ? 'Generando...' : 'Generar'}
-                  </button>
-                </div>
-                {claudeError && <p style={{ fontSize: 13, color: '#ef4444', marginTop: 8 }}>{claudeError}</p>}
-                {ejerciciosLibres && (
-                  <div style={{ marginTop: 14 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                      <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>Rutina generada</span>
-                      <button type="button" onClick={() => setEjerciciosLibres('')} style={{ background: 'none', border: 'none', fontSize: 12, color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>Eliminar</button>
-                    </div>
-                    <textarea rows={8} style={{ ...fld, resize: 'vertical', lineHeight: 1.6, background: '#f0fdf4', borderColor: '#bbf7d0' }}
-                      value={ejerciciosLibres} onChange={e => setEjerciciosLibres(e.target.value)} />
-                  </div>
-                )}
-              </div>
             </div>
 
             {/* Columna derecha — resumen */}
@@ -909,20 +919,17 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
                             Quitar
                           </button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginBottom: 12 }}>
-                          <img src={item.images[0]} alt={item.exerciseId + ' A'} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: 4 }} loading="lazy" />
-                          <img src={item.images[1]} alt={item.exerciseId + ' B'} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: 4 }} loading="lazy" />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 8 }}>
                           {[
-                            { label: 'Repeticiones', field: 'reps', val: item.reps, opts: REP_OPTIONS },
-                            { label: 'Segundos', field: 'seconds', val: item.seconds, opts: SEC_OPTIONS },
-                            { label: 'Series', field: 'series', val: item.series, opts: SERIES_OPTIONS },
+                            { label: 'Reps', field: 'reps', val: item.reps, opts: REP_OPTIONS.map(o => ({ val: o, label: o })) },
+                            { label: 'Segundos', field: 'seconds', val: item.seconds, opts: SEC_OPTIONS.map(o => ({ val: o, label: o })) },
+                            { label: 'Series', field: 'series', val: item.series, opts: SERIES_OPTIONS.map(o => ({ val: o, label: o })) },
+                            { label: 'Peso', field: 'peso', val: item.peso || '', opts: PESO_OPTIONS },
                           ].map(({ label, field, val, opts }) => (
                             <div key={field}>
                               <label style={{ display: 'block', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.07em', color: '#94a3b8', marginBottom: 6 }}>{label}</label>
                               <select style={{ ...fld, padding: '10px 12px', fontSize: 13 }} value={val} onChange={e => updateEj(item.key, field, e.target.value)}>
-                                {opts.map(o => <option key={o}>{o}</option>)}
+                                {opts.map(o => <option key={o.val} value={o.val}>{o.label}</option>)}
                               </select>
                             </div>
                           ))}
