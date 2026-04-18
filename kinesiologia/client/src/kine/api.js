@@ -121,4 +121,7 @@ export const api = {
 
   // Dolor
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
+
+  // Claude
+  claudeRutina: (descripcion) => req('POST', '/claude/rutina', { descripcion }),
 }

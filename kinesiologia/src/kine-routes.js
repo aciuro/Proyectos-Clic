@@ -472,7 +472,7 @@ router.get('/motivos/:id/rutinas', auth, (req, res) => {
 
 router.post('/motivos/:id/rutinas', auth, soloAdmin, (req, res) => {
   try {
-    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas } = req.body;
+    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas, veces, ejercicios_libres } = req.body;
     const r = db.insertRutina({
       motivo_id: req.params.id, nombre, estado, resumen,
       ejercicios: JSON.stringify(ejercicios || []),
@@ -480,6 +480,8 @@ router.post('/motivos/:id/rutinas', auth, soloAdmin, (req, res) => {
       calor:      calor ? JSON.stringify(calor) : null,
       contraste:  contraste ? JSON.stringify(contraste) : null,
       notas,
+      veces: veces || 1,
+      ejercicios_libres: ejercicios_libres || null,
     });
     res.status(201).json({ ...r, ejercicios: ejercicios || [], hielo, calor, contraste });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -487,7 +489,7 @@ router.post('/motivos/:id/rutinas', auth, soloAdmin, (req, res) => {
 
 router.put('/rutinas/:id', auth, soloAdmin, (req, res) => {
   try {
-    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas } = req.body;
+    const { nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas, veces, ejercicios_libres } = req.body;
     const r = db.updateRutina({
       id: req.params.id, nombre, estado, resumen,
       ejercicios: JSON.stringify(ejercicios || []),
@@ -495,6 +497,8 @@ router.put('/rutinas/:id', auth, soloAdmin, (req, res) => {
       calor:      calor ? JSON.stringify(calor) : null,
       contraste:  contraste ? JSON.stringify(contraste) : null,
       notas,
+      veces: veces || 1,
+      ejercicios_libres: ejercicios_libres || null,
     });
     res.json({ ...r, ejercicios: ejercicios || [], hielo, calor, contraste });
   } catch (e) { res.status(400).json({ error: e.message }); }
@@ -522,6 +526,35 @@ router.post('/pacientes/:id/ejercicios', auth, soloAdmin, (req, res) => {
 router.delete('/paciente-ejercicios/:id', auth, soloAdmin, (req, res) => {
   db.deletePacienteEjercicio(req.params.id);
   res.json({ ok: true });
+});
+
+// ── Claude: generar rutina libre ──────────────────────────
+
+router.post('/claude/rutina', auth, soloAdmin, async (req, res) => {
+  try {
+    const { descripcion } = req.body;
+    if (!descripcion?.trim()) return res.status(400).json({ error: 'Descripción requerida' });
+
+    const AnthropicMod = require('@anthropic-ai/sdk');
+    const Anthropic = AnthropicMod.default || AnthropicMod;
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const message = await client.messages.create({
+      model: 'claude-opus-4-7',
+      max_tokens: 1024,
+      system: `Sos un kinesiólogo experto. El usuario te describe ejercicios que quiere incluir en una rutina de rehabilitación.
+Generá una rutina escrita, clara y ordenada, lista para mostrarle al paciente.
+Formato: cada ejercicio en una línea con su nombre, descripción breve, series y repeticiones (si corresponde).
+Sin títulos ni secciones, sin markdown. Solo el listado limpio, en español, con lenguaje simple y directo para el paciente.`,
+      messages: [{ role: 'user', content: descripcion.trim() }],
+    });
+
+    const texto = message.content[0]?.text || '';
+    res.json({ texto });
+  } catch (e) {
+    console.error('Claude rutina error:', e.message);
+    res.status(500).json({ error: 'Error al generar rutina con Claude' });
+  }
 });
 
 module.exports = router;

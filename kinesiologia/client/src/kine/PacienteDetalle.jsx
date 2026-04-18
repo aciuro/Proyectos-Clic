@@ -639,6 +639,10 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
   const [heat, setHeat] = useState(init.calor ? { enabled: true, minutes: init.calor.min || '', timesPerDay: init.calor.vecesAlDia || '' } : { enabled: false, minutes: '', timesPerDay: '' })
   const [contrast, setContrast] = useState(init.contraste ? { enabled: true, timesPerDay: init.contraste.vecesAlDia || '' } : { enabled: false, timesPerDay: '' })
   const [notas, setNotas] = useState(init.notas || '')
+  const [ejerciciosLibres, setEjerciciosLibres] = useState(init.ejercicios_libres || '')
+  const [claudeDesc, setClaudeDesc] = useState('')
+  const [claudeLoading, setClaudeLoading] = useState(false)
+  const [claudeError, setClaudeError] = useState('')
 
   const allGroups = ['Todos', ...exerciseLibrary.map(g => g.title)]
 
@@ -661,6 +665,21 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
     setEjercicios(prev => prev.filter(e => e.key !== key))
   }
 
+  async function generarConClaude() {
+    if (!claudeDesc.trim()) return
+    setClaudeLoading(true)
+    setClaudeError('')
+    try {
+      const res = await api.claudeRutina(claudeDesc)
+      if (res.texto) setEjerciciosLibres(res.texto)
+      else setClaudeError('Sin respuesta de Claude')
+    } catch {
+      setClaudeError('Error al conectar con Claude')
+    } finally {
+      setClaudeLoading(false)
+    }
+  }
+
   function handleSave(e) {
     e.preventDefault()
     const resumen = [
@@ -679,6 +698,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
       calor: heat.enabled ? { min: heat.minutes, vecesAlDia: heat.timesPerDay } : null,
       contraste: contrast.enabled ? { vecesAlDia: contrast.timesPerDay } : null,
       notas,
+      ejercicios_libres: ejerciciosLibres || null,
     })
   }
 
@@ -841,6 +861,37 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
                 <textarea rows={4} placeholder="Ej: realizar 4 veces por semana, no superar dolor 4/10, suspender si aumenta la inflamación..."
                   style={{ ...fld, marginTop: 14, resize: 'none', lineHeight: 1.5 }}
                   value={notas} onChange={e => setNotas(e.target.value)} />
+              </div>
+
+              {/* Ejercicios con Claude */}
+              <div style={card}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 4 }}>
+                  <div style={{ width: 32, height: 32, borderRadius: 10, background: '#f0fdf4', border: '1px solid #bbf7d0', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, flexShrink: 0 }}>✦</div>
+                  <div>
+                    <p style={secTitle}>Ejercicios con Claude</p>
+                    <p style={secSub}>Describí los ejercicios que querés incluir y Claude los formatea en una rutina prolija para el paciente.</p>
+                  </div>
+                </div>
+                <div style={{ marginTop: 16, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+                  <textarea rows={3} placeholder="Ej: ejercicios de propiocepción para tobillo, 3 series cada uno, incluir trabajo en una pierna y en tabla inestable"
+                    style={{ ...fld, flex: 1, resize: 'none', lineHeight: 1.5 }}
+                    value={claudeDesc} onChange={e => setClaudeDesc(e.target.value)} />
+                  <button type="button" onClick={generarConClaude} disabled={claudeLoading || !claudeDesc.trim()}
+                    style={{ padding: '12px 20px', borderRadius: 16, border: 'none', background: claudeLoading || !claudeDesc.trim() ? '#e2e8f0' : '#059669', color: claudeLoading || !claudeDesc.trim() ? '#94a3b8' : '#fff', fontWeight: 600, fontSize: 14, cursor: claudeLoading || !claudeDesc.trim() ? 'default' : 'pointer', fontFamily: 'inherit', flexShrink: 0, minWidth: 120 }}>
+                    {claudeLoading ? 'Generando...' : 'Generar'}
+                  </button>
+                </div>
+                {claudeError && <p style={{ fontSize: 13, color: '#ef4444', marginTop: 8 }}>{claudeError}</p>}
+                {ejerciciosLibres && (
+                  <div style={{ marginTop: 14 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 13, fontWeight: 600, color: '#059669' }}>Rutina generada</span>
+                      <button type="button" onClick={() => setEjerciciosLibres('')} style={{ background: 'none', border: 'none', fontSize: 12, color: '#94a3b8', cursor: 'pointer', fontFamily: 'inherit' }}>Eliminar</button>
+                    </div>
+                    <textarea rows={8} style={{ ...fld, resize: 'vertical', lineHeight: 1.6, background: '#f0fdf4', borderColor: '#bbf7d0' }}
+                      value={ejerciciosLibres} onChange={e => setEjerciciosLibres(e.target.value)} />
+                  </div>
+                )}
               </div>
             </div>
 

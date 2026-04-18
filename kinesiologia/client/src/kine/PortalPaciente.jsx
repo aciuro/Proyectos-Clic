@@ -661,6 +661,14 @@ function RutinaCard({ rutina }) {
             </div>
           )}
 
+          {/* Ejercicios adicionales escritos */}
+          {rutina.ejercicios_libres && (
+            <div style={{ borderRadius:16, background:'#f0fdf4', border:'1px solid #bbf7d0', padding:16 }}>
+              <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:'#059669', margin:'0 0 10px' }}>Ejercicios adicionales</p>
+              <p style={{ fontSize:14, color:c.s700, margin:0, lineHeight:1.7, whiteSpace:'pre-wrap' }}>{rutina.ejercicios_libres}</p>
+            </div>
+          )}
+
           {todoHecho && !rutinaFinalizada && (
             <div style={{ background:c.emeraldBg, border:`1px solid #a7f3d0`, borderRadius:16, padding:'16px', textAlign:'center' }}>
               <p style={{ color:c.emeraldText, fontWeight:700, fontSize:15, margin:'0 0 10px' }}>

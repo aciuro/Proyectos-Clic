@@ -189,6 +189,10 @@ db.exec(`
   )
 `);
 
+// Columnas agregadas después de la creación inicial
+try { db.exec(`ALTER TABLE rutinas ADD COLUMN veces INTEGER DEFAULT 1`) } catch {}
+try { db.exec(`ALTER TABLE rutinas ADD COLUMN ejercicios_libres TEXT`) } catch {}
+
 // ── Crear admin por defecto si no existe ──────────────────
 
 const adminEmail = process.env.ADMIN_EMAIL || 'augustociuro@gmail.com';
@@ -668,8 +672,8 @@ module.exports = {
   // Rutinas
   getRutinasByMotivo:  (id) => db.prepare(`SELECT * FROM rutinas WHERE motivo_id = ? ORDER BY created_at DESC`).all(id),
   getRutina:           (id) => db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(id),
-  insertRutina:        (data) => { const r = db.prepare(`INSERT INTO rutinas (motivo_id, nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas) VALUES (@motivo_id, @nombre, @estado, @resumen, @ejercicios, @hielo, @calor, @contraste, @notas)`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(r.lastInsertRowid); },
-  updateRutina:        (data) => { db.prepare(`UPDATE rutinas SET nombre=@nombre, estado=@estado, resumen=@resumen, ejercicios=@ejercicios, hielo=@hielo, calor=@calor, contraste=@contraste, notas=@notas WHERE id=@id`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(data.id); },
+  insertRutina:        (data) => { const r = db.prepare(`INSERT INTO rutinas (motivo_id, nombre, estado, resumen, ejercicios, hielo, calor, contraste, notas, veces, ejercicios_libres) VALUES (@motivo_id, @nombre, @estado, @resumen, @ejercicios, @hielo, @calor, @contraste, @notas, @veces, @ejercicios_libres)`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(r.lastInsertRowid); },
+  updateRutina:        (data) => { db.prepare(`UPDATE rutinas SET nombre=@nombre, estado=@estado, resumen=@resumen, ejercicios=@ejercicios, hielo=@hielo, calor=@calor, contraste=@contraste, notas=@notas, veces=@veces, ejercicios_libres=@ejercicios_libres WHERE id=@id`).run(data); return db.prepare(`SELECT * FROM rutinas WHERE id = ?`).get(data.id); },
   deleteRutina:        (id) => db.prepare(`DELETE FROM rutinas WHERE id = ?`).run(id),
 
   // Dashboard
