@@ -631,6 +631,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
   }))
   const [nombre, setNombre] = useState(init.nombre || '')
   const [estado, setEstado] = useState(init.estado || 'Activa')
+  const [veces, setVeces] = useState(init.veces || 1)
   const [ejercicios, setEjercicios] = useState(initEjs)
   const [search, setSearch] = useState('')
   const [grupo, setGrupo] = useState('Todos')
@@ -671,6 +672,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
       id: Date.now(),
       nombre: nombre || 'Rutina sin nombre',
       estado,
+      veces: parseInt(veces) || 1,
       resumen,
       ejercicios,
       hielo: ice.enabled ? { min: ice.minutes, vecesAlDia: ice.timesPerDay } : null,
@@ -715,10 +717,17 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
               <div style={card}>
                 <p style={secTitle}>Datos generales</p>
                 <p style={secSub}>Nombre de la rutina y estado actual.</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 200px', gap: 14, marginTop: 16 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 140px', gap: 14, marginTop: 16 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 8 }}>Nombre de la rutina</label>
                     <input style={fld} placeholder="Ej: Rutina tobillo fase 1" value={nombre} onChange={e => setNombre(e.target.value)} />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 8 }}>Repetir rutina</label>
+                    <div style={{ position: 'relative' }}>
+                      <input type="number" min="1" max="30" style={fld} value={veces} onChange={e => setVeces(e.target.value)} />
+                      <span style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 12, color: '#94a3b8', pointerEvents: 'none' }}>veces</span>
+                    </div>
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: 13, fontWeight: 500, color: '#475569', marginBottom: 8 }}>Estado</label>

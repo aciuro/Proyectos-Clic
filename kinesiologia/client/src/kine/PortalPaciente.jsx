@@ -538,10 +538,18 @@ function SeccionTurnos({ turnos, paciente }) {
 function RutinaCard({ rutina }) {
   const [done, setDone] = useState({})
   const [expanded, setExpanded] = useState(true)
+  const [vecesCompletadas, setVecesCompletadas] = useState(0)
 
   const ejs = rutina.ejercicios || []
+  const totalVeces = rutina.veces || 1
   const completados = ejs.filter((_, i) => done[i]).length
   const todoHecho = ejs.length > 0 && completados === ejs.length
+  const rutinaFinalizada = vecesCompletadas >= totalVeces
+
+  function marcarVuelta() {
+    setVecesCompletadas(v => v + 1)
+    setDone({})
+  }
 
   return (
     <Card style={{ overflow:'hidden' }}>
@@ -560,6 +568,29 @@ function RutinaCard({ rutina }) {
             {expanded ? '▴' : '▾'}
           </button>
         </div>
+
+        {/* Checklist de vueltas */}
+        {totalVeces > 1 && (
+          <div style={{ marginTop:14 }}>
+            <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color: rutinaFinalizada ? '#059669' : c.s400, margin:'0 0 8px' }}>
+              {rutinaFinalizada ? '¡Completaste todas las vueltas! 🎉' : `Vueltas completadas — ${vecesCompletadas}/${totalVeces}`}
+            </p>
+            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+              {Array.from({ length: totalVeces }).map((_, i) => (
+                <div key={i} style={{
+                  width:38, height:38, borderRadius:'50%',
+                  background: i < vecesCompletadas ? '#059669' : '#fff',
+                  border: `2px solid ${i < vecesCompletadas ? '#059669' : c.s300}`,
+                  display:'flex', alignItems:'center', justifyContent:'center',
+                  fontSize:15, color:'#fff', fontWeight:700,
+                  transition:'all 0.2s',
+                }}>
+                  {i < vecesCompletadas ? '✓' : <span style={{ color: c.s300, fontSize:13, fontWeight:600 }}>{i+1}</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {ejs.length > 0 && (
           <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:14 }}>
@@ -630,9 +661,26 @@ function RutinaCard({ rutina }) {
             </div>
           )}
 
-          {todoHecho && (
-            <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:14, padding:'12px', textAlign:'center', fontWeight:700, fontSize:14 }}>
-              ¡Excelente! Completaste esta rutina
+          {todoHecho && !rutinaFinalizada && (
+            <div style={{ background:c.emeraldBg, border:`1px solid #a7f3d0`, borderRadius:16, padding:'16px', textAlign:'center' }}>
+              <p style={{ color:c.emeraldText, fontWeight:700, fontSize:15, margin:'0 0 10px' }}>
+                ¡Excelente! Completaste todos los ejercicios 💪
+              </p>
+              <button onClick={marcarVuelta} style={{
+                background:'#059669', color:'#fff', border:'none', borderRadius:12,
+                padding:'10px 24px', fontWeight:700, fontSize:14, cursor:'pointer',
+                fontFamily:"'DM Sans', sans-serif",
+              }}>
+                Marcar vuelta {vecesCompletadas + 1} de {totalVeces}
+              </button>
+            </div>
+          )}
+          {rutinaFinalizada && (
+            <div style={{ background:c.emeraldBg, border:`1px solid #a7f3d0`, borderRadius:16, padding:'16px', textAlign:'center' }}>
+              <p style={{ fontSize:22, margin:'0 0 4px' }}>🎉</p>
+              <p style={{ color:c.emeraldText, fontWeight:700, fontSize:15, margin:0 }}>
+                ¡Completaste todas las {totalVeces} vueltas!
+              </p>
             </div>
           )}
         </div>
