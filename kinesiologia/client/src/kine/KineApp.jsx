@@ -152,8 +152,13 @@ function AdminLayout({ usuario, onLogout }) {
               <div style={{ fontSize: 10, color: s.s500 }}>Panel profesional</div>
             </div>
           </div>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: s.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: s.s900 }}>
-            {usuario?.nombre?.[0] || 'A'}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ width: 34, height: 34, borderRadius: '50%', background: s.accent, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 700, color: s.s900 }}>
+              {usuario?.nombre?.[0] || 'A'}
+            </div>
+            <button onClick={onLogout} style={{ background: 'none', border: '1px solid ' + s.s200, borderRadius: 8, padding: '5px 10px', fontSize: 12, color: s.s500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500 }}>
+              Salir
+            </button>
           </div>
         </header>
 
