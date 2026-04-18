@@ -713,21 +713,20 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
   })
 
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, zIndex: 60 }}>
-      <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 1200, background: '#f8fafc', borderRadius: 32, border: '1px solid #e2e8f0', boxShadow: '0 24px 80px rgba(0,0,0,0.18)', maxHeight: '94vh', display: 'flex', flexDirection: 'column' }}>
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.4)', display: 'flex', alignItems: 'flex-end', justifyContent: 'center', zIndex: 60 }} className="rm-overlay">
+      <div onClick={e => e.stopPropagation()} className="rm-modal-inner">
 
         {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', padding: '20px 28px', borderBottom: '1px solid #e2e8f0', background: '#fff', borderRadius: '32px 32px 0 0', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px', borderBottom: '1px solid #e2e8f0', background: '#fff', borderRadius: '24px 24px 0 0', flexShrink: 0 }}>
           <div>
-            <span style={{ display: 'inline-block', background: '#ecfdf5', color: '#059669', fontWeight: 600, fontSize: 12, padding: '4px 12px', borderRadius: 100 }}>Rutina domiciliaria</span>
-            <h2 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', marginTop: 10, marginBottom: 4 }}>{initialData ? 'Editar rutina' : 'Nueva rutina'}</h2>
-            <p style={{ fontSize: 14, color: '#64748b', margin: 0 }}>Armá la rutina con ejercicios de tu biblioteca y agentes físicos claros para el paciente.</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>{initialData ? 'Editar rutina' : 'Nueva rutina'}</h2>
+            <p style={{ fontSize: 13, color: '#64748b', margin: '2px 0 0' }}>Rutina domiciliaria</p>
           </div>
-          <button onClick={onClose} style={{ ...mc.iconBtn, marginTop: 4 }}>✕</button>
+          <button onClick={onClose} style={{ ...mc.iconBtn }}>✕</button>
         </div>
 
         {/* Body */}
-        <form id="form-rutina" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: '24px 28px' }}>
+        <form id="form-rutina" onSubmit={handleSave} style={{ flex: 1, overflowY: 'auto', padding: '16px' }}>
           <div className="rm-layout">
 
             {/* Columna izquierda */}
@@ -761,49 +760,38 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
 
               {/* Biblioteca */}
               <div style={card}>
-                <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-                  <div>
-                    <p style={secTitle}>Biblioteca de ejercicios</p>
-                    <p style={secSub}>Elegí y agregá ejercicios a la rutina.</p>
-                  </div>
-                  <span style={{ background: '#f1f5f9', color: '#475569', fontWeight: 500, fontSize: 13, padding: '8px 14px', borderRadius: 14, flexShrink: 0 }}>{filtered.length} resultados</span>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: 10, marginTop: 16 }}>
-                  <input style={fld} placeholder="Buscar ejercicio..." value={search} onChange={e => setSearch(e.target.value)} />
-                  <select style={fld} value={grupo} onChange={e => setGrupo(e.target.value)}>
-                    {allGroups.map(g => <option key={g}>{g}</option>)}
-                  </select>
-                </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 12 }}>
-                  {allGroups.map(g => (
-                    <button key={g} type="button" style={pillBtn(grupo === g)} onClick={() => setGrupo(g)}>{g}</button>
+                <p style={secTitle}>Biblioteca de ejercicios</p>
+                <p style={secSub}>Seleccioná la zona y agregá los ejercicios.</p>
+
+                {/* Zonas */}
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 14 }}>
+                  {allGroups.filter(g => g !== 'Todos').map(g => (
+                    <button key={g} type="button" style={pillBtn(grupo === g)} onClick={() => setGrupo(g === grupo ? 'Todos' : g)}>{g}</button>
                   ))}
                 </div>
-                <div className="rm-lib-grid" style={{ marginTop: 16, maxHeight: 430, overflowY: 'auto', paddingRight: 4 }}>
+
+                {/* Buscador */}
+                <input style={{ ...fld, marginTop: 12 }} placeholder="Buscar ejercicio..." value={search} onChange={e => setSearch(e.target.value)} />
+
+                {/* Lista compacta */}
+                <div style={{ marginTop: 10, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 4 }}>
                   {filtered.map(item => {
                     const added = ejercicios.some(e => e.exerciseId === item.name)
                     return (
-                      <div key={item.name} style={{ borderRadius: 22, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 14 }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-                          <div>
-                            <p style={{ fontWeight: 700, fontSize: 13, color: '#0f172a', margin: 0, lineHeight: 1.3 }}>{item.name}</p>
-                            <p style={{ fontSize: 12, color: '#64748b', margin: '3px 0 0' }}>{item.group}</p>
-                          </div>
-                          <span style={{ background: '#eff6ff', color: '#2563eb', fontWeight: 600, fontSize: 11, padding: '3px 8px', borderRadius: 100, flexShrink: 0 }}>2 fotos</span>
+                      <div key={item.name} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '10px 14px', borderRadius: 14, border: '1px solid ' + (added ? '#a7f3d0' : '#e2e8f0'), background: added ? '#f0fdf4' : '#f8fafc' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <p style={{ fontWeight: 600, fontSize: 13, color: added ? '#059669' : '#0f172a', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.name}</p>
+                          <p style={{ fontSize: 11, color: '#94a3b8', margin: '2px 0 0' }}>{item.group}</p>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 6, marginTop: 10 }}>
-                          <img src={item.images[0]} alt={item.name + ' A'} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: 4 }} loading="lazy" />
-                          <img src={item.images[1]} alt={item.name + ' B'} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', borderRadius: 12, border: '1px solid #e2e8f0', background: '#fff', padding: 4 }} loading="lazy" />
-                        </div>
-                        <button type="button" onClick={() => addEjercicio(item)} disabled={added}
-                          style={{ marginTop: 10, width: '100%', padding: '10px 0', borderRadius: 14, border: 'none', fontWeight: 600, fontSize: 13, cursor: added ? 'default' : 'pointer', fontFamily: 'inherit', background: added ? '#d1fae5' : '#059669', color: added ? '#059669' : '#fff', transition: 'all 0.15s' }}>
-                          {added ? '✓ Agregado' : 'Agregar a la rutina'}
+                        <button type="button" onClick={() => added ? removeEj(ejercicios.find(e => e.exerciseId === item.name)?.key) : addEjercicio(item)}
+                          style={{ padding: '6px 14px', borderRadius: 10, border: 'none', fontWeight: 600, fontSize: 12, cursor: 'pointer', fontFamily: 'inherit', background: added ? 'transparent' : '#059669', color: added ? '#059669' : '#fff', flexShrink: 0, border: added ? '1px solid #a7f3d0' : 'none' }}>
+                          {added ? '✓ Quitar' : '+ Agregar'}
                         </button>
                       </div>
                     )
                   })}
                   {filtered.length === 0 && (
-                    <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '32px 0', color: '#94a3b8', fontSize: 14 }}>Sin resultados</div>
+                    <div style={{ textAlign: 'center', padding: '24px 0', color: '#94a3b8', fontSize: 14 }}>Sin resultados</div>
                   )}
                 </div>
               </div>
@@ -950,7 +938,7 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
         </form>
 
         {/* Footer */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '16px 28px', borderTop: '1px solid #e2e8f0', background: '#fff', borderRadius: '0 0 32px 32px', flexShrink: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, padding: '14px 16px', borderTop: '1px solid #e2e8f0', background: '#fff', borderRadius: '0 0 24px 24px', flexShrink: 0 }}>
           <button type="button" onClick={onClose} style={{ padding: '12px 22px', borderRadius: 16, border: '1px solid #e2e8f0', background: '#fff', color: '#334155', fontWeight: 600, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit' }}>
             Cancelar
           </button>
@@ -1507,15 +1495,18 @@ export default function PacienteDetalle() {
         .mc-session-card:hover { transform: translateY(-2px); border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
         .mc-routine-card { width: 100%; text-align: left; background: #fff; border: 1px solid #e2e8f0; border-radius: 24px; padding: 20px; cursor: pointer; transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s; font-family: inherit; }
         .mc-routine-card:hover { transform: translateY(-2px); border-color: #cbd5e1; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
-        .rm-layout { display: grid; grid-template-columns: 1fr; gap: 20px; }
-        .rm-lib-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-        @media (min-width: 1100px) { .rm-layout { grid-template-columns: 1.2fr 0.8fr; } }
-        @media (min-width: 1400px) { .rm-lib-grid { grid-template-columns: 1fr 1fr 1fr; } }
+        .rm-overlay { align-items: flex-end !important; }
+        @media (min-width: 768px) { .rm-overlay { align-items: center !important; padding: 16px; } }
+        .rm-modal-inner { width: 100%; max-width: 1200px; background: #f8fafc; border-radius: 24px 24px 0 0; border: 1px solid #e2e8f0; box-shadow: 0 -8px 40px rgba(0,0,0,0.18); max-height: 96vh; display: flex; flex-direction: column; }
+        @media (min-width: 768px) { .rm-modal-inner { border-radius: 32px; max-height: 94vh; } }
+        .rm-layout { display: grid; grid-template-columns: 1fr; gap: 16px; }
+        @media (min-width: 900px) {
+          .rm-layout { grid-template-columns: 1.2fr 0.8fr; gap: 20px; }
+        }
         @media (max-width: 768px) {
           .mc-stats-grid { grid-template-columns: repeat(2, 1fr); }
           .mc-sessions-grid { grid-template-columns: 1fr; }
           .mc-routines-grid { grid-template-columns: 1fr; }
-          .rm-lib-grid { grid-template-columns: 1fr; }
         }
       `}</style>
       <div className="kine-page-header">
