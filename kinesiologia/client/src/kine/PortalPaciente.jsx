@@ -1,28 +1,15 @@
 import { useEffect, useState } from 'react'
 import { api } from './api.js'
 
-/* ── Paleta ──────────────────────────────────────────────── */
 const c = {
-  white:       '#ffffff',
-  s50:         '#f8fafc',
-  s100:        '#f1f5f9',
-  s200:        '#e2e8f0',
-  s300:        '#cbd5e1',
-  s400:        '#94a3b8',
-  s500:        '#64748b',
-  s700:        '#334155',
-  s900:        '#0f172a',
-  blue:        '#2563eb',
-  blueDark:    '#1d4ed8',
-  blue50:      '#eff6ff',
-  blue100:     '#dbeafe',
-  emerald:     '#059669',
-  emeraldBg:   '#ecfdf5',
-  emeraldText: '#047857',
-  red:         '#dc2626',
-  redBg:       '#fef2f2',
-  redBorder:   '#fecaca',
-  redText:     '#991b1b',
+  bg: '#F0F8FA', white: '#FFFFFF',
+  sky: '#5BB8CC', skyDark: '#3A96AE',
+  skyLight: '#DAEEF5', skyXlight: '#EEF7FA',
+  aqua: '#7EC8B8', aquaDark: '#4FA898', aquaLight: '#D8F0EA',
+  ink: '#0D3540', ink2: '#2A6070', muted: '#7AAAB8',
+  border: '#C0DDE5',
+  redBg: '#FEF0EE', redBorder: '#F5A897', redText: '#C0341D', redSub: '#E05A3A',
+  yellow: '#FFF8D6', yellowBorder: '#F0DFA0', yellowText: '#7A5C00', yellowDark: '#B8860B',
 }
 
 const ALIAS    = 'clic.escobar'
@@ -35,70 +22,62 @@ const INITIAL_HISTORY = [
 ]
 
 const globalStyle = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
-  .pp-root * { box-sizing: border-box; font-family: 'DM Sans', sans-serif; }
-  .pp-root { background: #f8fafc; min-height: 100vh; }
-  .pp-right-col { display: none; }
-  @media (min-width: 768px) {
-    .pp-right-col { display: block; }
-    .pp-contact-btn { display: none; }
-    .pp-bottom-nav-pill { display: none; }
-    .pp-bottom-bar { position: static !important; border-top: none !important; background: transparent !important; backdrop-filter: none !important; }
-    .pp-main-grid { display: grid !important; grid-template-columns: 1.1fr 0.9fr; gap: 16px; }
-    .pp-content { padding: 32px !important; max-width: 960px; margin: 0 auto; }
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body, #root { height: 100%; }
+  body { font-family: 'DM Sans', sans-serif; background: ${c.bg}; -webkit-font-smoothing: antialiased; }
+  textarea, input { outline: none; }
+
+  .pac-shell { min-height: 100vh; background: ${c.bg}; display: flex; flex-direction: column; }
+  .pac-content { flex: 1; padding: 16px 18px 120px; max-width: 480px; margin: 0 auto; width: 100%; }
+
+  .bottom-nav {
+    position: fixed; bottom: 12px; left: 12px; right: 12px;
+    background: ${c.white}; border: 0.5px solid ${c.border};
+    border-radius: 22px; display: flex; justify-content: space-around;
+    padding: 10px 4px env(safe-area-inset-bottom,10px);
+    z-index: 100; box-shadow: 0 4px 24px rgba(13,53,64,0.08);
   }
+  .nav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; background: none; border: none; cursor: pointer; padding: 4px 2px; }
+  .nav-label { font-size: 9px; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .nav-dot { width: 4px; height: 4px; border-radius: 50%; background: ${c.skyDark}; margin: 1px auto 0; }
+
+  .pp-card { background: ${c.white}; border-radius: 16px; border: 0.5px solid ${c.border}; padding: 15px; margin-bottom: 14px; }
+  .pp-mini-card { background: ${c.white}; border-radius: 14px; padding: 13px; display: flex; flex-direction: column; gap: 8px; border: 0.5px solid ${c.border}; }
+  .pp-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+  @media (min-width: 768px) {
+    .pac-content { max-width: 860px; padding: 32px 40px 120px; }
+    .bottom-nav { max-width: 480px; left: 50%; transform: translateX(-50%); right: auto; width: calc(100% - 40px); }
+    .pp-two-col { display: grid !important; grid-template-columns: 1.1fr 0.9fr; gap: 24px; align-items: start; }
+  }
+
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-thumb { background: ${c.border}; border-radius: 2px; }
 `
 
-/* ── UI helpers ─────────────────────────────────────────── */
-function Card({ children, style = {} }) {
+function LogoSVG() {
   return (
-    <div style={{
-      background: c.white, borderRadius: 20,
-      border: `1px solid ${c.s200}`,
-      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-      ...style,
-    }}>
-      {children}
-    </div>
+    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+      <ellipse cx="13" cy="13" rx="7.5" ry="10.5" fill="#5BB8CC" transform="rotate(-20 13 13)"/>
+      <ellipse cx="13" cy="13" rx="5.5" ry="8.5" fill="#7EC8B8" opacity="0.6" transform="rotate(30 13 13)"/>
+      <line x1="13" y1="4" x2="13" y2="22" stroke={c.ink} strokeWidth="1.2" strokeLinecap="round"/>
+    </svg>
   )
 }
 
-function Badge({ children, tone = 'default' }) {
-  const tones = {
-    default: { background: c.s100, color: c.s700 },
-    success: { background: c.emeraldBg, color: c.emeraldText },
-    warning: { background: '#fffbeb', color: '#92400e' },
-    info:    { background: c.blue50, color: c.blue },
-  }
-  const t = tones[tone] || tones.default
-  return (
-    <span style={{ ...t, borderRadius: 20, padding: '3px 10px', fontSize: 12, fontWeight: 500, display: 'inline-flex', alignItems: 'center', whiteSpace: 'nowrap' }}>
-      {children}
-    </span>
-  )
-}
-
-function SectionTitle({ title, subtitle, action }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
-      <div>
-        <h2 style={{ fontSize: 16, fontWeight: 600, color: c.s900 }}>{title}</h2>
-        {subtitle && <p style={{ fontSize: 13, color: c.s500, marginTop: 2 }}>{subtitle}</p>}
-      </div>
-      {action}
-    </div>
-  )
-}
-
-function StatLabel({ children }) {
-  return <p style={{ fontSize: 11, fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.06em', color: c.s500 }}>{children}</p>
+function formatDateLong() {
+  const now = new Date()
+  const days = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado']
+  const months = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']
+  return `${days[now.getDay()]} ${now.getDate()} de ${months[now.getMonth()]}`
 }
 
 function colorEscala(v) {
-  if (!v) return c.s200
-  if (v <= 3) return '#16a34a'
-  if (v <= 6) return '#f59e0b'
-  return '#dc2626'
+  if (!v) return c.muted
+  if (v <= 3) return '#43A047'
+  if (v <= 6) return '#F59E0B'
+  return '#D0446A'
 }
 
 /* ── VideoEmbed ─────────────────────────────────────────── */
@@ -117,34 +96,34 @@ function VideoEmbed({ url }) {
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen title="Ejercicio" />
     </div>
   )
-  return <a href={url} target="_blank" rel="noreferrer" style={{ color:c.blue }}>Ver video del ejercicio</a>
+  return <a href={url} target="_blank" rel="noreferrer" style={{ color:c.skyDark }}>Ver video del ejercicio</a>
 }
 
 /* ── EjercicioDetalle ───────────────────────────────────── */
 function EjercicioDetalle({ ej, onVolver }) {
   const nombre = ej.nombre.replace(/ — (CC|OA)$/, '')
   return (
-    <div style={{ background: c.s50, minHeight:'100vh', paddingBottom:'2rem' }}>
-      <button onClick={onVolver} style={{ background:'none', border:'none', color:c.blue, fontSize:15, fontWeight:600, cursor:'pointer', padding:'1.5rem 1rem 0.5rem', display:'flex', alignItems:'center', gap:6 }}>
+    <div style={{ background: c.bg, minHeight:'100vh', paddingBottom:'2rem' }}>
+      <button onClick={onVolver} style={{ background:'none', border:'none', color:c.skyDark, fontSize:15, fontWeight:600, cursor:'pointer', padding:'1.5rem 1rem 0.5rem', display:'flex', alignItems:'center', gap:6 }}>
         ← Volver a la rutina
       </button>
       <div style={{ padding:'0 1rem' }}>
-        <span style={{ background:c.blue50, color:c.blue, borderRadius:20, padding:'2px 12px', fontSize:12, fontWeight:600 }}>
+        <span style={{ background:c.skyLight, color:c.skyDark, borderRadius:20, padding:'2px 12px', fontSize:12, fontWeight:600 }}>
           {ej.categoria || 'General'}
         </span>
-        <h2 style={{ color:c.s900, fontSize:22, fontWeight:700, margin:'0.75rem 0 1rem' }}>{nombre}</h2>
+        <h2 style={{ color:c.ink, fontSize:22, fontWeight:700, margin:'0.75rem 0 1rem', fontFamily:"'DM Serif Display', serif" }}>{nombre}</h2>
         {(ej.series || ej.repeticiones || ej.segundos) && (
-          <Card style={{ padding:'1rem', marginBottom:'1rem' }}>
-            <div style={{ fontSize:11, color:c.s500, fontWeight:600, marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:1 }}>Tu prescripción</div>
+          <div className="pp-card" style={{ marginBottom:'1rem' }}>
+            <div style={{ fontSize:11, color:c.muted, fontWeight:600, marginBottom:'0.75rem', textTransform:'uppercase', letterSpacing:1 }}>Tu prescripción</div>
             <div style={{ display:'flex', gap:16 }}>
-              {ej.series       && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.series}</div><div style={{ fontSize:11, color:c.s500 }}>Series</div></div>}
-              {ej.repeticiones && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.repeticiones}</div><div style={{ fontSize:11, color:c.s500 }}>Reps</div></div>}
-              {ej.segundos     && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.blue }}>{ej.segundos}"</div><div style={{ fontSize:11, color:c.s500 }}>Seg</div></div>}
+              {ej.series       && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.skyDark }}>{ej.series}</div><div style={{ fontSize:11, color:c.muted }}>Series</div></div>}
+              {ej.repeticiones && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.skyDark }}>{ej.repeticiones}</div><div style={{ fontSize:11, color:c.muted }}>Reps</div></div>}
+              {ej.segundos     && <div style={{ textAlign:'center' }}><div style={{ fontSize:28, fontWeight:700, color:c.skyDark }}>{ej.segundos}"</div><div style={{ fontSize:11, color:c.muted }}>Seg</div></div>}
             </div>
-          </Card>
+          </div>
         )}
         <VideoEmbed url={ej.video_url} />
-        {ej.descripcion && <p style={{ color:c.s500, fontSize:14, lineHeight:1.6 }}>{ej.descripcion}</p>}
+        {ej.descripcion && <p style={{ color:c.muted, fontSize:14, lineHeight:1.6 }}>{ej.descripcion}</p>}
       </div>
     </div>
   )
@@ -168,12 +147,13 @@ function ModalDolor({ onClose, historia, onGuardar }) {
 
   function Escala({ value, onChange }) {
     return (
-      <div style={{ display:'flex', gap:6, flexWrap:'wrap', margin:'0.5rem 0' }}>
+      <div style={{ display:'flex', gap:5, flexWrap:'wrap', margin:'0.5rem 0' }}>
         {[1,2,3,4,5,6,7,8,9,10].map(n => (
           <button key={n} onClick={() => onChange(n)} style={{
-            width:36, height:36, borderRadius:10, border:'none', cursor:'pointer', fontWeight:700, fontSize:14,
-            background: value===n ? colorEscala(n) : c.s100,
-            color: value===n ? '#fff' : c.s700,
+            width:32, height:32, borderRadius:9, border:'none', cursor:'pointer', fontWeight:700, fontSize:13,
+            background: value===n ? colorEscala(n) : 'rgba(13,53,64,0.07)',
+            color: value===n ? '#fff' : c.ink2,
+            fontFamily:"'DM Sans', sans-serif",
           }}>{n}</button>
         ))}
       </div>
@@ -181,40 +161,46 @@ function ModalDolor({ onClose, historia, onGuardar }) {
   }
 
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.5)', zIndex:1000, display:'flex', alignItems:'flex-end' }} onClick={onClose}>
-      <div style={{ background:c.white, borderRadius:'20px 20px 0 0', width:'100%', maxWidth:520, maxHeight:'92vh', overflow:'auto', padding:'1.5rem', margin:'0 auto' }} onClick={e=>e.stopPropagation()}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem' }}>
-          <div style={{ fontSize:18, fontWeight:700, color:c.s900 }}>Registro de dolor</div>
-          <button onClick={onClose} style={{ background:'none', border:'none', fontSize:24, color:c.s400, cursor:'pointer' }}>×</button>
+    <div style={{ position:'fixed', inset:0, background:'rgba(13,53,64,0.45)', zIndex:200, display:'flex', alignItems:'flex-end', justifyContent:'center' }} onClick={onClose}>
+      <div style={{ background:c.white, borderRadius:'22px 22px 0 0', width:'100%', maxWidth:520, maxHeight:'92vh', overflow:'auto', padding:'1.5rem', margin:'0 auto' }} onClick={e=>e.stopPropagation()}>
+        <div style={{ display:'flex', justifyContent:'center', marginBottom:12 }}>
+          <div style={{ width:36, height:4, borderRadius:2, background:c.border }} />
         </div>
-        <div style={{ display:'flex', gap:4, marginBottom:'1.5rem', background:c.s100, borderRadius:12, padding:4 }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'1rem' }}>
+          <div style={{ fontSize:17, fontWeight:500, color:c.ink }}>Registro de dolor</div>
+          <button onClick={onClose} style={{ background:'rgba(13,53,64,0.06)', border:'none', borderRadius:'50%', width:30, height:30, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke={c.muted} strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        <div style={{ display:'flex', gap:4, marginBottom:'1.5rem', background:'rgba(13,53,64,0.06)', borderRadius:10, padding:3 }}>
           {['registrar','historial'].map(t => (
             <button key={t} onClick={() => setTab(t)} style={{
-              flex:1, padding:'8px', borderRadius:9, border:'none', cursor:'pointer', fontWeight:600, fontSize:13,
+              flex:1, padding:'8px 0', borderRadius:8, border:'none', cursor:'pointer', fontWeight: tab===t ? 500 : 400, fontSize:12,
               background: tab===t ? c.white : 'transparent',
-              color: tab===t ? c.blue : c.s500,
-              boxShadow: tab===t ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+              color: tab===t ? c.skyDark : c.muted,
+              boxShadow: tab===t ? '0 1px 4px rgba(13,53,64,0.1)' : 'none',
+              fontFamily:"'DM Sans', sans-serif", transition:'all 0.15s',
             }}>{t==='registrar' ? 'Registrar hoy' : 'Historial'}</button>
           ))}
         </div>
         {tab === 'registrar' && (
-          <div>
-            <div style={{ marginBottom:'1.25rem' }}>
-              <div style={{ fontSize:14, fontWeight:600, color:c.s900, marginBottom:'0.4rem' }}>🌅 Al despertar</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:18 }}>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500, color:c.ink, marginBottom:'0.4rem' }}>🌅 Al despertar</div>
               <Escala value={manana} onChange={setManana} />
             </div>
-            <div style={{ marginBottom:'1.25rem' }}>
-              <div style={{ fontSize:14, fontWeight:600, color:c.s900, marginBottom:'0.4rem' }}>✍️ Descripción</div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500, color:c.ink, marginBottom:'0.4rem' }}>✍️ Descripción</div>
               <textarea value={descripcion} onChange={e=>setDesc(e.target.value)} placeholder="Describí cómo te sentiste..." rows={3}
-                style={{ width:'100%', border:`1px solid ${c.s200}`, borderRadius:12, padding:'10px 12px', fontSize:14, color:c.s900, resize:'none', outline:'none', fontFamily:'inherit' }} />
+                style={{ width:'100%', border:`1px solid ${c.border}`, borderRadius:12, padding:'10px 12px', fontSize:13, color:c.ink, resize:'none', fontFamily:"'DM Sans', sans-serif", background:c.skyXlight }} />
             </div>
-            <div style={{ marginBottom:'1.5rem' }}>
-              <div style={{ fontSize:14, fontWeight:600, color:c.s900, marginBottom:'0.4rem' }}>🌙 Al acostarse</div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500, color:c.ink, marginBottom:'0.4rem' }}>🌙 Al acostarse</div>
               <Escala value={noche} onChange={setNoche} />
             </div>
             {guardado
-              ? <div style={{ textAlign:'center', color:c.emerald, fontWeight:700, padding:'12px', background:c.emeraldBg, borderRadius:12 }}>✓ Guardado</div>
-              : <button onClick={handleGuardar} style={{ width:'100%', padding:'14px', background:c.blue, color:'#fff', border:'none', borderRadius:14, fontWeight:700, fontSize:15, cursor:'pointer' }}>
+              ? <div style={{ textAlign:'center', color:c.aquaDark, fontWeight:600, padding:'12px', background:c.aquaLight, borderRadius:12 }}>✓ Guardado</div>
+              : <button onClick={handleGuardar} style={{ width:'100%', padding:'14px', background:`linear-gradient(135deg,${c.sky},${c.skyDark})`, color:'#fff', border:'none', borderRadius:14, fontWeight:500, fontSize:14, cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
                   Guardar registro
                 </button>
             }
@@ -223,24 +209,24 @@ function ModalDolor({ onClose, historia, onGuardar }) {
         {tab === 'historial' && (
           <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
             {historia.length === 0
-              ? <div style={{ color:c.s400, textAlign:'center', padding:'2rem' }}>Sin registros aún</div>
+              ? <div style={{ color:c.muted, textAlign:'center', padding:'2rem' }}>Sin registros aún</div>
               : historia.map((h,i) => {
                   const d = new Date(h.date+'T12:00')
                   const label = d.toLocaleDateString('es-AR', { weekday:'short', day:'numeric', month:'short' })
                   return (
-                    <div key={i} style={{ background:c.s50, borderRadius:14, padding:'1rem', border:`1px solid ${c.s200}` }}>
-                      <div style={{ fontSize:12, color:c.s500, fontWeight:600, marginBottom:'0.5rem', textTransform:'capitalize' }}>{label}</div>
+                    <div key={i} style={{ background:c.skyXlight, borderRadius:14, padding:'1rem', border:`0.5px solid ${c.border}` }}>
+                      <div style={{ fontSize:12, color:c.muted, fontWeight:500, marginBottom:'0.5rem', textTransform:'capitalize' }}>{label}</div>
                       <div style={{ display:'flex', gap:8, marginBottom:'0.5rem' }}>
-                        <div style={{ flex:1, background:colorEscala(h.manana), borderRadius:10, padding:'8px', textAlign:'center' }}>
+                        <div key="m" style={{ flex:1, background:colorEscala(h.manana), borderRadius:10, padding:'8px', textAlign:'center' }}>
                           <div style={{ fontSize:22, fontWeight:800, color:'#fff' }}>{h.manana}</div>
                           <div style={{ fontSize:10, color:'#fff', opacity:0.9 }}>Mañana</div>
                         </div>
-                        <div style={{ flex:1, background:colorEscala(h.noche), borderRadius:10, padding:'8px', textAlign:'center' }}>
+                        <div key="n" style={{ flex:1, background:colorEscala(h.noche), borderRadius:10, padding:'8px', textAlign:'center' }}>
                           <div style={{ fontSize:22, fontWeight:800, color:'#fff' }}>{h.noche}</div>
                           <div style={{ fontSize:10, color:'#fff', opacity:0.9 }}>Noche</div>
                         </div>
                       </div>
-                      {h.descripcion && <p style={{ fontSize:13, color:c.s700, fontStyle:'italic', margin:0, lineHeight:1.5 }}>{h.descripcion}</p>}
+                      {h.descripcion && <p style={{ fontSize:13, color:c.ink2, fontStyle:'italic', margin:0, lineHeight:1.5 }}>{h.descripcion}</p>}
                     </div>
                   )
                 })
@@ -256,82 +242,26 @@ function ModalDolor({ onClose, historia, onGuardar }) {
 function DeudaOverlay({ paciente, saldo }) {
   const msg = encodeURIComponent(`Hola Augusto! Soy ${paciente.nombre} ${paciente.apellido}. Acabo de realizar el pago de $${saldo} por mis sesiones. Alias: ${ALIAS}. Por favor confirmame cuando lo recibas. Gracias!`)
   return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(15,23,42,0.75)', zIndex:900, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
-      <Card style={{ padding:'2rem', maxWidth:360, width:'100%', textAlign:'center' }}>
+    <div style={{ position:'fixed', inset:0, background:'rgba(13,53,64,0.75)', zIndex:900, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
+      <div style={{ background:c.white, borderRadius:20, border:`0.5px solid ${c.border}`, padding:'2rem', maxWidth:360, width:'100%', textAlign:'center' }}>
         <div style={{ fontSize:40, marginBottom:'0.75rem' }}>🔒</div>
-        <h2 style={{ color:c.s900, fontSize:20, fontWeight:700, margin:'0 0 0.5rem' }}>Acceso suspendido</h2>
-        <p style={{ color:c.s500, fontSize:14, marginBottom:'1rem' }}>Tenés un saldo pendiente de <strong style={{ color:c.s900 }}>${saldo}</strong>.</p>
-        <div style={{ background:c.redBg, border:`1px solid ${c.redBorder}`, borderRadius:14, padding:'0.75rem', marginBottom:'1rem' }}>
+        <h2 style={{ color:c.ink, fontSize:20, fontWeight:600, margin:'0 0 0.5rem', fontFamily:"'DM Serif Display', serif" }}>Acceso suspendido</h2>
+        <p style={{ color:c.muted, fontSize:14, marginBottom:'1rem' }}>Tenés un saldo pendiente de <strong style={{ color:c.ink }}>${saldo}</strong>.</p>
+        <div style={{ background:c.redBg, border:`0.5px solid ${c.redBorder}`, borderRadius:14, padding:'0.75rem', marginBottom:'1rem' }}>
           <div style={{ fontSize:11, color:c.redText, marginBottom:4 }}>Transferí al alias</div>
-          <div style={{ fontSize:18, fontWeight:700, color:c.red }}>{ALIAS}</div>
+          <div style={{ fontSize:18, fontWeight:700, color:c.redText }}>{ALIAS}</div>
         </div>
         <a href={`https://wa.me/${ADMIN_WA}?text=${msg}`} target="_blank" rel="noreferrer"
-          style={{ display:'block', background:c.blue, color:'#fff', padding:'14px', borderRadius:14, fontWeight:700, textDecoration:'none', fontSize:15 }}>
+          style={{ display:'block', background:`linear-gradient(135deg,${c.sky},${c.skyDark})`, color:'#fff', padding:'14px', borderRadius:14, fontWeight:500, textDecoration:'none', fontSize:14, fontFamily:"'DM Sans', sans-serif" }}>
           Avisá que pagaste por WhatsApp
         </a>
-      </Card>
-    </div>
-  )
-}
-
-/* ── Columna derecha (solo desktop) ─────────────────────── */
-function RightColumn({ motivos, onTabChange }) {
-  return (
-    <div className="pp-right-col" style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      {/* Estado del tratamiento */}
-      <Card style={{ padding:20 }}>
-        <SectionTitle title="Estado del tratamiento" />
-        <div style={{ marginTop:16, background:c.s50, borderRadius:16, padding:16 }}>
-          <p style={{ fontWeight:600, color:c.s900, fontSize:14 }}>
-            {motivos?.[0]?.sintoma ? motivos[0].sintoma.charAt(0).toUpperCase() + motivos[0].sintoma.slice(1) : 'Rehabilitación'}
-          </p>
-          <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Evolución favorable</p>
-        </div>
-        <div style={{ marginTop:12, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-          <div style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:14 }}>
-            <StatLabel>Kinesiólogo</StatLabel>
-            <p style={{ marginTop:6, fontSize:13, fontWeight:600, color:c.s900 }}>Lic. Augusto Ciuro</p>
-          </div>
-          <div style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:14 }}>
-            <StatLabel>Próximo control</StatLabel>
-            <p style={{ marginTop:6, fontSize:13, fontWeight:600, color:c.s900 }}>A definir</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Mensajes */}
-      <Card style={{ padding:20 }}>
-        <SectionTitle title="Mensajes" />
-        <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
-          <div style={{ background:c.s50, borderRadius:14, padding:14 }}>
-            <p style={{ fontWeight:500, color:c.s900, fontSize:14 }}>Recordatorio</p>
-            <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Intentá completar tu rutina al menos 4 veces por semana.</p>
-          </div>
-          <div style={{ background:c.s50, borderRadius:14, padding:14 }}>
-            <p style={{ fontWeight:500, color:c.s900, fontSize:14 }}>Indicaciones</p>
-            <p style={{ fontSize:13, color:c.s500, marginTop:4 }}>Evitá movimientos bruscos durante los próximos días.</p>
-          </div>
-        </div>
-      </Card>
-
-      {/* Accesos rápidos */}
-      <Card style={{ padding:20 }}>
-        <SectionTitle title="Accesos rápidos" />
-        <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-          {[['Turnos','turnos'],['Rutinas','rutinas'],['Estudios','inicio'],['Perfil','perfil']].map(([label, id]) => (
-            <button key={label} onClick={() => onTabChange(id)}
-              style={{ borderRadius:14, border:`1px solid ${c.s200}`, padding:'14px', textAlign:'left', fontSize:13, fontWeight:500, color:c.s700, background:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </Card>
+      </div>
     </div>
   )
 }
 
 /* ── SeccionInicio ──────────────────────────────────────── */
-function SeccionInicio({ paciente, ejercicios, rutinas, turnos, saldo, motivos, onVerDetalle, onAbrirDolor, historialDolor, onTabChange }) {
+function SeccionInicio({ paciente, rutinas, turnos, saldo, onAbrirDolor, historialDolor, onTabChange }) {
   const hoy = new Date(); hoy.setHours(0,0,0,0)
   const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic']
   const proximoTurno = turnos
@@ -340,122 +270,136 @@ function SeccionInicio({ paciente, ejercicios, rutinas, turnos, saldo, motivos, 
   const dolorHoy = historialDolor[0]
 
   return (
-    <div className="pp-main-grid" style={{ display:'block' }}>
-      {/* Columna izquierda */}
-      <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+      {/* Próximo turno */}
+      <div style={{ fontSize:10, letterSpacing:'1.5px', textTransform:'uppercase', color:c.muted, marginBottom:10, fontWeight:500 }}>Próximo turno</div>
+      <div className="pp-card">
+        {proximoTurno ? (() => {
+          const d = new Date(proximoTurno.fecha+'T12:00')
+          return (
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ borderRadius:11, width:46, height:46, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0, background:c.sky }}>
+                <span style={{ fontSize:18, fontWeight:500, lineHeight:1, color:'#fff' }}>{d.getDate()}</span>
+                <span style={{ fontSize:8, letterSpacing:1, textTransform:'uppercase', color:'rgba(255,255,255,0.75)' }}>{meses[d.getMonth()]}</span>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:14, fontWeight:500, color:c.ink }}>Kinesiología</div>
+                <div style={{ fontSize:12, color:c.muted, marginTop:2 }}>Lic. Augusto Ciuro · {proximoTurno.hora?.slice(0,5)} hs</div>
+              </div>
+              <div style={{ width:22, height:22, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(91,184,204,0.15)' }}>
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 1.5l3.5 3-3.5 3" stroke={c.skyDark} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            </div>
+          )
+        })() : (
+          <div style={{ textAlign:'center', padding:'8px 0' }}>
+            <div style={{ fontSize:14, fontWeight:500, color:c.ink }}>Sin turnos próximos</div>
+            <div style={{ fontSize:12, color:c.muted, marginTop:4 }}>Cuando reserves una sesión, la verás acá</div>
+          </div>
+        )}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:12, paddingTop:10, borderTop:`0.5px solid ${c.border}` }}>
+          <span style={{ fontSize:11, background:c.aquaLight, color:c.aquaDark, padding:'3px 10px', borderRadius:20 }}>
+            {proximoTurno ? 'Confirmado' : 'Sin turnos'}
+          </span>
+          <button onClick={() => onTabChange('turnos')} style={{ fontSize:11, color:c.skyDark, fontWeight:500, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
+            {proximoTurno ? 'Ver todos' : 'Reservar'}
+          </button>
+        </div>
+      </div>
 
-        {/* Próximo turno */}
-        <Card style={{
-          overflow:'hidden',
-          borderColor: c.blue100,
-          background: 'linear-gradient(135deg, #eff6ff 0%, #f8fafc 100%)',
-          padding: 20,
-        }}>
-          <p style={{ fontSize:14, fontWeight:500, color:c.blue }}>Próximo turno</p>
-          {proximoTurno ? (() => {
-            const d = new Date(proximoTurno.fecha+'T12:00')
-            return (
-              <>
-                <h2 style={{ fontSize:30, fontWeight:700, color:c.s900, marginTop:8, letterSpacing:'-0.025em', lineHeight:1.1 }}>
-                  {d.getDate()} {meses[d.getMonth()]} · {proximoTurno.hora?.slice(0,5)} hs
-                </h2>
-                <p style={{ fontSize:14, color:c.s500, marginTop:8 }}>
-                  {proximoTurno.motivo || 'Sesión de kinesiología'}
-                </p>
-              </>
-            )
-          })() : (
+      {/* Rutina */}
+      <div style={{ fontSize:10, letterSpacing:'1.5px', textTransform:'uppercase', color:c.muted, marginBottom:10, fontWeight:500 }}>Rutina de hoy</div>
+      {rutinas.filter(r => r.estado === 'Activa').length === 0 ? (
+        <div className="pp-card">
+          <div style={{ textAlign:'center', fontSize:13, color:c.muted, padding:'8px 0' }}>Tu kinesiólogo aún no asignó rutinas</div>
+        </div>
+      ) : (
+        rutinas.filter(r => r.estado === 'Activa').slice(0,2).map(r => (
+          <div key={r.id} className="pp-card" style={{ cursor:'pointer' }} onClick={() => onTabChange('rutinas')}>
+            <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+              <div style={{ borderRadius:11, width:46, height:46, display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, background:`linear-gradient(135deg,${c.aqua},${c.aquaDark})` }}>
+                <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M5 11c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/><path d="M8 15l3-8 3 8" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M9 13h4" stroke="rgba(255,255,255,0.9)" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </div>
+              <div style={{ flex:1 }}>
+                <div style={{ fontSize:11, color:c.muted, marginBottom:2 }}>{r.motivo_sintoma || 'Rutina domiciliaria'}</div>
+                <div style={{ fontSize:14, fontWeight:500, color:c.ink }}>{r.nombre}</div>
+              </div>
+              <div style={{ width:22, height:22, borderRadius:'50%', display:'flex', alignItems:'center', justifyContent:'center', background:'rgba(126,200,184,0.2)' }}>
+                <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><path d="M2 1.5l3.5 3-3.5 3" stroke={c.aquaDark} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </div>
+            </div>
+          </div>
+        ))
+      )}
+
+      {/* Seguimiento */}
+      <div style={{ fontSize:10, letterSpacing:'1.5px', textTransform:'uppercase', color:c.muted, marginBottom:10, fontWeight:500 }}>Seguimiento</div>
+      <div className="pp-grid-2">
+        {/* Dolor */}
+        <div className="pp-mini-card" onClick={onAbrirDolor} style={{ background:'#FFF5F8', border:'0.5px solid #F5B8C8', cursor:'pointer' }}>
+          <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+            <div style={{ width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background:'#FFE8EF' }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 2C5.2 2 3 4.2 3 7c0 3.5 5 8 5 8s5-4.5 5-8c0-2.8-2.2-5-5-5z" stroke="#D0446A" strokeWidth="1.2"/><circle cx="8" cy="7" r="1.5" fill="#D0446A"/></svg>
+            </div>
+            {dolorHoy && <span style={{ fontSize:9, background:c.aquaLight, color:c.aquaDark, padding:'2px 7px', borderRadius:10 }}>✓ Hoy</span>}
+          </div>
+          <div style={{ fontSize:13, fontWeight:500, color:'#A02050' }}>Dolor</div>
+          {dolorHoy ? (
             <>
-              <h2 style={{ fontSize:28, fontWeight:700, color:c.s900, marginTop:8, letterSpacing:'-0.025em' }}>Sin turnos próximos</h2>
-              <p style={{ fontSize:14, color:c.s500, marginTop:8 }}>Cuando reserves una nueva sesión, la vas a ver acá.</p>
+              <div style={{ display:'flex', gap:6 }}>
+                <div style={{ flex:1, background:'#FFE8EF', borderRadius:8, padding:'5px 0', textAlign:'center' }}>
+                  <div style={{ fontSize:9, color:'#C06080' }}>mañana</div>
+                  <div style={{ fontSize:16, fontWeight:600, color:'#D0446A' }}>{dolorHoy.manana}</div>
+                </div>
+                <div style={{ flex:1, background:'#FFE8EF', borderRadius:8, padding:'5px 0', textAlign:'center' }}>
+                  <div style={{ fontSize:9, color:'#C06080' }}>noche</div>
+                  <div style={{ fontSize:16, fontWeight:600, color:'#D0446A' }}>{dolorHoy.noche}</div>
+                </div>
+              </div>
+              <div style={{ paddingTop:6, borderTop:'0.5px solid #F5B8C8' }}>
+                <span style={{ fontSize:10, color:'#D0446A' }}>Ver historial →</span>
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{ fontSize:11, color:'#C06080', lineHeight:1.45 }}>Registrá cómo te sentiste hoy</div>
+              <div style={{ paddingTop:6, borderTop:'0.5px solid #F5B8C8' }}>
+                <span style={{ fontSize:10, color:'#D0446A', fontWeight:500 }}>+ Registrar →</span>
+              </div>
             </>
           )}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginTop:20 }}>
-            <button onClick={() => onTabChange('turnos')}
-              style={{ background:c.blue, color:'#fff', padding:'12px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer', boxShadow:'0 1px 3px rgba(37,99,235,0.25)' }}>
-              {proximoTurno ? 'Confirmar' : 'Reservar turno'}
-            </button>
-            <button onClick={() => onTabChange('turnos')}
-              style={{ background:c.white, color:c.s700, padding:'12px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:`1px solid ${c.s200}`, cursor:'pointer' }}>
-              {proximoTurno ? 'Cambiar' : 'Ver agenda'}
-            </button>
-          </div>
-        </Card>
-
-        {/* Stats */}
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
-          <Card style={{ padding:16 }} onClick={onAbrirDolor}>
-            <StatLabel>Dolor</StatLabel>
-            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>{dolorHoy ? `${dolorHoy.manana}/10` : '—'}</p>
-            {dolorHoy && dolorHoy.manana <= 3
-              ? <p style={{ fontSize:12, color:c.emerald, marginTop:4 }}>Mejorando</p>
-              : <p style={{ fontSize:12, color:c.s400, marginTop:4, cursor:'pointer' }}>Registrar →</p>
-            }
-          </Card>
-          <Card style={{ padding:16 }}>
-            <StatLabel>Sesión</StatLabel>
-            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>—</p>
-            <p style={{ fontSize:12, color:c.s500, marginTop:4 }}>Plan actual</p>
-          </Card>
-          <Card style={{ padding:16 }}>
-            <StatLabel>Progreso</StatLabel>
-            <p style={{ fontSize:24, fontWeight:700, color:c.s900, marginTop:8 }}>+20%</p>
-            <p style={{ fontSize:12, color:c.s500, marginTop:4 }}>Movilidad</p>
-          </Card>
         </div>
 
-        {/* Tu evolución */}
-        <Card style={{ padding:20 }}>
-          <SectionTitle title="Tu evolución" subtitle="Resumen simple de cómo venís avanzando" />
-          <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:12 }}>
-            {[['Dolor','-35%'],['Movilidad','75%'],['Adherencia','82%']].map(([label, val]) => (
-              <div key={label} style={{ background:c.s50, borderRadius:16, padding:16, textAlign:'center' }}>
-                <StatLabel>{label}</StatLabel>
-                <p style={{ fontSize:20, fontWeight:700, color:c.s900, marginTop:8 }}>{val}</p>
-              </div>
-            ))}
+        {/* Saldo */}
+        {saldo > 0 ? (
+          <div className="pp-mini-card" style={{ border:`0.5px solid ${c.redBorder}` }}>
+            <div style={{ width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background:c.redBg }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke={c.redText} strokeWidth="1.3"/><path d="M8 5.5v3" stroke={c.redText} strokeWidth="1.3" strokeLinecap="round"/><circle cx="8" cy="11" r="0.7" fill={c.redText}/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500, color:c.redText }}>${saldo}</div>
+              <div style={{ fontSize:11, color:c.redSub }}>Saldo pendiente</div>
+            </div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', paddingTop:8, borderTop:`0.5px solid #FAD0C4` }}>
+              <span style={{ fontSize:10, padding:'2px 8px', borderRadius:10, background:c.redBg, color:c.redText }}>Pendiente</span>
+              <button style={{ fontSize:11, color:c.redSub, fontWeight:500, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Pagar</button>
+            </div>
           </div>
-        </Card>
-
-        {/* Rutinas activas */}
-        <Card style={{ padding:20 }}>
-          <SectionTitle
-            title="Mis rutinas"
-            subtitle="Indicaciones domiciliarias de tu kinesiólogo"
-            action={rutinas.length > 0
-              ? <button onClick={() => onTabChange('rutinas')} style={{ fontSize:13, fontWeight:600, color:c.blue, background:'none', border:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>Ver todas</button>
-              : null
-            }
-          />
-          <div style={{ marginTop:16, display:'flex', flexDirection:'column', gap:10 }}>
-            {rutinas.filter(r => r.estado === 'Activa').length === 0 ? (
-              <p style={{ fontSize:13, color:c.s400, textAlign:'center', padding:'1rem' }}>Tu kinesiólogo aún no asignó rutinas</p>
-            ) : rutinas.filter(r => r.estado === 'Activa').slice(0,2).map(r => (
-              <button key={r.id} onClick={() => onTabChange('rutinas')}
-                style={{ borderRadius:16, border:`1px solid #a7f3d0`, background:'linear-gradient(135deg,#f0fdf4 0%,#fff 100%)', padding:16, cursor:'pointer', textAlign:'left', fontFamily:"'DM Sans', sans-serif", width:'100%' }}>
-                <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
-                  <div style={{ minWidth:0 }}>
-                    <p style={{ fontWeight:700, color:c.s900, fontSize:14, margin:0 }}>{r.nombre}</p>
-                    {r.resumen && <p style={{ fontSize:13, color:c.s500, marginTop:4, marginBottom:0 }}>{r.resumen}</p>}
-                  </div>
-                  <Badge tone="success">Activa</Badge>
-                </div>
-                <p style={{ fontSize:13, fontWeight:600, color:'#059669', marginTop:12, marginBottom:0 }}>Ver rutina →</p>
-              </button>
-            ))}
-          </div>
-        </Card>
-
-        {saldo > 0 && (
-          <div style={{ background:c.redBg, border:`1px solid ${c.redBorder}`, borderRadius:16, padding:'14px' }}>
-            <p style={{ fontSize:13, fontWeight:600, color:c.red }}>💳 Saldo pendiente: ${saldo}</p>
-            <p style={{ fontSize:12, color:c.redText, marginTop:4 }}>Transferí al alias <strong>{ALIAS}</strong></p>
+        ) : (
+          <div className="pp-mini-card">
+            <div style={{ width:32, height:32, borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', background:c.aquaLight }}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l4 4 6-6" stroke={c.aquaDark} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </div>
+            <div>
+              <div style={{ fontSize:13, fontWeight:500, color:c.aquaDark }}>Sin deuda</div>
+              <div style={{ fontSize:11, color:c.muted }}>Al día</div>
+            </div>
+            <div style={{ paddingTop:8, borderTop:`0.5px solid ${c.border}` }}>
+              <span style={{ fontSize:10, color:c.aquaDark }}>✓ Todo en orden</span>
+            </div>
           </div>
         )}
       </div>
-
-      {/* Columna derecha — solo desktop */}
-      <RightColumn motivos={motivos} onTabChange={onTabChange} />
     </div>
   )
 }
@@ -484,52 +428,52 @@ function SeccionTurnos({ turnos, paciente }) {
   }
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Turnos</h1>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <h1 style={{ fontSize:22, fontFamily:"'DM Serif Display', serif", color:c.ink }}>Turnos</h1>
       {proximos.map(t => {
         const d = new Date(t.fecha+'T12:00')
         return (
-          <Card key={t.id} style={{ padding:16, display:'flex', gap:12, alignItems:'center' }}>
-            <div style={{ background:c.blue, borderRadius:12, minWidth:46, height:50, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}>
-              <div style={{ fontSize:18, fontWeight:800, lineHeight:1 }}>{d.getDate()}</div>
-              <div style={{ fontSize:9, fontWeight:600 }}>{meses[d.getMonth()].toUpperCase()}</div>
+          <div key={t.id} className="pp-card" style={{ display:'flex', gap:12, alignItems:'center' }}>
+            <div style={{ background:c.sky, borderRadius:11, minWidth:46, height:50, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}>
+              <div style={{ fontSize:18, fontWeight:500, lineHeight:1 }}>{d.getDate()}</div>
+              <div style={{ fontSize:8, letterSpacing:1 }}>{meses[d.getMonth()].toUpperCase()}</div>
             </div>
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:14, fontWeight:700, color:c.s900 }}>{diasSemana[d.getDay()]} · {t.hora?.slice(0,5)}</div>
-              <div style={{ fontSize:13, color:c.s500, marginTop:2 }}>{t.motivo||'Sesión de kinesiología'}</div>
+              <div style={{ fontSize:14, fontWeight:500, color:c.ink }}>{diasSemana[d.getDay()]} · {t.hora?.slice(0,5)}</div>
+              <div style={{ fontSize:12, color:c.muted, marginTop:2 }}>{t.motivo||'Sesión de kinesiología'}</div>
             </div>
-            <Badge tone="success">Confirmado</Badge>
-          </Card>
+            <span style={{ fontSize:11, background:c.aquaLight, color:c.aquaDark, padding:'3px 10px', borderRadius:20, whiteSpace:'nowrap' }}>Confirmado</span>
+          </div>
         )
       })}
-      <Card style={{ padding:20 }}>
-        <h2 style={{ fontSize:16, fontWeight:600, color:c.s900, marginBottom:16 }}>Solicitar turno</h2>
+      <div className="pp-card">
+        <h2 style={{ fontSize:15, fontWeight:500, color:c.ink, marginBottom:16 }}>Solicitar turno</h2>
         {exito ? (
-          <div style={{ background:c.emeraldBg, color:c.emeraldText, borderRadius:12, padding:'1rem', textAlign:'center', fontWeight:600 }}>✓ Solicitud enviada.</div>
+          <div style={{ background:c.aquaLight, color:c.aquaDark, borderRadius:12, padding:'1rem', textAlign:'center', fontWeight:500 }}>✓ Solicitud enviada.</div>
         ) : (
           <form onSubmit={handleSubmit}>
             <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:10 }}>
               <div>
-                <label style={{ fontSize:12, color:c.s500, display:'block', marginBottom:4 }}>Fecha</label>
+                <label style={{ fontSize:11, color:c.muted, display:'block', marginBottom:4 }}>Fecha</label>
                 <input type="date" min={hoyStr} value={form.fecha} onChange={e=>setForm(f=>({...f,fecha:e.target.value}))}
-                  style={{ width:'100%', border:`1px solid ${c.s200}`, borderRadius:12, padding:'10px 11px', fontSize:14, color:c.s900, outline:'none', fontFamily:'inherit' }} />
+                  style={{ width:'100%', border:`0.5px solid ${c.border}`, borderRadius:10, padding:'10px 11px', fontSize:13, color:c.ink, background:c.skyXlight, fontFamily:"'DM Sans', sans-serif" }} />
               </div>
               <div>
-                <label style={{ fontSize:12, color:c.s500, display:'block', marginBottom:4 }}>Hora</label>
+                <label style={{ fontSize:11, color:c.muted, display:'block', marginBottom:4 }}>Hora</label>
                 <input type="time" value={form.hora} onChange={e=>setForm(f=>({...f,hora:e.target.value}))}
-                  style={{ width:'100%', border:`1px solid ${c.s200}`, borderRadius:12, padding:'10px 11px', fontSize:14, color:c.s900, outline:'none', fontFamily:'inherit' }} />
+                  style={{ width:'100%', border:`0.5px solid ${c.border}`, borderRadius:10, padding:'10px 11px', fontSize:13, color:c.ink, background:c.skyXlight, fontFamily:"'DM Sans', sans-serif" }} />
               </div>
             </div>
             <textarea value={form.notas} onChange={e=>setForm(f=>({...f,notas:e.target.value}))} placeholder="Motivo (opcional)" rows={2}
-              style={{ width:'100%', border:`1px solid ${c.s200}`, borderRadius:12, padding:'10px 11px', fontSize:14, color:c.s900, resize:'none', outline:'none', fontFamily:'inherit', marginBottom:10 }} />
-            {error && <div style={{ color:c.red, fontSize:12, marginBottom:8 }}>{error}</div>}
+              style={{ width:'100%', border:`0.5px solid ${c.border}`, borderRadius:10, padding:'10px 11px', fontSize:13, color:c.ink, resize:'none', fontFamily:"'DM Sans', sans-serif", background:c.skyXlight, marginBottom:10 }} />
+            {error && <div style={{ color:c.redText, fontSize:12, marginBottom:8 }}>{error}</div>}
             <button type="submit" disabled={enviando}
-              style={{ width:'100%', background:c.blue, color:'#fff', border:'none', borderRadius:14, padding:'14px', fontWeight:700, fontSize:15, cursor:'pointer' }}>
+              style={{ width:'100%', background:`linear-gradient(135deg,${c.sky},${c.skyDark})`, color:'#fff', border:'none', borderRadius:12, padding:'13px', fontWeight:500, fontSize:14, cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
               {enviando ? 'Enviando...' : 'Solicitar turno'}
             </button>
           </form>
         )}
-      </Card>
+      </div>
     </div>
   )
 }
@@ -556,40 +500,39 @@ function RutinaCard({ rutina }) {
   }
 
   return (
-    <Card style={{ overflow:'hidden' }}>
+    <div className="pp-card" style={{ padding:0, overflow:'hidden' }}>
       {/* Header */}
-      <div style={{ background:'linear-gradient(135deg,#f0fdf4 0%,#fff 100%)', padding:'18px 20px', borderBottom:`1px solid ${c.s200}` }}>
+      <div style={{ background:`linear-gradient(135deg,${c.skyXlight},${c.white})`, padding:'16px 18px', borderBottom:`0.5px solid ${c.border}` }}>
         <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
           <div style={{ flex:1 }}>
-            <p style={{ fontSize:11, fontWeight:700, color:'#059669', textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
+            <p style={{ fontSize:10, fontWeight:500, color:c.aquaDark, textTransform:'uppercase', letterSpacing:'0.07em', margin:0 }}>
               {rutina.motivo_sintoma || 'Rutina domiciliaria'}
             </p>
-            <h2 style={{ fontSize:18, fontWeight:700, color:c.s900, margin:'6px 0 0', lineHeight:1.2 }}>{rutina.nombre}</h2>
-            {rutina.notas && <p style={{ fontSize:13, color:c.s500, marginTop:6, marginBottom:0, lineHeight:1.5 }}>{rutina.notas}</p>}
+            <h2 style={{ fontSize:17, fontWeight:500, color:c.ink, margin:'5px 0 0', lineHeight:1.2, fontFamily:"'DM Serif Display', serif" }}>{rutina.nombre}</h2>
+            {rutina.notas && <p style={{ fontSize:12, color:c.muted, marginTop:5, marginBottom:0, lineHeight:1.5 }}>{rutina.notas}</p>}
           </div>
           <button onClick={() => setExpanded(v => !v)}
-            style={{ background:'none', border:'none', cursor:'pointer', color:c.s400, fontSize:20, padding:'4px', flexShrink:0 }}>
+            style={{ background:'none', border:'none', cursor:'pointer', color:c.muted, fontSize:18, padding:'2px', flexShrink:0 }}>
             {expanded ? '▴' : '▾'}
           </button>
         </div>
 
-        {/* Checklist de vueltas */}
         {totalVeces > 1 && (
-          <div style={{ marginTop:14 }}>
-            <p style={{ fontSize:11, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color: rutinaFinalizada ? '#059669' : c.s400, margin:'0 0 8px' }}>
-              {rutinaFinalizada ? '¡Completaste todas las vueltas! 🎉' : `Vueltas completadas — ${vecesCompletadas}/${totalVeces}`}
+          <div style={{ marginTop:12 }}>
+            <p style={{ fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.07em', color: rutinaFinalizada ? c.aquaDark : c.muted, margin:'0 0 8px' }}>
+              {rutinaFinalizada ? '¡Completaste todas las vueltas! 🎉' : `Vueltas — ${vecesCompletadas}/${totalVeces}`}
             </p>
-            <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+            <div style={{ display:'flex', gap:7, flexWrap:'wrap' }}>
               {Array.from({ length: totalVeces }).map((_, i) => (
                 <div key={i} style={{
-                  width:38, height:38, borderRadius:'50%',
-                  background: i < vecesCompletadas ? '#059669' : '#fff',
-                  border: `2px solid ${i < vecesCompletadas ? '#059669' : c.s300}`,
+                  width:34, height:34, borderRadius:'50%',
+                  background: i < vecesCompletadas ? c.aquaDark : c.white,
+                  border: `1.5px solid ${i < vecesCompletadas ? c.aquaDark : c.border}`,
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:15, color:'#fff', fontWeight:700,
+                  fontSize:13, color:'#fff', fontWeight:600,
                   transition:'all 0.2s',
                 }}>
-                  {i < vecesCompletadas ? '✓' : <span style={{ color: c.s300, fontSize:13, fontWeight:600 }}>{i+1}</span>}
+                  {i < vecesCompletadas ? '✓' : <span style={{ color:c.muted, fontSize:12, fontWeight:500 }}>{i+1}</span>}
                 </div>
               ))}
             </div>
@@ -597,15 +540,15 @@ function RutinaCard({ rutina }) {
         )}
 
         {(ejs.length > 0 || tieneLibres) && (
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:10, marginTop:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginTop:12 }}>
             {[
               ['Total', ejs.length + (tieneLibres ? 1 : 0)],
               ['Hechos', completados + (libresHecho ? 1 : 0)],
               ['Pendientes', (ejs.length - completados) + (!libresHecho && tieneLibres ? 1 : 0)],
             ].map(([label, val]) => (
-              <div key={label} style={{ borderRadius:12, background:'#fff', padding:'10px', textAlign:'center', boxShadow:'0 1px 2px rgba(0,0,0,0.04)' }}>
-                <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
-                <p style={{ fontSize:18, fontWeight:700, color:c.s900, margin:'4px 0 0' }}>{val}</p>
+              <div key={label} style={{ borderRadius:11, background:c.white, padding:'9px', textAlign:'center', border:`0.5px solid ${c.border}` }}>
+                <p style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'0.06em', color:c.muted, margin:0 }}>{label}</p>
+                <p style={{ fontSize:17, fontWeight:600, color:c.ink, margin:'3px 0 0' }}>{val}</p>
               </div>
             ))}
           </div>
@@ -614,41 +557,40 @@ function RutinaCard({ rutina }) {
 
       {/* Ejercicios */}
       {expanded && (
-        <div style={{ padding:'14px 16px', display:'flex', flexDirection:'column', gap:12 }}>
+        <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
           {ejs.map((ej, i) => {
             const hecho = !!done[i]
             return (
-              <div key={i} style={{ borderRadius:20, border:`1px solid ${hecho ? '#a7f3d0' : c.s200}`, background: hecho ? '#f0fdf4' : '#fff', padding:14, transition:'all 0.2s' }}>
+              <div key={i} style={{ borderRadius:14, border:`0.5px solid ${hecho ? c.aquaDark : c.border}`, background: hecho ? c.aquaLight : c.white, padding:13, transition:'all 0.2s' }}>
                 <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
                   <button onClick={() => setDone(prev => ({ ...prev, [i]: !prev[i] }))} style={{
-                    marginTop:2, width:26, height:26, borderRadius:'50%', flexShrink:0,
-                    border:`2px solid ${hecho ? '#059669' : c.s300}`,
-                    background: hecho ? '#059669' : '#fff', color:'#fff',
-                    fontSize:13, fontWeight:700, cursor:'pointer',
+                    marginTop:2, width:24, height:24, borderRadius:'50%', flexShrink:0,
+                    border:`1.5px solid ${hecho ? c.aquaDark : c.border}`,
+                    background: hecho ? c.aquaDark : c.white, color:'#fff',
+                    fontSize:12, fontWeight:700, cursor:'pointer',
                     display:'flex', alignItems:'center', justifyContent:'center',
+                    fontFamily:"'DM Sans', sans-serif",
                   }}>
                     {hecho ? '✓' : ''}
                   </button>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontWeight:700, fontSize:14, color: hecho ? '#059669' : c.s900, margin:0, textDecoration: hecho ? 'line-through' : 'none' }}>{ej.exerciseId}</p>
-                    {/* Imágenes */}
+                    <p style={{ fontWeight:500, fontSize:13, color: hecho ? c.aquaDark : c.ink, margin:0, textDecoration: hecho ? 'line-through' : 'none' }}>{ej.exerciseId}</p>
                     {ej.images && ej.images[0] && (
                       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
-                        <img src={ej.images[0]} alt={ej.exerciseId + ' A'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:12, border:`1px solid ${c.s200}`, background:c.s50, padding:4 }} loading="lazy" />
-                        <img src={ej.images[1]} alt={ej.exerciseId + ' B'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:12, border:`1px solid ${c.s200}`, background:c.s50, padding:4 }} loading="lazy" />
+                        <img src={ej.images[0]} alt={ej.exerciseId + ' A'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />
+                        <img src={ej.images[1]} alt={ej.exerciseId + ' B'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />
                       </div>
                     )}
-                    {/* Pills */}
-                    <div style={{ display:'flex', gap:8, marginTop:10, flexWrap:'wrap' }}>
+                    <div style={{ display:'flex', gap:7, marginTop:9, flexWrap:'wrap' }}>
                       {[
                         ej.reps && ej.reps !== 'No aplica' && ['Reps', ej.reps],
                         ej.seconds && ej.seconds !== 'No aplica' && ['Seg.', ej.seconds],
                         ej.series && ['Series', ej.series],
                         ej.peso && ['Peso', ej.peso],
                       ].filter(Boolean).map(([label, val]) => (
-                        <div key={label} style={{ borderRadius:10, background:c.s100, padding:'7px 12px', textAlign:'center', minWidth:52 }}>
-                          <p style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s400, margin:0 }}>{label}</p>
-                          <p style={{ fontSize:15, fontWeight:700, color:c.s900, margin:'2px 0 0' }}>{val}</p>
+                        <div key={label} style={{ borderRadius:9, background:c.skyXlight, border:`0.5px solid ${c.border}`, padding:'6px 11px', textAlign:'center', minWidth:48 }}>
+                          <p style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'0.06em', color:c.muted, margin:0 }}>{label}</p>
+                          <p style={{ fontSize:14, fontWeight:600, color:c.ink, margin:'2px 0 0' }}>{val}</p>
                         </div>
                       ))}
                     </div>
@@ -658,46 +600,46 @@ function RutinaCard({ rutina }) {
             )
           })}
 
-          {/* Agentes físicos */}
-          {(rutina.hielo || rutina.calor || rutina.contraste) && (
-            <div style={{ borderRadius:16, background:c.s50, border:`1px solid ${c.s200}`, padding:14 }}>
-              <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color:c.s500, margin:'0 0 10px' }}>Agentes físicos</p>
-              <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                {rutina.hielo && <span style={{ borderRadius:100, background:c.blue50, color:c.blue, fontSize:12, fontWeight:600, padding:'5px 12px' }}>Hielo {rutina.hielo.min} min · {rutina.hielo.vecesAlDia}x/día</span>}
-                {rutina.calor && <span style={{ borderRadius:100, background:'#fffbeb', color:'#92400e', fontSize:12, fontWeight:600, padding:'5px 12px' }}>Calor {rutina.calor.min} min · {rutina.calor.vecesAlDia}x/día</span>}
-                {rutina.contraste && <span style={{ borderRadius:100, background:c.s100, color:c.s700, fontSize:12, fontWeight:600, padding:'5px 12px' }}>Contraste · {rutina.contraste.vecesAlDia}x/día</span>}
-              </div>
-            </div>
-          )}
-
           {/* Ejercicios adicionales escritos (Claude) */}
           {tieneLibres && (
             <div onClick={() => !rutinaFinalizada && setLibresHecho(v => !v)}
-              style={{ borderRadius:16, background: libresHecho ? '#f0fdf4' : '#fff', border: libresHecho ? '1px solid #a7f3d0' : `1px solid ${c.s200}`, padding:16, cursor: rutinaFinalizada ? 'default' : 'pointer', transition:'all 0.2s' }}>
+              style={{ borderRadius:14, background: libresHecho ? c.aquaLight : c.white, border: `0.5px solid ${libresHecho ? c.aquaDark : c.border}`, padding:14, cursor: rutinaFinalizada ? 'default' : 'pointer', transition:'all 0.2s' }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
                 <div style={{
-                  width:26, height:26, borderRadius:'50%', flexShrink:0,
-                  border:`2px solid ${libresHecho ? '#059669' : c.s300}`,
-                  background: libresHecho ? '#059669' : '#fff',
+                  width:24, height:24, borderRadius:'50%', flexShrink:0,
+                  border:`1.5px solid ${libresHecho ? c.aquaDark : c.border}`,
+                  background: libresHecho ? c.aquaDark : c.white,
                   display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:13, fontWeight:700, color:'#fff',
+                  fontSize:12, fontWeight:700, color:'#fff',
                 }}>
                   {libresHecho ? '✓' : ''}
                 </div>
-                <p style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.06em', color: libresHecho ? '#059669' : c.s500, margin:0 }}>Ejercicios adicionales</p>
+                <p style={{ fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', color: libresHecho ? c.aquaDark : c.muted, margin:0 }}>Ejercicios adicionales</p>
               </div>
-              <p style={{ fontSize:14, color: libresHecho ? '#059669' : c.s700, margin:0, lineHeight:1.7, whiteSpace:'pre-wrap', textDecoration: libresHecho ? 'line-through' : 'none', opacity: libresHecho ? 0.7 : 1 }}>{rutina.ejercicios_libres}</p>
+              <p style={{ fontSize:13, color: libresHecho ? c.aquaDark : c.ink2, margin:0, lineHeight:1.7, whiteSpace:'pre-wrap', textDecoration: libresHecho ? 'line-through' : 'none', opacity: libresHecho ? 0.7 : 1 }}>{rutina.ejercicios_libres}</p>
+            </div>
+          )}
+
+          {/* Agentes físicos */}
+          {(rutina.hielo || rutina.calor || rutina.contraste) && (
+            <div style={{ borderRadius:13, background:c.skyXlight, border:`0.5px solid ${c.border}`, padding:13 }}>
+              <p style={{ fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.06em', color:c.muted, margin:'0 0 9px' }}>Agentes físicos</p>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>
+                {rutina.hielo && <span style={{ borderRadius:100, background:c.skyLight, color:c.skyDark, fontSize:12, fontWeight:500, padding:'5px 12px' }}>Hielo {rutina.hielo.min} min · {rutina.hielo.vecesAlDia}x/día</span>}
+                {rutina.calor && <span style={{ borderRadius:100, background:'#FFF8D6', color:'#7A5C00', fontSize:12, fontWeight:500, padding:'5px 12px' }}>Calor {rutina.calor.min} min · {rutina.calor.vecesAlDia}x/día</span>}
+                {rutina.contraste && <span style={{ borderRadius:100, background:c.skyXlight, color:c.ink2, fontSize:12, fontWeight:500, padding:'5px 12px' }}>Contraste · {rutina.contraste.vecesAlDia}x/día</span>}
+              </div>
             </div>
           )}
 
           {todoHecho && !rutinaFinalizada && (
-            <div style={{ background:c.emeraldBg, border:`1px solid #a7f3d0`, borderRadius:16, padding:'16px', textAlign:'center' }}>
-              <p style={{ color:c.emeraldText, fontWeight:700, fontSize:15, margin:'0 0 10px' }}>
+            <div style={{ background:c.aquaLight, border:`0.5px solid ${c.aquaDark}`, borderRadius:14, padding:'15px', textAlign:'center' }}>
+              <p style={{ color:c.aquaDark, fontWeight:500, fontSize:14, margin:'0 0 10px' }}>
                 ¡Excelente! Completaste todos los ejercicios 💪
               </p>
               <button onClick={marcarVuelta} style={{
-                background:'#059669', color:'#fff', border:'none', borderRadius:12,
-                padding:'10px 24px', fontWeight:700, fontSize:14, cursor:'pointer',
+                background:c.aquaDark, color:'#fff', border:'none', borderRadius:11,
+                padding:'10px 24px', fontWeight:500, fontSize:13, cursor:'pointer',
                 fontFamily:"'DM Sans', sans-serif",
               }}>
                 Marcar vuelta {vecesCompletadas + 1} de {totalVeces}
@@ -705,16 +647,16 @@ function RutinaCard({ rutina }) {
             </div>
           )}
           {rutinaFinalizada && (
-            <div style={{ background:c.emeraldBg, border:`1px solid #a7f3d0`, borderRadius:16, padding:'16px', textAlign:'center' }}>
+            <div style={{ background:c.aquaLight, border:`0.5px solid ${c.aquaDark}`, borderRadius:14, padding:'15px', textAlign:'center' }}>
               <p style={{ fontSize:22, margin:'0 0 4px' }}>🎉</p>
-              <p style={{ color:c.emeraldText, fontWeight:700, fontSize:15, margin:0 }}>
+              <p style={{ color:c.aquaDark, fontWeight:500, fontSize:14, margin:0 }}>
                 ¡Completaste todas las {totalVeces} vueltas!
               </p>
             </div>
           )}
         </div>
       )}
-    </Card>
+    </div>
   )
 }
 
@@ -724,36 +666,36 @@ function SeccionRutinas({ rutinas }) {
   const inactivas = rutinas.filter(r => r.estado !== 'Activa')
 
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em', margin:0 }}>Mis rutinas</h1>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <h1 style={{ fontSize:22, fontFamily:"'DM Serif Display', serif", color:c.ink }}>Mis rutinas</h1>
 
       {rutinas.length === 0 ? (
-        <Card style={{ padding:'2.5rem', textAlign:'center', color:c.s400, fontSize:14 }}>
+        <div className="pp-card" style={{ textAlign:'center', color:c.muted, fontSize:13, padding:'2.5rem' }}>
           Tu kinesiólogo aún no asignó rutinas
-        </Card>
+        </div>
       ) : (
         <>
           {activas.length > 0 && (
-            <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ width:8, height:8, borderRadius:'50%', background:'#10b981', display:'inline-block' }} />
-                <span style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:'#059669' }}>Activas ({activas.length})</span>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:c.aquaDark, display:'inline-block' }} />
+                <span style={{ fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.07em', color:c.aquaDark }}>Activas ({activas.length})</span>
               </div>
               {activas.map(r => <RutinaCard key={r.id} rutina={r} />)}
             </div>
           )}
 
           {inactivas.length > 0 && (
-            <div style={{ display:'flex', flexDirection:'column', gap:14, marginTop:8 }}>
+            <div style={{ display:'flex', flexDirection:'column', gap:12, marginTop:8 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                <span style={{ width:8, height:8, borderRadius:'50%', background:c.s400, display:'inline-block' }} />
-                <span style={{ fontSize:12, fontWeight:700, textTransform:'uppercase', letterSpacing:'0.07em', color:c.s400 }}>Anteriores ({inactivas.length})</span>
+                <span style={{ width:7, height:7, borderRadius:'50%', background:c.muted, display:'inline-block' }} />
+                <span style={{ fontSize:10, fontWeight:500, textTransform:'uppercase', letterSpacing:'0.07em', color:c.muted }}>Anteriores ({inactivas.length})</span>
               </div>
               {inactivas.map(r => (
-                <Card key={r.id} style={{ padding:16, opacity:0.7 }}>
-                  <p style={{ fontWeight:600, fontSize:14, color:c.s700, margin:0 }}>{r.nombre}</p>
-                  {r.resumen && <p style={{ fontSize:13, color:c.s400, marginTop:4, marginBottom:0 }}>{r.resumen}</p>}
-                </Card>
+                <div key={r.id} className="pp-card" style={{ opacity:0.7 }}>
+                  <p style={{ fontWeight:500, fontSize:13, color:c.ink2, margin:0 }}>{r.nombre}</p>
+                  {r.resumen && <p style={{ fontSize:12, color:c.muted, marginTop:4, marginBottom:0 }}>{r.resumen}</p>}
+                </div>
               ))}
             </div>
           )}
@@ -766,32 +708,32 @@ function SeccionRutinas({ rutinas }) {
 /* ── SeccionPerfil ──────────────────────────────────────── */
 function SeccionPerfil({ paciente, usuario, onLogout }) {
   return (
-    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-      <h1 style={{ fontSize:22, fontWeight:700, color:c.s900, letterSpacing:'-0.025em' }}>Perfil</h1>
-      <Card style={{ padding:'1.5rem', textAlign:'center' }}>
-        <div style={{ width:68, height:68, borderRadius:'50%', background:c.blue, color:'#fff', fontSize:22, fontWeight:800, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+    <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+      <h1 style={{ fontSize:22, fontFamily:"'DM Serif Display', serif", color:c.ink }}>Perfil</h1>
+      <div className="pp-card" style={{ textAlign:'center', padding:'1.5rem' }}>
+        <div style={{ width:64, height:64, borderRadius:'50%', background:`linear-gradient(135deg,${c.sky},${c.skyDark})`, color:'#fff', fontSize:20, fontWeight:500, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px', fontFamily:"'DM Serif Display', serif" }}>
           {paciente.nombre[0]}{paciente.apellido[0]}
         </div>
-        <div style={{ fontSize:20, fontWeight:700, color:c.s900 }}>{paciente.nombre} {paciente.apellido}</div>
-        <div style={{ fontSize:13, color:c.s500, marginTop:4 }}>{usuario?.email}</div>
-      </Card>
+        <div style={{ fontSize:18, fontWeight:500, color:c.ink, fontFamily:"'DM Serif Display', serif" }}>{paciente.nombre} {paciente.apellido}</div>
+        <div style={{ fontSize:12, color:c.muted, marginTop:4 }}>{usuario?.email}</div>
+      </div>
       {paciente.celular && (
-        <Card style={{ padding:16 }}>
-          <StatLabel>Celular</StatLabel>
-          <div style={{ fontSize:15, color:c.s900, marginTop:6 }}>{paciente.celular}</div>
-        </Card>
+        <div className="pp-card">
+          <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'1px', color:c.muted, marginBottom:6 }}>Celular</div>
+          <div style={{ fontSize:15, color:c.ink }}>{paciente.celular}</div>
+        </div>
       )}
-      <Card style={{ padding:20 }}>
-        <SectionTitle title="Accesos rápidos" />
-        <div style={{ marginTop:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+      <div className="pp-card">
+        <div style={{ fontSize:10, textTransform:'uppercase', letterSpacing:'1px', color:c.muted, marginBottom:12 }}>Accesos rápidos</div>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
           {['Estudios','Recetas','Pagos','Ayuda'].map(item => (
-            <button key={item} style={{ borderRadius:12, border:`1px solid ${c.s200}`, padding:'14px', textAlign:'left', fontSize:13, fontWeight:500, color:c.s700, background:'none', cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
+            <button key={item} style={{ borderRadius:11, border:`0.5px solid ${c.border}`, padding:'13px', textAlign:'left', fontSize:13, fontWeight:400, color:c.ink2, background:c.skyXlight, cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
               {item}
             </button>
           ))}
         </div>
-      </Card>
-      <button onClick={onLogout} style={{ width:'100%', background:'none', border:`1px solid ${c.s200}`, borderRadius:14, padding:'13px', color:c.s500, fontWeight:600, fontSize:14, cursor:'pointer' }}>
+      </div>
+      <button onClick={onLogout} style={{ width:'100%', background:'none', border:`0.5px solid ${c.border}`, borderRadius:13, padding:'13px', color:c.muted, fontWeight:400, fontSize:13, cursor:'pointer', fontFamily:"'DM Sans', sans-serif" }}>
         Cerrar sesión
       </button>
     </div>
@@ -824,85 +766,83 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
   }, [paciente?.id])
 
   if (!paciente) return (
-    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:c.s50, gap:12, padding:'2rem' }}>
+    <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'100vh', background:c.bg, gap:12, padding:'2rem' }}>
       <div style={{ fontSize:40 }}>🏥</div>
-      <p style={{ color:c.s500, textAlign:'center' }}>Tu cuenta aún no está vinculada a un paciente.<br />Consultá con tu kinesiólogo.</p>
+      <p style={{ color:c.muted, textAlign:'center', fontFamily:"'DM Sans', sans-serif" }}>Tu cuenta aún no está vinculada a un paciente.<br />Consultá con tu kinesiólogo.</p>
     </div>
   )
 
   if (seleccionado) {
     const ej = ejercicios.find(e => e.id === seleccionado)
-    if (ej) return <div className="pp-root"><EjercicioDetalle ej={ej} onVolver={() => setSeleccionado(null)} /></div>
+    if (ej) return (
+      <div style={{ background:c.bg, minHeight:'100vh' }}>
+        <style>{globalStyle}</style>
+        <EjercicioDetalle ej={ej} onVolver={() => setSeleccionado(null)} />
+      </div>
+    )
   }
 
   const tieneDeuda = saldo > 0
+
   const navItems = [
-    { id:'inicio',  label:'Inicio'  },
-    { id:'turnos',  label:'Turnos'  },
-    { id:'rutinas', label:'Rutinas' },
-    { id:'perfil',  label:'Perfil'  },
+    { id:'inicio',  label:'Inicio',
+      icon: (a) => <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M3 11L11 4l8 7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9v9h4v-4h2v4h4V9" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
+    { id:'turnos',  label:'Turnos',
+      icon: (a) => <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="14" rx="2" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M7 5V3M15 5V3M3 9h16" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+    { id:'rutinas', label:'Rutinas',
+      icon: (a) => <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><path d="M4 6h14M4 11h9M4 16h7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
+    { id:'perfil',  label:'Perfil',
+      icon: (a) => <svg width="20" height="20" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7" r="4" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M4 19c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
   ]
 
   return (
-    <div className="pp-root">
+    <div className="pac-shell">
       <style>{globalStyle}</style>
       {tieneDeuda && !loading && <DeudaOverlay paciente={paciente} saldo={saldo} />}
       {modalDolor && <ModalDolor onClose={() => setModalDolor(false)} historia={historialDolor} onGuardar={r => setHistorialDolor(prev => [r,...prev])} />}
 
-      <div className="pp-content" style={{ padding:'16px 16px 0' }}>
-
-        {/* Header */}
-        <header style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-          <div>
-            <p style={{ fontSize:14, color:c.s500 }}>Portal del paciente</p>
-            <h1 style={{ fontSize:24, fontWeight:700, color:c.s900, letterSpacing:'-0.025em', marginTop:2 }}>
-              Hola, {paciente.nombre} 👋
-            </h1>
+      <div className="pac-content">
+        {/* Topbar */}
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+          <div style={{ display:'flex', alignItems:'center', gap:9 }}>
+            <LogoSVG />
           </div>
-          <div style={{ width:44, height:44, background:c.blue, borderRadius:14, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:15, color:'#fff', boxShadow:'0 1px 3px rgba(37,99,235,0.3)', flexShrink:0 }}>
-            R+
-          </div>
-        </header>
-
-        {/* Contenido con padding inferior para el nav */}
-        <div style={{ paddingBottom: 130 }}>
-          {loading ? (
-            <div style={{ textAlign:'center', color:c.s400, padding:'3rem' }}>Cargando...</div>
-          ) : (
-            <>
-              {tab==='inicio'  && <SeccionInicio paciente={paciente} ejercicios={ejercicios} rutinas={rutinas} turnos={turnos} saldo={saldo} motivos={motivos} onVerDetalle={setSeleccionado} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} onTabChange={setTab} />}
-              {tab==='turnos'  && <SeccionTurnos  turnos={turnos} paciente={paciente} />}
-              {tab==='rutinas' && <SeccionRutinas rutinas={rutinas} />}
-              {tab==='perfil'  && <SeccionPerfil  paciente={paciente} usuario={usuario} onLogout={onLogout} />}
-            </>
-          )}
-        </div>
-      </div>
-
-      {/* Bottom bar — fixed mobile */}
-      <div className="pp-bottom-bar" style={{ position:'fixed', bottom:0, left:0, right:0, borderTop:`1px solid ${c.s200}`, background:'rgba(255,255,255,0.95)', backdropFilter:'blur(8px)', padding:'12px 16px calc(env(safe-area-inset-bottom, 0px) + 12px)', zIndex:100 }}>
-        <div style={{ maxWidth:448, margin:'0 auto' }}>
-          {/* Botón contactar */}
-          <button className="pp-contact-btn"
-            style={{ width:'100%', background:c.blue, color:'#fff', padding:'14px 16px', borderRadius:16, fontWeight:600, fontSize:14, border:'none', cursor:'pointer', marginBottom:10, boxShadow:'0 1px 3px rgba(37,99,235,0.25)', fontFamily:"'DM Sans', sans-serif" }}>
-            Contactar kinesiólogo
+          <button style={{ width:36, height:36, borderRadius:'50%', background:c.white, border:`0.5px solid ${c.border}`, display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><path d="M9 2a5 5 0 0 1 5 5v3l1.5 2.5H2.5L4 10V7A5 5 0 0 1 9 2z" stroke={c.skyDark} strokeWidth="1.4" strokeLinecap="round"/><path d="M7 14.5a2 2 0 0 0 4 0" stroke={c.skyDark} strokeWidth="1.4" strokeLinecap="round"/></svg>
           </button>
-          {/* Tabs */}
-          <div className="pp-bottom-nav-pill" style={{ display:'grid', gridTemplateColumns:'repeat(4, 1fr)', gap:8, background:c.s50, borderRadius:24, padding:8 }}>
-            {navItems.map(({ id, label }) => (
-              <button key={id} onClick={() => setTab(id)} style={{
-                display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:4,
-                padding:'7px 4px', borderRadius:16, border:'none', cursor:'pointer',
-                background:'none', color: tab===id ? c.blue : c.s500,
-                fontSize:11, fontWeight: tab===id ? 600 : 400, fontFamily:"'DM Sans', sans-serif",
-              }}>
-                <span style={{ width:24, height:24, borderRadius:'50%', background: tab===id ? c.blue100 : c.s100, display:'block' }} />
-                {label}
-              </button>
-            ))}
-          </div>
         </div>
+
+        {/* Greeting */}
+        <div style={{ marginBottom:24 }}>
+          <div style={{ fontSize:10, color:c.muted, letterSpacing:'1.2px', textTransform:'uppercase', marginBottom:3 }}>{formatDateLong()}</div>
+          <div style={{ fontFamily:"'DM Serif Display', serif", fontSize:28, color:c.ink, lineHeight:1.1 }}>Hola, {paciente.nombre}</div>
+        </div>
+
+        {loading ? (
+          <div style={{ textAlign:'center', color:c.muted, padding:'3rem', fontFamily:"'DM Sans', sans-serif" }}>Cargando…</div>
+        ) : (
+          <>
+            {tab==='inicio'  && <SeccionInicio paciente={paciente} rutinas={rutinas} turnos={turnos} saldo={saldo} onAbrirDolor={() => setModalDolor(true)} historialDolor={historialDolor} onTabChange={setTab} />}
+            {tab==='turnos'  && <SeccionTurnos turnos={turnos} paciente={paciente} />}
+            {tab==='rutinas' && <SeccionRutinas rutinas={rutinas} />}
+            {tab==='perfil'  && <SeccionPerfil paciente={paciente} usuario={usuario} onLogout={onLogout} />}
+          </>
+        )}
       </div>
+
+      {/* Bottom nav flotante */}
+      <nav className="bottom-nav">
+        {navItems.map(item => {
+          const active = tab === item.id
+          return (
+            <button key={item.id} className="nav-btn" onClick={() => setTab(item.id)}>
+              {item.icon(active)}
+              <span className="nav-label" style={{ color: active ? c.skyDark : 'rgba(13,53,64,0.45)' }}>{item.label}</span>
+              {active && <div className="nav-dot" />}
+            </button>
+          )
+        })}
+      </nav>
     </div>
   )
 }
