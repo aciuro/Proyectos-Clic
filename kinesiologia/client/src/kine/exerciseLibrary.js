@@ -1017,11 +1017,11 @@ export const exerciseLibrary = [
   {
     "title": "Actividad aeróbica",
     "items": [
-      { "name": "Bicicleta fija", "images": ["/ejercicios/cardio_bicicleta_1.jpg", "/ejercicios/cardio_bicicleta_2.jpg"] },
-      { "name": "Caminar", "images": ["/ejercicios/cardio_caminar_1.jpg", "/ejercicios/cardio_caminar_2.jpg"] },
-      { "name": "Correr", "images": ["/ejercicios/cardio_correr_1.jpg", "/ejercicios/cardio_correr_2.jpg"] },
-      { "name": "Cinta (trote/caminata)", "images": ["/ejercicios/cardio_cinta_1.jpg", "/ejercicios/cardio_cinta_2.jpg"] },
-      { "name": "Elíptico", "images": ["/ejercicios/cardio_eliptico_1.jpg", "/ejercicios/cardio_eliptico_2.jpg"] }
+      { "name": "Bicicleta fija", "images": ["", ""] },
+      { "name": "Caminar", "images": ["", ""] },
+      { "name": "Correr", "images": ["", ""] },
+      { "name": "Cinta (trote/caminata)", "images": ["", ""] },
+      { "name": "Elíptico", "images": ["", ""] }
     ]
   }
 ];
