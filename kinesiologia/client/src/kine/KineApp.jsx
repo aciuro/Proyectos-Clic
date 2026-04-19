@@ -8,6 +8,8 @@ import PacienteDetalle from './PacienteDetalle.jsx'
 import Ejercicios from './Ejercicios.jsx'
 import Agenda from './Agenda.jsx'
 import KineClaude from './KineClaude.jsx'
+import Notas from './Notas.jsx'
+import Cuenta from './Cuenta.jsx'
 import PortalPaciente from './PortalPaciente.jsx'
 import './kine.css'
 
@@ -27,8 +29,10 @@ const NAV_ITEMS = [
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="14" rx="2" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M7 5V3M15 5V3M3 9h16" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
   { id: 'ejercicios', label: 'Rutinas',   path: '/kine/ejercicios',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><path d="M4 6h14M4 11h9M4 16h7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
-  { id: 'claude',     label: 'Claude',    path: '/kine/claude',
-    icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M8 9c0-1.7 1.3-3 3-3s3 1.3 3 3c0 2-3 2.5-3 5" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.4" strokeLinecap="round"/><circle cx="11" cy="17" r="0.8" fill={a ? c.skyDark : 'rgba(13,53,64,0.35)'}/></svg> },
+  { id: 'cuenta',     label: 'Cuenta',    path: '/kine/cuenta',
+    icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M11 7v1.5m0 5V15m-2-5.5c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2 .9-2 2 .9 2 2 2" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.3" strokeLinecap="round"/></svg> },
+  { id: 'notas',      label: 'Notas',     path: '/kine/notas',
+    icon: (a) => <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.2" strokeLinejoin="round"/><path d="M10 2v3h3" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.2" strokeLinejoin="round"/><path d="M5 7h6M5 9.5h4" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.1" strokeLinecap="round"/></svg> },
 ]
 
 const ADMIN_CSS = `
@@ -75,7 +79,9 @@ function AdminLayout({ usuario, onLogout }) {
     if (p.includes('/paciente')) return 'pacientes'
     if (p.includes('/agenda')) return 'agenda'
     if (p.includes('/ejercicios')) return 'ejercicios'
-    if (p.includes('/claude')) return 'claude'
+    if (p.includes('/claude'))    return 'claude'
+    if (p.includes('/cuenta'))    return 'cuenta'
+    if (p.includes('/notas'))     return 'notas'
     return 'dashboard'
   }
 
@@ -147,6 +153,8 @@ function AdminLayout({ usuario, onLogout }) {
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/ejercicios" element={<Ejercicios />} />
           <Route path="/claude" element={<KineClaude />} />
+          <Route path="/cuenta" element={<Cuenta />} />
+          <Route path="/notas" element={<Notas />} />
           <Route path="*" element={<Navigate to="/kine" replace />} />
         </Routes>
       </main>
