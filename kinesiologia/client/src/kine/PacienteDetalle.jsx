@@ -673,6 +673,16 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
   function removeEj(key) {
     setEjercicios(prev => prev.filter(e => e.key !== key))
   }
+  function moveEj(key, dir) {
+    setEjercicios(prev => {
+      const arr = [...prev]
+      const i = arr.findIndex(e => e.key === key)
+      const j = i + dir
+      if (j < 0 || j >= arr.length) return arr
+      ;[arr[i], arr[j]] = [arr[j], arr[i]]
+      return arr
+    })
+  }
 
   async function generarConClaude() {
     if (!claudeDesc.trim()) return
@@ -913,7 +923,19 @@ function RoutineModalForm({ onClose, onSave, initialData }) {
                     {ejercicios.map((item, i) => (
                       <div key={item.key} style={{ borderRadius: 22, border: '1px solid #e2e8f0', background: '#f8fafc', padding: 14 }}>
                         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8, marginBottom: 12 }}>
-                          <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>{i + 1}. {item.exerciseId}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2, flexShrink: 0 }}>
+                              <button type="button" onClick={() => moveEj(item.key, -1)} disabled={i === 0}
+                                style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid #e2e8f0', background: i === 0 ? '#f8fafc' : '#fff', color: i === 0 ? '#cbd5e1' : '#475569', fontSize: 11, cursor: i === 0 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                ▲
+                              </button>
+                              <button type="button" onClick={() => moveEj(item.key, 1)} disabled={i === ejercicios.length - 1}
+                                style={{ width: 22, height: 22, borderRadius: 6, border: '1px solid #e2e8f0', background: i === ejercicios.length - 1 ? '#f8fafc' : '#fff', color: i === ejercicios.length - 1 ? '#cbd5e1' : '#475569', fontSize: 11, cursor: i === ejercicios.length - 1 ? 'default' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 0 }}>
+                                ▼
+                              </button>
+                            </div>
+                            <p style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', margin: 0 }}>{i + 1}. {item.exerciseId}</p>
+                          </div>
                           <button type="button" onClick={() => removeEj(item.key)}
                             style={{ padding: '5px 12px', borderRadius: 10, border: '1px solid #e2e8f0', background: '#fff', color: '#64748b', fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
                             Quitar
