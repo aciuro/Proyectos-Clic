@@ -969,6 +969,7 @@ function MotivoCard({ motivo, onUpdated }) {
   const [modalEstudio, setModalEstudio] = useState(false)
   const [archivoEstudio, setArchivoEstudio] = useState(null)
   const [nombreEstudio, setNombreEstudio] = useState('')
+  const [descripcionEstudio, setDescripcionEstudio] = useState('')
   const [modalEditMotivo, setModalEditMotivo] = useState(false)
   const [formMotivo, setFormMotivo] = useState({ ...motivo, afloja_dia: !!motivo.afloja_dia })
   const [ejercicios, setEjercicios] = useState([])
@@ -1064,10 +1065,12 @@ function MotivoCard({ motivo, onUpdated }) {
     fd.append('archivo', archivoEstudio)
     fd.append('nombre', nombreEstudio || archivoEstudio.name)
     fd.append('tipo', archivoEstudio.type.startsWith('image') ? 'imagen' : 'documento')
+    if (descripcionEstudio.trim()) fd.append('descripcion', descripcionEstudio.trim())
     await api.uploadEstudio(motivo.id, fd)
     setModalEstudio(false)
     setArchivoEstudio(null)
     setNombreEstudio('')
+    setDescripcionEstudio('')
     setEstudios(await api.getEstudios(motivo.id))
   }
 
@@ -1168,7 +1171,8 @@ function MotivoCard({ motivo, onUpdated }) {
                       ? <img src={`/uploads/${est.archivo}`} alt={est.nombre} className="estudio-img" onClick={() => window.open(`/uploads/${est.archivo}`)} />
                       : <a href={`/api/kine/estudios/${est.id}/descargar`} className="estudio-doc">📄 {est.nombre}</a>
                     }
-                    <div className="estudio-nombre">{est.nombre}</div>
+                    <div className="estudio-nombre">{est.descripcion || est.nombre}</div>
+                    {est.descripcion && <div style={{ fontSize: 11, color: '#94a3b8', padding: '0 6px 4px', lineHeight: 1.3 }}>{est.nombre}</div>}
                     <button className="kine-btn-icon-sm danger estudio-del" onClick={() => eliminarEstudio(est.id)}>✕</button>
                   </div>
                 ))}
@@ -1429,7 +1433,8 @@ function MotivoCard({ motivo, onUpdated }) {
       <Modal open={modalEstudio} onClose={() => setModalEstudio(false)} titulo="Subir estudio">
         <form className="kine-form" onSubmit={subirEstudio}>
           <label>Archivo *<input type="file" required onChange={e => setArchivoEstudio(e.target.files[0])} accept="image/*,.pdf,.doc,.docx" /></label>
-          <label>Nombre (opcional)<input value={nombreEstudio} onChange={e => setNombreEstudio(e.target.value)} placeholder="Ej: Radiografía rodilla derecha" /></label>
+          <label>Descripción *<input value={descripcionEstudio} onChange={e => setDescripcionEstudio(e.target.value)} placeholder="Ej: Edema Oseo Tibial izq" /></label>
+          <label>Nombre de archivo (opcional)<input value={nombreEstudio} onChange={e => setNombreEstudio(e.target.value)} placeholder="Se usa el nombre del archivo si se deja vacío" /></label>
           <div className="kine-form-footer">
             <button type="button" className="kine-btn-secondary" onClick={() => setModalEstudio(false)}>Cancelar</button>
             <button type="submit" className="kine-btn-primary">Subir</button>

@@ -524,8 +524,10 @@ const getDolorEvolByPaciente = db.prepare(`
 
 // ── Estudios ──────────────────────────────────────────────
 
+try { db.exec(`ALTER TABLE estudios ADD COLUMN descripcion TEXT`) } catch {}
+
 const getEstudiosByMotivo = db.prepare(`SELECT * FROM estudios WHERE motivo_id = ? ORDER BY created_at DESC`);
-const insertEstudio = db.prepare(`INSERT INTO estudios (motivo_id, nombre, tipo, archivo) VALUES (@motivo_id, @nombre, @tipo, @archivo)`);
+const insertEstudio = db.prepare(`INSERT INTO estudios (motivo_id, nombre, tipo, archivo, descripcion) VALUES (@motivo_id, @nombre, @tipo, @archivo, @descripcion)`);
 const deleteEstudio = db.prepare(`DELETE FROM estudios WHERE id = ?`);
 const getEstudio = db.prepare(`SELECT * FROM estudios WHERE id = ?`);
 

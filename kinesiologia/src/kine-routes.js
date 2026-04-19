@@ -416,6 +416,7 @@ router.post('/motivos/:id/estudios', auth, upload.single('archivo'), (req, res) 
       nombre: req.body.nombre || req.file.originalname,
       tipo: req.body.tipo || 'imagen',
       archivo: req.file.filename,
+      descripcion: req.body.descripcion || null,
     });
     res.status(201).json(db.getEstudiosByMotivo(req.params.id));
   } catch (e) { res.status(400).json({ error: e.message }); }
