@@ -481,6 +481,7 @@ function SeccionTurnos({ turnos, paciente }) {
 /* ── RutinaCard ─────────────────────────────────────────── */
 function RutinaCard({ rutina }) {
   const [done, setDone] = useState({})
+  const [ejOpen, setEjOpen] = useState({})
   const [libresHecho, setLibresHecho] = useState(false)
   const [expanded, setExpanded] = useState(true)
   const [vecesCompletadas, setVecesCompletadas] = useState(0)
@@ -557,45 +558,62 @@ function RutinaCard({ rutina }) {
 
       {/* Ejercicios */}
       {expanded && (
-        <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:10 }}>
+        <div style={{ padding:'12px 14px', display:'flex', flexDirection:'column', gap:8 }}>
           {ejs.map((ej, i) => {
             const hecho = !!done[i]
+            const abierto = !!ejOpen[i]
+            const pills = [
+              ej.series && ['Series', ej.series],
+              ej.reps && ej.reps !== 'No aplica' && ['Reps', ej.reps],
+              ej.seconds && ej.seconds !== 'No aplica' && ['Seg.', ej.seconds],
+              ej.peso && ['Peso', ej.peso],
+            ].filter(Boolean)
             return (
-              <div key={i} style={{ borderRadius:14, border:`0.5px solid ${hecho ? c.aquaDark : c.border}`, background: hecho ? c.aquaLight : c.white, padding:13, transition:'all 0.2s' }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:10 }}>
-                  <button onClick={() => setDone(prev => ({ ...prev, [i]: !prev[i] }))} style={{
-                    marginTop:2, width:24, height:24, borderRadius:'50%', flexShrink:0,
-                    border:`1.5px solid ${hecho ? c.aquaDark : c.border}`,
-                    background: hecho ? c.aquaDark : c.white, color:'#fff',
-                    fontSize:12, fontWeight:700, cursor:'pointer',
-                    display:'flex', alignItems:'center', justifyContent:'center',
-                    fontFamily:"'DM Sans', sans-serif",
-                  }}>
+              <div key={i} style={{ borderRadius:14, border:`0.5px solid ${hecho ? c.aquaDark : c.border}`, background: hecho ? c.aquaLight : c.white, overflow:'hidden', transition:'border-color 0.2s' }}>
+                {/* Fila principal */}
+                <div style={{ display:'flex', alignItems:'center', gap:10, padding:'11px 13px', cursor:'pointer' }}
+                  onClick={() => setEjOpen(prev => ({ ...prev, [i]: !prev[i] }))}>
+                  <button
+                    onClick={e => { e.stopPropagation(); setDone(prev => ({ ...prev, [i]: !prev[i] })) }}
+                    style={{
+                      width:24, height:24, borderRadius:'50%', flexShrink:0,
+                      border:`1.5px solid ${hecho ? c.aquaDark : c.border}`,
+                      background: hecho ? c.aquaDark : c.white, color:'#fff',
+                      fontSize:12, fontWeight:700, cursor:'pointer',
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      fontFamily:"'DM Sans', sans-serif",
+                    }}>
                     {hecho ? '✓' : ''}
                   </button>
                   <div style={{ flex:1, minWidth:0 }}>
-                    <p style={{ fontWeight:500, fontSize:13, color: hecho ? c.aquaDark : c.ink, margin:0, textDecoration: hecho ? 'line-through' : 'none' }}>{ej.exerciseId}</p>
-                    {ej.images && ej.images[0] && (
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
-                        <img src={ej.images[0]} alt={ej.exerciseId + ' A'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />
-                        <img src={ej.images[1]} alt={ej.exerciseId + ' B'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />
+                    <p style={{ fontWeight:500, fontSize:13, color: hecho ? c.aquaDark : c.ink, margin:0, textDecoration: hecho ? 'line-through' : 'none', lineHeight:1.3 }}>{ej.exerciseId}</p>
+                    {pills.length > 0 && (
+                      <div style={{ display:'flex', gap:5, marginTop:5, flexWrap:'wrap' }}>
+                        {pills.map(([label, val]) => (
+                          <span key={label} style={{ fontSize:10, background:c.skyXlight, border:`0.5px solid ${c.border}`, borderRadius:7, padding:'2px 7px', color:c.ink2 }}>
+                            <span style={{ color:c.muted }}>{label} </span>{val}
+                          </span>
+                        ))}
                       </div>
                     )}
-                    <div style={{ display:'flex', gap:7, marginTop:9, flexWrap:'wrap' }}>
-                      {[
-                        ej.reps && ej.reps !== 'No aplica' && ['Reps', ej.reps],
-                        ej.seconds && ej.seconds !== 'No aplica' && ['Seg.', ej.seconds],
-                        ej.series && ['Series', ej.series],
-                        ej.peso && ['Peso', ej.peso],
-                      ].filter(Boolean).map(([label, val]) => (
-                        <div key={label} style={{ borderRadius:9, background:c.skyXlight, border:`0.5px solid ${c.border}`, padding:'6px 11px', textAlign:'center', minWidth:48 }}>
-                          <p style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'0.06em', color:c.muted, margin:0 }}>{label}</p>
-                          <p style={{ fontSize:14, fontWeight:600, color:c.ink, margin:'2px 0 0' }}>{val}</p>
-                        </div>
-                      ))}
+                  </div>
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{ flexShrink:0, transform: abierto ? 'rotate(180deg)' : 'none', transition:'transform 0.2s', opacity:0.4 }}>
+                    <path d="M2 4.5l5 5 5-5" stroke={c.ink} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </div>
+
+                {/* Detalle expandido: fotos */}
+                {abierto && ej.images && ej.images[0] && (
+                  <div style={{ padding:'0 13px 13px', borderTop:`0.5px solid ${hecho ? c.aquaDark : c.border}` }}>
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:10 }}>
+                      <img src={ej.images[0]} alt={ej.exerciseId + ' A'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />
+                      {ej.images[1] && <img src={ej.images[1]} alt={ej.exerciseId + ' B'} style={{ width:'100%', aspectRatio:'1/1', objectFit:'contain', borderRadius:11, border:`0.5px solid ${c.border}`, background:c.skyXlight, padding:4 }} loading="lazy" />}
                     </div>
                   </div>
-                </div>
+                )}
+                {abierto && !(ej.images && ej.images[0]) && (
+                  <div style={{ padding:'8px 13px 12px', borderTop:`0.5px solid ${c.border}`, fontSize:12, color:c.muted, fontStyle:'italic' }}>Sin imagen disponible</div>
+                )}
               </div>
             )
           })}
