@@ -12,7 +12,7 @@ const c = {
   yellow: '#FFF8D6', yellowBorder: '#F0DFA0', yellowText: '#7A5C00', yellowDark: '#B8860B',
 }
 
-const ALIAS    = 'clic.escobar'
+const ALIAS    = 'augustociuro.s'
 const ADMIN_WA = '5491144054833'
 
 const INITIAL_HISTORY = [
@@ -239,22 +239,17 @@ function ModalDolor({ onClose, historia, onGuardar }) {
 }
 
 /* ── DeudaOverlay ───────────────────────────────────────── */
-function DeudaOverlay({ paciente, saldo }) {
-  const msg = encodeURIComponent(`Hola Augusto! Soy ${paciente.nombre} ${paciente.apellido}. Acabo de realizar el pago de $${saldo} por mis sesiones. Alias: ${ALIAS}. Por favor confirmame cuando lo recibas. Gracias!`)
+function DeudaOverlay({ saldo }) {
   return (
     <div style={{ position:'fixed', inset:0, background:'rgba(13,53,64,0.75)', zIndex:900, display:'flex', alignItems:'center', justifyContent:'center', padding:'1rem' }}>
       <div style={{ background:c.white, borderRadius:20, border:`0.5px solid ${c.border}`, padding:'2rem', maxWidth:360, width:'100%', textAlign:'center' }}>
         <div style={{ fontSize:40, marginBottom:'0.75rem' }}>🔒</div>
         <h2 style={{ color:c.ink, fontSize:20, fontWeight:600, margin:'0 0 0.5rem', fontFamily:"'DM Serif Display', serif" }}>Acceso suspendido</h2>
         <p style={{ color:c.muted, fontSize:14, marginBottom:'1rem' }}>Tenés un saldo pendiente de <strong style={{ color:c.ink }}>${saldo}</strong>.</p>
-        <div style={{ background:c.redBg, border:`0.5px solid ${c.redBorder}`, borderRadius:14, padding:'0.75rem', marginBottom:'1rem' }}>
+        <div style={{ background:c.redBg, border:`0.5px solid ${c.redBorder}`, borderRadius:14, padding:'0.75rem' }}>
           <div style={{ fontSize:11, color:c.redText, marginBottom:4 }}>Transferí al alias</div>
           <div style={{ fontSize:18, fontWeight:700, color:c.redText }}>{ALIAS}</div>
         </div>
-        <a href={`https://wa.me/${ADMIN_WA}?text=${msg}`} target="_blank" rel="noreferrer"
-          style={{ display:'block', background:`linear-gradient(135deg,${c.sky},${c.skyDark})`, color:'#fff', padding:'14px', borderRadius:14, fontWeight:500, textDecoration:'none', fontSize:14, fontFamily:"'DM Sans', sans-serif" }}>
-          Avisá que pagaste por WhatsApp
-        </a>
       </div>
     </div>
   )
@@ -816,7 +811,7 @@ export default function PortalPaciente({ paciente, usuario, onLogout }) {
   return (
     <div className="pac-shell">
       <style>{globalStyle}</style>
-      {tieneDeuda && !loading && <DeudaOverlay paciente={paciente} saldo={saldo} />}
+      {tieneDeuda && !loading && <DeudaOverlay saldo={saldo} />}
       {modalDolor && <ModalDolor onClose={() => setModalDolor(false)} historia={historialDolor} onGuardar={r => setHistorialDolor(prev => [r,...prev])} />}
 
       <div className="pac-content">
