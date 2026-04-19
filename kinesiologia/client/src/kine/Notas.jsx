@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from './api.js'
 
 const c = {
   bg: '#F0F8FA', white: '#FFFFFF', sky: '#5BB8CC', skyDark: '#3A96AE',
@@ -9,35 +10,35 @@ const c = {
   redBg: '#FEF0EE', redBorder: '#F5A897', redText: '#C0341D',
 }
 
-const INICIALES = [
-  { id: 1, texto: 'Comprar bandas elásticas rojas y azules', fecha: '12 abr' },
-  { id: 2, texto: 'Decirle a María que traiga ropa cómoda la próxima sesión', fecha: '11 abr' },
-  { id: 3, texto: 'Renovar seguro de consultorio antes del 30', fecha: '10 abr' },
-]
-
 export default function Notas() {
-  const [notas, setNotas] = useState(INICIALES)
+  const [notas, setNotas] = useState([])
   const [nuevo, setNuevo] = useState('')
   const [zoomNota, setZoomNota] = useState(null)
   const [editTexto, setEditTexto] = useState('')
   const [editando, setEditando] = useState(false)
+  const [loading, setLoading] = useState(true)
 
-  function agregarNota() {
+  useEffect(() => {
+    api.getNotas().then(data => { setNotas(data); setLoading(false) }).catch(() => setLoading(false))
+  }, [])
+
+  async function agregarNota() {
     if (!nuevo.trim()) return
-    const today = new Date()
-    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
-    setNotas(p => [{ id: Date.now(), texto: nuevo.trim(), fecha: `${today.getDate()} ${meses[today.getMonth()]}` }, ...p])
+    const nota = await api.createNota(nuevo.trim())
+    setNotas(p => [nota, ...p])
     setNuevo('')
   }
 
-  function eliminarNota(id) {
+  async function eliminarNota(id) {
+    await api.deleteNota(id)
     setNotas(p => p.filter(n => n.id !== id))
     setZoomNota(null)
   }
 
-  function guardarEdicion() {
-    setNotas(p => p.map(n => n.id === zoomNota.id ? { ...n, texto: editTexto } : n))
-    setZoomNota(prev => ({ ...prev, texto: editTexto }))
+  async function guardarEdicion() {
+    const actualizada = await api.updateNota(zoomNota.id, editTexto)
+    setNotas(p => p.map(n => n.id === zoomNota.id ? actualizada : n))
+    setZoomNota(actualizada)
     setEditando(false)
   }
 
@@ -47,15 +48,20 @@ export default function Notas() {
     setEditando(false)
   }
 
+  function formatFecha(dateStr) {
+    if (!dateStr) return ''
+    const d = new Date(dateStr + 'T12:00')
+    const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+    return `${d.getDate()} ${meses[d.getMonth()]}`
+  }
+
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 10, color: c.muted, letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: 3 }}>Panel profesional</div>
         <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: c.ink }}>Notas</div>
       </div>
 
-      {/* Input nueva nota */}
       <div style={{ background: c.yellow, border: `0.5px solid ${c.yellowBorder}`, borderRadius: 16, padding: '14px 16px', marginBottom: 18 }}>
         <div style={{ fontSize: 10, fontWeight: 600, color: c.yellowText, letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 8 }}>Nueva nota</div>
         <textarea
@@ -71,10 +77,9 @@ export default function Notas() {
         </button>
       </div>
 
-      {/* Lista de notas */}
-      {notas.length === 0 && (
-        <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, paddingTop: 20 }}>Sin notas aún</div>
-      )}
+      {loading && <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, padding: '20px 0' }}>Cargando…</div>}
+      {!loading && notas.length === 0 && <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, paddingTop: 20 }}>Sin notas aún</div>}
+
       {notas.map(nota => (
         <div key={nota.id} onClick={() => abrirNota(nota)}
           style={{ background: c.white, borderRadius: 14, border: `0.5px solid ${c.yellowBorder}`, padding: '13px 16px', marginBottom: 10, cursor: 'pointer', display: 'flex', alignItems: 'flex-start', gap: 11 }}>
@@ -83,13 +88,12 @@ export default function Notas() {
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontSize: 13, color: c.ink, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{nota.texto}</div>
-            <div style={{ fontSize: 10, color: c.muted, marginTop: 4 }}>{nota.fecha}</div>
+            <div style={{ fontSize: 10, color: c.muted, marginTop: 4 }}>{formatFecha(nota.fecha)}</div>
           </div>
           <svg width="8" height="8" viewBox="0 0 9 9" fill="none" style={{ flexShrink: 0, marginTop: 6 }}><path d="M2 1.5l3.5 3-3.5 3" stroke={c.muted} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </div>
       ))}
 
-      {/* Modal zoom */}
       {zoomNota && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 300, background: 'rgba(13,53,64,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px 16px' }}
           onClick={() => { setZoomNota(null); setEditando(false) }}>
@@ -102,7 +106,7 @@ export default function Notas() {
                 </div>
                 <div>
                   <div style={{ fontSize: 13, fontWeight: 500, color: c.yellowText }}>Nota</div>
-                  <div style={{ fontSize: 10, color: c.yellowDark }}>{zoomNota.fecha}</div>
+                  <div style={{ fontSize: 10, color: c.yellowDark }}>{formatFecha(zoomNota.fecha)}</div>
                 </div>
               </div>
               <button onClick={() => { setZoomNota(null); setEditando(false) }}

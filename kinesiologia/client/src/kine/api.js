@@ -124,4 +124,19 @@ export const api = {
 
   // Claude
   claudeRutina: (descripcion) => req('POST', '/claude/rutina', { descripcion }),
+
+  // Notas admin
+  getNotas:     () => req('GET', '/notas'),
+  createNota:   (texto) => req('POST', '/notas', { texto }),
+  updateNota:   (id, texto) => req('PUT', `/notas/${id}`, { texto }),
+  deleteNota:   (id) => req('DELETE', `/notas/${id}`),
+
+  // Movimientos
+  getMovimientos:    (tipo) => req('GET', `/movimientos${tipo ? `?tipo=${tipo}` : ''}`),
+  createMovimiento:  (data) => req('POST', '/movimientos', data),
+  deleteMovimiento:  (id) => req('DELETE', `/movimientos/${id}`),
+
+  // Saldos
+  getSaldosTodos:      () => req('GET', '/saldos'),
+  pagarSaldoPaciente:  (pacienteId) => req('POST', `/saldos/${pacienteId}/pagar`),
 }

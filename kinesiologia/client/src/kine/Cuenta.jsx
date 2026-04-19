@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { api } from './api.js'
 
 const c = {
   bg: '#F0F8FA', white: '#FFFFFF', sky: '#5BB8CC', skyDark: '#3A96AE',
@@ -23,40 +24,72 @@ function CatBadge({ cat }) {
   )
 }
 
-const SALDOS_INIT = [
-  { paciente: 'Laura Ríos',      categoria: 'Particular', monto: 3500, estado: 'debe',   fecha: 'Vence 19 abr', sesiones: 4 },
-  { paciente: 'María González',  categoria: 'Friend',     monto: 1200, estado: 'debe',   fecha: 'Vence 15 abr', sesiones: 2 },
-  { paciente: 'Emilia Santaliz', categoria: 'Clic',       monto: 2400, estado: 'pagado', fecha: 'Pagó 10 abr',  sesiones: 3 },
-]
+function todayISO() {
+  return new Date().toISOString().slice(0, 10)
+}
 
-const INGRESOS_INIT = [
-  { desc: 'Sesión Emilia Santaliz', fecha: '10 abr', monto: 2400 },
-  { desc: 'Sesión María González',  fecha: '8 abr',  monto: 1800 },
-  { desc: 'Sesión Laura Ríos',      fecha: '7 abr',  monto: 2000 },
-]
-
-const EGRESOS_INIT = [
-  { desc: 'Insumos kinesiología', fecha: '9 abr', monto: 850  },
-  { desc: 'Alquiler consultorio', fecha: '1 abr', monto: 4500 },
-  { desc: 'Material didáctico',   fecha: '5 abr', monto: 320  },
-]
+function formatFecha(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T12:00')
+  const meses = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic']
+  return `${d.getDate()} ${meses[d.getMonth()]}`
+}
 
 export default function Cuenta() {
-  const [tab, setTab]       = useState('saldos')
-  const [saldos, setSaldos] = useState(SALDOS_INIT)
-  const [ingresos, setIngresos] = useState(INGRESOS_INIT)
-  const [egresos, setEgresos]   = useState(EGRESOS_INIT)
+  const [tab, setTab]             = useState('saldos')
+  const [saldos, setSaldos]       = useState([])
+  const [ingresos, setIngresos]   = useState([])
+  const [egresos, setEgresos]     = useState([])
+  const [loading, setLoading]     = useState(true)
   const [showAddIngreso, setShowAddIngreso] = useState(false)
   const [showAddEgreso,  setShowAddEgreso]  = useState(false)
-  const [newDesc,  setNewDesc]  = useState('')
-  const [newMonto, setNewMonto] = useState('')
+  const [newDesc,  setNewDesc]    = useState('')
+  const [newMonto, setNewMonto]   = useState('')
+  const [newFecha, setNewFecha]   = useState(todayISO)
 
-  const deben   = saldos.filter(s => s.estado === 'debe')
-  const pagados  = saldos.filter(s => s.estado === 'pagado')
-  const totalDeuda    = deben.reduce((a, s) => a + s.monto, 0)
+  useEffect(() => {
+    Promise.all([
+      api.getSaldosTodos(),
+      api.getMovimientos('ingreso'),
+      api.getMovimientos('egreso'),
+    ]).then(([s, ing, egr]) => {
+      setSaldos(s)
+      setIngresos(ing)
+      setEgresos(egr)
+    }).finally(() => setLoading(false))
+  }, [])
+
   const totalIngresos = ingresos.reduce((a, i) => a + i.monto, 0)
   const totalEgresos  = egresos.reduce((a, e) => a + e.monto, 0)
-  const balance = totalIngresos - totalEgresos
+  const balance       = totalIngresos - totalEgresos
+  const totalDeuda    = saldos.reduce((a, s) => a + s.saldo_pendiente, 0)
+
+  async function cobrar(pacienteId) {
+    await api.pagarSaldoPaciente(pacienteId)
+    const nuevos = await api.getSaldosTodos()
+    setSaldos(nuevos)
+    const nuevosIng = await api.getMovimientos('ingreso')
+    setIngresos(nuevosIng)
+  }
+
+  async function addMovimiento(tipo) {
+    if (!newDesc.trim() || !newMonto) return
+    const mov = await api.createMovimiento({
+      tipo,
+      descripcion: newDesc.trim(),
+      monto: parseFloat(newMonto),
+      fecha: newFecha,
+    })
+    if (tipo === 'ingreso') { setIngresos(p => [mov, ...p]); setShowAddIngreso(false) }
+    else                    { setEgresos(p => [mov, ...p]);  setShowAddEgreso(false) }
+    setNewDesc(''); setNewMonto(''); setNewFecha(todayISO())
+  }
+
+  async function deleteMov(id, tipo) {
+    await api.deleteMovimiento(id)
+    if (tipo === 'ingreso') setIngresos(p => p.filter(x => x.id !== id))
+    else                    setEgresos(p => p.filter(x => x.id !== id))
+  }
 
   const tabs = [
     { id: 'saldos',   label: 'Saldos' },
@@ -64,17 +97,10 @@ export default function Cuenta() {
     { id: 'egresos',  label: 'Egresos' },
   ]
 
-  function addMovimiento(tipo) {
-    if (!newDesc || !newMonto) return
-    const entry = { desc: newDesc, fecha: 'Hoy', monto: parseInt(newMonto) }
-    if (tipo === 'ingreso') { setIngresos(p => [entry, ...p]); setShowAddIngreso(false) }
-    else                    { setEgresos(p => [entry, ...p]);  setShowAddEgreso(false) }
-    setNewDesc(''); setNewMonto('')
-  }
+  if (loading) return <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, padding: '40px 0' }}>Cargando…</div>
 
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontSize: 10, color: c.muted, letterSpacing: '1.2px', textTransform: 'uppercase', marginBottom: 3 }}>Panel profesional</div>
         <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 22, color: c.ink }}>Estado de cuenta</div>
@@ -85,12 +111,12 @@ export default function Cuenta() {
         <div style={{ background: `linear-gradient(135deg,${c.aquaLight},#C8EDE5)`, border: `0.5px solid #A8DDD5`, borderRadius: 16, padding: '15px 14px' }}>
           <div style={{ fontSize: 9, color: c.aquaDark, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 5 }}>Ingresos</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: c.aquaDark, lineHeight: 1 }}>${totalIngresos.toLocaleString()}</div>
-          <div style={{ fontSize: 9, color: c.aquaDark, marginTop: 3 }}>{ingresos.length} movimientos</div>
+          <div style={{ fontSize: 9, color: c.aquaDark, marginTop: 3 }}>{ingresos.length} mov.</div>
         </div>
         <div style={{ background: `linear-gradient(135deg,${c.redBg},#FDE8E4)`, border: `0.5px solid ${c.redBorder}`, borderRadius: 16, padding: '15px 14px' }}>
           <div style={{ fontSize: 9, color: c.redSub, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 5 }}>Egresos</div>
           <div style={{ fontSize: 20, fontWeight: 700, color: c.redText, lineHeight: 1 }}>${totalEgresos.toLocaleString()}</div>
-          <div style={{ fontSize: 9, color: c.redSub, marginTop: 3 }}>{egresos.length} movimientos</div>
+          <div style={{ fontSize: 9, color: c.redSub, marginTop: 3 }}>{egresos.length} mov.</div>
         </div>
         <div style={{ background: balance >= 0 ? `linear-gradient(135deg,${c.skyLight},${c.skyXlight})` : `linear-gradient(135deg,${c.redBg},#FDE8E4)`, border: `0.5px solid ${balance >= 0 ? c.border : c.redBorder}`, borderRadius: 16, padding: '15px 14px' }}>
           <div style={{ fontSize: 9, color: balance >= 0 ? c.skyDark : c.redText, textTransform: 'uppercase', letterSpacing: '0.8px', marginBottom: 5 }}>Balance</div>
@@ -111,46 +137,28 @@ export default function Cuenta() {
       {/* Saldos */}
       {tab === 'saldos' && (
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-            <div style={{ fontSize: 10, letterSpacing: '1.2px', textTransform: 'uppercase', color: c.redSub, fontWeight: 500 }}>Pendientes · ${totalDeuda.toLocaleString()}</div>
-            <div style={{ flex: 1, height: '0.5px', background: c.redBorder }} />
-          </div>
-          {deben.map((s, i) => (
-            <div key={i} style={{ background: c.white, borderRadius: 15, border: `0.5px solid ${c.redBorder}`, padding: '14px 16px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 14 }}>
-              <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${c.redBg},#FDDDD8)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, fontWeight: 600, color: c.redText }}>{s.paciente.charAt(0)}</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 13, fontWeight: 500, color: c.ink }}>{s.paciente}</span>
-                  <CatBadge cat={s.categoria} />
-                </div>
-                <div style={{ fontSize: 11, color: c.redSub }}>{s.fecha} · {s.sesiones} sesiones</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: 17, fontWeight: 700, color: c.redText }}>${s.monto.toLocaleString()}</div>
-                <button onClick={() => setSaldos(p => p.map(x => x.paciente === s.paciente ? { ...x, estado: 'pagado', fecha: 'Pagó hoy' } : x))}
-                  style={{ fontSize: 10, color: c.aquaDark, background: c.aquaLight, border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, marginTop: 4 }}>✓ Cobrado</button>
-              </div>
-            </div>
-          ))}
-          {pagados.length > 0 && (
+          {saldos.length === 0 && <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, paddingTop: 20 }}>Sin saldos pendientes</div>}
+          {saldos.length > 0 && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10, marginTop: 18 }}>
-                <div style={{ fontSize: 10, letterSpacing: '1.2px', textTransform: 'uppercase', color: c.aquaDark, fontWeight: 500 }}>Cobrados</div>
-                <div style={{ flex: 1, height: '0.5px', background: '#A8DDD5' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                <div style={{ fontSize: 10, letterSpacing: '1.2px', textTransform: 'uppercase', color: c.redSub, fontWeight: 500 }}>Pendientes · ${totalDeuda.toLocaleString()}</div>
+                <div style={{ flex: 1, height: '0.5px', background: c.redBorder }} />
               </div>
-              {pagados.map((s, i) => (
-                <div key={i} style={{ background: c.white, borderRadius: 15, border: `0.5px solid ${c.border}`, padding: '12px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 14, opacity: 0.75 }}>
-                  <div style={{ width: 38, height: 38, borderRadius: 11, background: c.aquaLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke={c.aquaDark} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                      <span style={{ fontSize: 13, fontWeight: 500, color: c.ink }}>{s.paciente}</span>
-                      <CatBadge cat={s.categoria} />
+              {saldos.map(s => (
+                <div key={s.id} style={{ background: c.white, borderRadius: 15, border: `0.5px solid ${c.redBorder}`, padding: '14px 16px', marginBottom: 9, display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ width: 42, height: 42, borderRadius: 12, background: `linear-gradient(135deg,${c.redBg},#FDDDD8)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, fontSize: 16, fontWeight: 600, color: c.redText }}>{(s.nombre || '?').charAt(0)}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 3, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: c.ink }}>{s.nombre} {s.apellido}</span>
+                      {s.tipo && <CatBadge cat={s.tipo} />}
                     </div>
-                    <div style={{ fontSize: 11, color: c.muted }}>{s.fecha}</div>
+                    <div style={{ fontSize: 11, color: c.redSub }}>{s.sesiones_pendientes} sesión{s.sesiones_pendientes !== 1 ? 'es' : ''} sin cobrar</div>
                   </div>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: c.aquaDark }}>${s.monto.toLocaleString()}</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: 17, fontWeight: 700, color: c.redText }}>${s.saldo_pendiente.toLocaleString()}</div>
+                    <button onClick={() => cobrar(s.id)}
+                      style={{ fontSize: 10, color: c.aquaDark, background: c.aquaLight, border: 'none', borderRadius: 8, padding: '3px 8px', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, marginTop: 4 }}>✓ Cobrado</button>
+                  </div>
                 </div>
               ))}
             </>
@@ -172,22 +180,27 @@ export default function Cuenta() {
             <div style={{ background: c.aquaLight, borderRadius: 13, border: `0.5px solid #A8DDD5`, padding: '13px 14px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Descripción" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid #A8DDD5`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
               <input value={newMonto} onChange={e => setNewMonto(e.target.value)} placeholder="Monto $" type="number" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid #A8DDD5`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
+              <input value={newFecha} onChange={e => setNewFecha(e.target.value)} type="date" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid #A8DDD5`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => addMovimiento('ingreso')} style={{ flex: 1, padding: '8px 0', borderRadius: 9, border: 'none', background: c.aquaDark, color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Guardar</button>
                 <button onClick={() => setShowAddIngreso(false)} style={{ padding: '8px 14px', borderRadius: 9, border: 'none', background: 'rgba(0,0,0,0.05)', color: c.muted, fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Cancelar</button>
               </div>
             </div>
           )}
-          {ingresos.map((item, i) => (
-            <div key={i} style={{ background: c.white, borderRadius: 13, border: `0.5px solid ${c.border}`, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+          {ingresos.length === 0 && <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, paddingTop: 16 }}>Sin ingresos registrados</div>}
+          {ingresos.map(item => (
+            <div key={item.id} style={{ background: c.white, borderRadius: 13, border: `0.5px solid ${c.border}`, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: c.aquaLight, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M5 6l3-3 3 3" stroke={c.aquaDark} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: c.ink, marginBottom: 2 }}>{item.desc}</div>
-                <div style={{ fontSize: 11, color: c.muted }}>{item.fecha}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: c.ink, marginBottom: 2 }}>{item.descripcion}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{formatFecha(item.fecha)}</div>
               </div>
               <span style={{ fontSize: 14, fontWeight: 600, color: c.aquaDark }}>+${item.monto.toLocaleString()}</span>
+              <button onClick={() => deleteMov(item.id, 'ingreso')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, padding: '4px', display: 'flex', alignItems: 'center' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke={c.muted} strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
             </div>
           ))}
         </div>
@@ -207,22 +220,27 @@ export default function Cuenta() {
             <div style={{ background: c.redBg, borderRadius: 13, border: `0.5px solid ${c.redBorder}`, padding: '13px 14px', marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
               <input value={newDesc} onChange={e => setNewDesc(e.target.value)} placeholder="Descripción" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid ${c.redBorder}`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
               <input value={newMonto} onChange={e => setNewMonto(e.target.value)} placeholder="Monto $" type="number" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid ${c.redBorder}`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
+              <input value={newFecha} onChange={e => setNewFecha(e.target.value)} type="date" style={{ padding: '8px 11px', borderRadius: 9, border: `0.5px solid ${c.redBorder}`, background: c.white, fontSize: 12, color: c.ink, fontFamily: "'DM Sans', sans-serif" }} />
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => addMovimiento('egreso')} style={{ flex: 1, padding: '8px 0', borderRadius: 9, border: 'none', background: c.redText, color: '#fff', fontSize: 12, fontWeight: 500, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Guardar</button>
                 <button onClick={() => setShowAddEgreso(false)} style={{ padding: '8px 14px', borderRadius: 9, border: 'none', background: 'rgba(0,0,0,0.05)', color: c.muted, fontSize: 12, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Cancelar</button>
               </div>
             </div>
           )}
-          {egresos.map((item, i) => (
-            <div key={i} style={{ background: c.white, borderRadius: 13, border: `0.5px solid ${c.border}`, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
+          {egresos.length === 0 && <div style={{ textAlign: 'center', color: c.muted, fontSize: 13, paddingTop: 16 }}>Sin egresos registrados</div>}
+          {egresos.map(item => (
+            <div key={item.id} style={{ background: c.white, borderRadius: 13, border: `0.5px solid ${c.border}`, padding: '12px 14px', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12 }}>
               <div style={{ width: 36, height: 36, borderRadius: 10, background: c.redBg, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M8 3v10M5 10l3 3 3-3" stroke={c.redText} strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
               </div>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: c.ink, marginBottom: 2 }}>{item.desc}</div>
-                <div style={{ fontSize: 11, color: c.muted }}>{item.fecha}</div>
+                <div style={{ fontSize: 13, fontWeight: 500, color: c.ink, marginBottom: 2 }}>{item.descripcion}</div>
+                <div style={{ fontSize: 11, color: c.muted }}>{formatFecha(item.fecha)}</div>
               </div>
               <span style={{ fontSize: 14, fontWeight: 600, color: c.redText }}>-${item.monto.toLocaleString()}</span>
+              <button onClick={() => deleteMov(item.id, 'egreso')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, padding: '4px', display: 'flex', alignItems: 'center' }}>
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M1 1l10 10M11 1L1 11" stroke={c.muted} strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
             </div>
           ))}
         </div>

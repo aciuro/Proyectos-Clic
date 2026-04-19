@@ -193,6 +193,28 @@ db.exec(`
 try { db.exec(`ALTER TABLE rutinas ADD COLUMN veces INTEGER DEFAULT 1`) } catch {}
 try { db.exec(`ALTER TABLE rutinas ADD COLUMN ejercicios_libres TEXT`) } catch {}
 
+// Notas del admin
+db.exec(`
+  CREATE TABLE IF NOT EXISTS notas_admin (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    texto      TEXT NOT NULL,
+    fecha      TEXT DEFAULT (date('now','localtime')),
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
+
+// Movimientos de cuenta (ingresos/egresos)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS movimientos (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    tipo       TEXT NOT NULL CHECK(tipo IN ('ingreso','egreso')),
+    descripcion TEXT NOT NULL,
+    monto      REAL NOT NULL,
+    fecha      TEXT DEFAULT (date('now','localtime')),
+    created_at TEXT DEFAULT (datetime('now','localtime'))
+  )
+`);
+
 // ── Crear admin por defecto si no existe ──────────────────
 
 const adminEmail = process.env.ADMIN_EMAIL || 'augustociuro@gmail.com';
@@ -681,4 +703,29 @@ module.exports = {
   getSesionesPorMes:   () => getSesionesPorMes.all(),
   getProximosTurnos:   () => getProximosTurnos.all(),
   getDolorEvolucion:   (pacienteId) => getDolorEvolucion.all(pacienteId),
+
+  // Notas admin
+  getNotasAdmin:    () => db.prepare(`SELECT * FROM notas_admin ORDER BY created_at DESC`).all(),
+  insertNotaAdmin:  (texto) => { const r = db.prepare(`INSERT INTO notas_admin (texto) VALUES (?)`).run(texto); return db.prepare(`SELECT * FROM notas_admin WHERE id=?`).get(r.lastInsertRowid); },
+  updateNotaAdmin:  (id, texto) => { db.prepare(`UPDATE notas_admin SET texto=? WHERE id=?`).run(texto, id); return db.prepare(`SELECT * FROM notas_admin WHERE id=?`).get(id); },
+  deleteNotaAdmin:  (id) => db.prepare(`DELETE FROM notas_admin WHERE id=?`).run(id),
+
+  // Movimientos
+  getMovimientos:    (tipo) => tipo ? db.prepare(`SELECT * FROM movimientos WHERE tipo=? ORDER BY created_at DESC`).all(tipo) : db.prepare(`SELECT * FROM movimientos ORDER BY created_at DESC`).all(),
+  insertMovimiento:  (data) => { const r = db.prepare(`INSERT INTO movimientos (tipo, descripcion, monto, fecha) VALUES (@tipo, @descripcion, @monto, @fecha)`).run(data); return db.prepare(`SELECT * FROM movimientos WHERE id=?`).get(r.lastInsertRowid); },
+  deleteMovimiento:  (id) => db.prepare(`DELETE FROM movimientos WHERE id=?`).run(id),
+
+  // Saldos por paciente (para Cuenta)
+  getSaldosTodos: () => db.prepare(`
+    SELECT p.id, p.nombre, p.apellido, p.tipo,
+      COALESCE(SUM(CASE WHEN e.pagado=0 THEN e.monto_cobrado ELSE 0 END),0) as saldo_pendiente,
+      COUNT(CASE WHEN e.pagado=0 THEN 1 END) as sesiones_pendientes
+    FROM pacientes p
+    LEFT JOIN motivos m ON m.paciente_id = p.id
+    LEFT JOIN evoluciones e ON e.motivo_id = m.id
+    GROUP BY p.id
+    HAVING saldo_pendiente > 0
+    ORDER BY saldo_pendiente DESC
+  `).all(),
+  pagarSaldoPaciente: (pacienteId) => db.prepare(`UPDATE evoluciones SET pagado=1 WHERE motivo_id IN (SELECT id FROM motivos WHERE paciente_id=?) AND pagado=0 AND monto_cobrado>0`).run(pacienteId),
 };

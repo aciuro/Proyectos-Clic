@@ -557,4 +557,47 @@ Sin títulos ni secciones, sin markdown. Solo el listado limpio, en español, co
   }
 });
 
+// ── Notas admin ──────────────────────────────────────────────
+router.get('/notas', auth, soloAdmin, (req, res) => {
+  res.json(db.getNotasAdmin());
+});
+router.post('/notas', auth, soloAdmin, (req, res) => {
+  const { texto } = req.body;
+  if (!texto?.trim()) return res.status(400).json({ error: 'Texto requerido' });
+  res.json(db.insertNotaAdmin(texto.trim()));
+});
+router.put('/notas/:id', auth, soloAdmin, (req, res) => {
+  const { texto } = req.body;
+  if (!texto?.trim()) return res.status(400).json({ error: 'Texto requerido' });
+  res.json(db.updateNotaAdmin(req.params.id, texto.trim()));
+});
+router.delete('/notas/:id', auth, soloAdmin, (req, res) => {
+  db.deleteNotaAdmin(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Movimientos (ingresos/egresos) ───────────────────────────
+router.get('/movimientos', auth, soloAdmin, (req, res) => {
+  res.json(db.getMovimientos(req.query.tipo));
+});
+router.post('/movimientos', auth, soloAdmin, (req, res) => {
+  const { tipo, descripcion, monto, fecha } = req.body;
+  if (!tipo || !descripcion || !monto) return res.status(400).json({ error: 'Faltan campos' });
+  const hoy = new Date().toISOString().split('T')[0];
+  res.json(db.insertMovimiento({ tipo, descripcion, monto: parseFloat(monto), fecha: fecha || hoy }));
+});
+router.delete('/movimientos/:id', auth, soloAdmin, (req, res) => {
+  db.deleteMovimiento(req.params.id);
+  res.json({ ok: true });
+});
+
+// ── Saldos todos los pacientes ────────────────────────────────
+router.get('/saldos', auth, soloAdmin, (req, res) => {
+  res.json(db.getSaldosTodos());
+});
+router.post('/saldos/:pacienteId/pagar', auth, soloAdmin, (req, res) => {
+  db.pagarSaldoPaciente(req.params.pacienteId);
+  res.json({ ok: true });
+});
+
 module.exports = router;
