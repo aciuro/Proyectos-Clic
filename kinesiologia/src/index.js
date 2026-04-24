@@ -3,10 +3,12 @@ require('dotenv').config();
 const path = require('path');
 const express = require('express');
 const kineRoutes = require('./kine-routes');
+const therapyRoutes = require('./kine-therapy-routes');
 
 const app = express();
 
 // ─── Rutas API ────────────────────────────────────────────────
+app.use('/api/kine', therapyRoutes);
 app.use('/api/kine', kineRoutes);
 
 // ─── Archivos estáticos ───────────────────────────────────────
