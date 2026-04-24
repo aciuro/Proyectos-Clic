@@ -31,7 +31,7 @@ export const api = {
   // Pacientes
   getPacientes:   () => req('GET', '/pacientes'),
   getPaciente:    (id) => req('GET', `/pacientes/${id}`),
-  createPaciente: (data) => req('POST', '/pacientes', data), // devuelve { paciente, acceso }
+  createPaciente: (data) => req('POST', '/pacientes', data),
   updatePaciente: (id, data) => req('PUT', `/pacientes/${id}`, data),
   deletePaciente: (id) => req('DELETE', `/pacientes/${id}`),
   crearAcceso:    (id, data) => req('POST', `/pacientes/${id}/crear-acceso`, data),
@@ -118,6 +118,11 @@ export const api = {
   createRutina:  (motivoId, data) => req('POST', `/motivos/${motivoId}/rutinas`, data),
   updateRutina:  (id, data) => req('PUT', `/rutinas/${id}`, data),
   deleteRutina:  (id) => req('DELETE', `/rutinas/${id}`),
+  getRutinaPrescripcion:    (id) => req('GET', `/rutinas/${id}/prescripcion`),
+  updateRutinaPrescripcion: (id, data) => req('PUT', `/rutinas/${id}/prescripcion`, data),
+  createRutinaFeedback:     (id, data) => req('POST', `/rutinas/${id}/feedback`, data),
+  getRutinaFeedback:        (id) => req('GET', `/rutinas/${id}/feedback`),
+  getFeedbackPaciente:      (pacienteId) => req('GET', `/pacientes/${pacienteId}/feedback-rutinas`),
 
   // Dolor
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
