@@ -1,0 +1,326 @@
+/* Rehabilitaplus UX polish
+   Capa de mejoras visuales y de experiencia para admin y pacientes.
+   Se carga después de los estilos existentes para no romper la lógica actual. */
+
+:root {
+  --rp-bg: #f3fbfd;
+  --rp-surface: rgba(255, 255, 255, 0.92);
+  --rp-surface-strong: #ffffff;
+  --rp-ink: #0d3540;
+  --rp-muted: #6f9fab;
+  --rp-border: rgba(91, 184, 204, 0.24);
+  --rp-sky: #5bb8cc;
+  --rp-sky-dark: #2f8da4;
+  --rp-aqua: #7ec8b8;
+  --rp-aqua-dark: #3f9f8e;
+  --rp-soft: #eef9fb;
+  --rp-shadow: 0 18px 50px rgba(13, 53, 64, 0.10);
+  --rp-shadow-soft: 0 10px 30px rgba(13, 53, 64, 0.07);
+  --rp-radius-lg: 24px;
+  --rp-radius-md: 18px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background:
+    radial-gradient(circle at top left, rgba(91, 184, 204, 0.18), transparent 34rem),
+    radial-gradient(circle at bottom right, rgba(126, 200, 184, 0.18), transparent 30rem),
+    var(--rp-bg) !important;
+}
+
+button, a, input, textarea, select {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 3px solid rgba(91, 184, 204, 0.35) !important;
+  outline-offset: 2px;
+}
+
+/* ── Admin shell ───────────────────────────────────────── */
+.adm-shell {
+  background:
+    radial-gradient(circle at 20% 0%, rgba(91, 184, 204, 0.16), transparent 28rem),
+    linear-gradient(135deg, #f3fbfd 0%, #eef8f3 100%) !important;
+}
+
+.adm-sidebar {
+  background: rgba(232, 223, 208, 0.76) !important;
+  border-right: 1px solid rgba(13, 53, 64, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.adm-content {
+  max-width: 1220px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.adm-bottom-nav,
+.bottom-nav {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border: 1px solid rgba(91, 184, 204, 0.18) !important;
+  box-shadow: 0 10px 34px rgba(13, 53, 64, 0.16) !important;
+  backdrop-filter: blur(18px);
+}
+
+.adm-bnav-btn,
+.nav-btn {
+  border-radius: 16px !important;
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.adm-bnav-btn:active,
+.nav-btn:active {
+  transform: scale(0.96);
+}
+
+.adm-bnav-btn:has(.adm-bnav-dot),
+.nav-btn:has(.nav-dot) {
+  background: rgba(91, 184, 204, 0.10) !important;
+}
+
+/* ── Reusable existing cards ───────────────────────────── */
+.pp-card,
+.pp-mini-card,
+.kine-ejercicios-panel,
+.kine-sesiones-panel,
+.kine-lesiones-sidebar,
+.paciente-card,
+.kine-ej-card {
+  background: var(--rp-surface) !important;
+  border: 1px solid var(--rp-border) !important;
+  box-shadow: var(--rp-shadow-soft) !important;
+  backdrop-filter: blur(14px);
+}
+
+.pp-card,
+.pp-mini-card {
+  border-radius: var(--rp-radius-md) !important;
+}
+
+.pp-card {
+  transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+}
+
+.pp-card:active,
+.pp-mini-card:active {
+  transform: scale(0.985);
+}
+
+.paciente-card,
+.kine-ej-card {
+  transition: transform 170ms ease, box-shadow 170ms ease, border-color 170ms ease;
+}
+
+.paciente-card:hover,
+.kine-ej-card:hover,
+.pp-card:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--rp-shadow) !important;
+  border-color: rgba(91, 184, 204, 0.46) !important;
+}
+
+/* ── Page rhythm ───────────────────────────────────────── */
+.kine-page {
+  max-width: 1180px !important;
+}
+
+.kine-page-header {
+  align-items: flex-start !important;
+  gap: 16px !important;
+}
+
+.kine-page-title,
+.kine-detalle-nombre {
+  letter-spacing: -0.04em !important;
+}
+
+.kine-search,
+.kine-select,
+.kine-form input,
+.kine-form select,
+.kine-form textarea {
+  border-radius: 14px !important;
+  border-color: rgba(91, 184, 204, 0.22) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+.kine-search:focus,
+.kine-select:focus,
+.kine-form input:focus,
+.kine-form select:focus,
+.kine-form textarea:focus {
+  box-shadow: 0 0 0 4px rgba(91, 184, 204, 0.16) !important;
+}
+
+.kine-btn-primary,
+.kine-btn-secondary,
+.kine-btn-logout {
+  border-radius: 14px !important;
+}
+
+.kine-btn-primary {
+  background: linear-gradient(135deg, var(--rp-sky), var(--rp-sky-dark)) !important;
+  box-shadow: 0 10px 22px rgba(47, 141, 164, 0.22) !important;
+}
+
+.kine-btn-secondary {
+  background: rgba(255, 255, 255, 0.78) !important;
+}
+
+.kine-tabs {
+  background: rgba(255, 255, 255, 0.70);
+  border: 1px solid rgba(91, 184, 204, 0.18) !important;
+  border-radius: 18px;
+  padding: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.kine-tabs::-webkit-scrollbar { display: none; }
+
+.kine-tab {
+  border-radius: 14px !important;
+  white-space: nowrap;
+}
+
+.kine-tab.active {
+  background: rgba(91, 184, 204, 0.13) !important;
+}
+
+.kine-tab::before { display: none !important; }
+
+/* ── Patient portal polish ─────────────────────────────── */
+.pac-shell {
+  background:
+    radial-gradient(circle at top, rgba(91, 184, 204, 0.18), transparent 24rem),
+    linear-gradient(180deg, #f3fbfd 0%, #eef8f3 100%) !important;
+}
+
+.pac-content {
+  animation: rpFadeUp 360ms ease both;
+}
+
+.pp-grid-2 {
+  gap: 12px !important;
+}
+
+.pp-mini-card {
+  min-height: 132px;
+  transition: transform 170ms ease, box-shadow 170ms ease;
+}
+
+/* Make exercise detail easier to read on mobile */
+.pac-shell iframe,
+.pp-card iframe {
+  border: 0;
+}
+
+/* ── Modal / bottom sheet ──────────────────────────────── */
+.kine-modal-overlay {
+  background: rgba(13, 53, 64, 0.48) !important;
+  backdrop-filter: blur(6px);
+}
+
+.kine-modal {
+  border-radius: 24px !important;
+  border: 1px solid rgba(255,255,255,0.7);
+}
+
+/* ── Mobile-first refinements ──────────────────────────── */
+@media (max-width: 767px) {
+  .adm-content {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .kine-page {
+    padding: 20px 14px 110px !important;
+  }
+
+  .kine-page-header {
+    margin-bottom: 18px !important;
+  }
+
+  .kine-page-title {
+    font-size: 24px !important;
+  }
+
+  .kine-page-actions {
+    width: 100%;
+  }
+
+  .kine-search,
+  .kine-select {
+    min-width: 0 !important;
+    width: 100%;
+  }
+
+  .pacientes-grid,
+  .kine-ej-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .paciente-card {
+    border-radius: 20px !important;
+    padding: 14px !important;
+  }
+
+  .kine-detalle-header {
+    align-items: flex-start !important;
+  }
+
+  .kine-lesiones-layout {
+    grid-template-columns: 1fr !important;
+  }
+
+  .kine-lesiones-sidebar {
+    max-height: 260px;
+    overflow: auto;
+  }
+
+  .kine-panel-header {
+    flex-direction: column;
+  }
+
+  .kine-form-row {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (min-width: 768px) {
+  .adm-content {
+    padding-top: 36px !important;
+  }
+
+  .pac-content {
+    max-width: 960px !important;
+  }
+
+  .pp-card,
+  .pp-mini-card {
+    padding: 18px !important;
+  }
+}
+
+@keyframes rpFadeUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
