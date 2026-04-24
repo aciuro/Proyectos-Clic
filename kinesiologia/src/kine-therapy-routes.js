@@ -1,6 +1,6 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const db = require('./kine-db-unified');
+const db = require('./kine-therapy-db');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'kine-ciuro-secret-2024';
@@ -51,8 +51,6 @@ function normalizarPrescripcion(body) {
   };
 }
 
-// Guarda una prescripción flexible para rutinas terapéuticas.
-// Soporta bloques de cardio/interválicos, caminata, carrera, bici, pausas y consignas libres.
 router.put('/rutinas/:id/prescripcion', auth, soloAdmin, (req, res) => {
   try {
     const rutina = db.getRutina(req.params.id);
@@ -71,7 +69,6 @@ router.get('/rutinas/:id/prescripcion', auth, (req, res) => {
   res.json(db.parseRutinaPrescripcion(rutina));
 });
 
-// Feedback del paciente al terminar una rutina.
 router.post('/rutinas/:id/feedback', auth, (req, res) => {
   if (!puedeAccederRutina(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' });
   try {
