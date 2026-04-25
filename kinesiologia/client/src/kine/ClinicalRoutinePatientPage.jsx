@@ -63,6 +63,32 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
   const [editorData, setEditorData] = useState({ contexto: getRoutineContext(form), ejercicios: normalizeRoutineItems(form) })
   const [saving, setSaving] = useState(false)
 
+  useEffect(() => {
+    const html = document.documentElement
+    const body = document.body
+    const previousHtmlOverflow = html.style.overflow
+    const previousBodyOverflow = body.style.overflow
+    const previousBodyPosition = body.style.position
+    const previousBodyWidth = body.style.width
+    const previousBodyTop = body.style.top
+    const scrollY = window.scrollY || window.pageYOffset || 0
+
+    html.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    body.style.position = 'fixed'
+    body.style.width = '100%'
+    body.style.top = `-${scrollY}px`
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow
+      body.style.overflow = previousBodyOverflow
+      body.style.position = previousBodyPosition
+      body.style.width = previousBodyWidth
+      body.style.top = previousBodyTop
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
+
   async function save() {
     setSaving(true)
     const payload = buildRoutinePayload({ ...form }, editorData.contexto, editorData.ejercicios)
@@ -76,8 +102,8 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, backdropFilter: 'blur(7px)' }}>
-      <div style={{ width: 'min(980px, 100%)', maxHeight: '92vh', overflowY: 'auto', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, backdropFilter: 'blur(7px)', overflow: 'hidden', overscrollBehavior: 'none', touchAction: 'none' }}>
+      <div style={{ width: 'min(980px, 100%)', height: 'min(92dvh, 920px)', maxHeight: '92dvh', overflowY: 'auto', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 3, background: 'rgba(244,250,251,.94)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${c.border}`, padding: 16, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 950, letterSpacing: '.1em', textTransform: 'uppercase', color: c.muted }}>{form.id ? 'Editar rutina' : 'Nueva rutina'}</div>
@@ -89,7 +115,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
           </div>
         </div>
 
-        <div style={{ padding: 16, display: 'grid', gap: 14 }}>
+        <div style={{ padding: '16px 16px 28px', display: 'grid', gap: 14 }}>
           <section style={{ ...glass, padding: 14, display: 'grid', gap: 10 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr .6fr .6fr', gap: 10 }}>
               <input style={fld} value={form.nombre || ''} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre: Rodilla semana 2" />
