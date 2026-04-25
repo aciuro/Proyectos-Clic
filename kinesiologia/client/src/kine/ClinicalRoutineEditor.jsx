@@ -5,6 +5,7 @@ import {
   CAMPO_PRESETS,
   CARDIO_PRESETS,
   CONTEXTOS_RUTINA,
+  CONTRACCION_FILTROS,
   MOVILIDAD_PRESETS,
   QUICK_ROUTINE_FLOW,
   TIPOS_ITEM,
@@ -24,7 +25,7 @@ const c = {
 
 const typeInfo = {
   movilidad: { title: 'Movilidad / entrada en calor', short: 'Movilidad', icon: '🟢', hint: 'Primer bloque: caminar, bici, elíptico o movilidad articular.', bg: '#EAFBF5', border: '#BFEEDC', color: '#13795B' },
-  ejercicio: { title: 'Gimnasio / fuerza', short: 'Gimnasio', icon: '🏋️', hint: 'Ejercicios por articulación: tobillo, rodilla, cadera, columna, hombro, brazo y core.', bg: '#EFF8FF', border: '#B9E2F2', color: '#075985' },
+  ejercicio: { title: 'Gimnasio / fuerza', short: 'Gimnasio', icon: '🏋️', hint: 'Ejercicios por articulación y contracción: concéntrica, isométrica o excéntrica.', bg: '#EFF8FF', border: '#B9E2F2', color: '#075985' },
   campo: { title: 'Trabajo en campo', short: 'Campo', icon: '🏃', hint: 'Pasadas, intermitentes, trote, fondo o cambios de ritmo.', bg: '#FFF9E8', border: '#F3DA90', color: '#7A5C00' },
   cardio: { title: 'Cardio', short: 'Cardio', icon: '🚴', hint: 'Bloque aeróbico por tiempo o intensidad.', bg: '#F1F5FF', border: '#C8D7FF', color: '#334E99' },
   agente: { title: 'Agente físico post rutina', short: 'Agente', icon: '🧊', hint: 'Hielo, calor o baños de contraste al finalizar.', bg: '#F0FDFF', border: '#BAE6F0', color: '#0E7490' },
@@ -141,13 +142,13 @@ function ExerciseThumb({ item }) {
   )
 }
 
-function RegionChips({ region, setRegion }) {
+function HorizontalChips({ items, value, onChange }) {
   return (
-    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 2px 9px', marginTop: 12 }}>
-      {ARTICULACION_FILTROS.map(r => {
-        const active = region === r.id
+    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 2px 9px' }}>
+      {items.map(r => {
+        const active = value === r.id
         return (
-          <button key={r.id} type="button" onClick={() => setRegion(r.id)} style={{ flex: '0 0 auto', border: `1px solid ${active ? c.sky : c.border}`, background: active ? '#E9F7FA' : '#fff', color: active ? c.skyDark : c.inkSoft, borderRadius: 999, padding: '8px 11px', fontSize: 11.5, fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }}>
+          <button key={r.id} type="button" onClick={() => onChange(r.id)} style={{ flex: '0 0 auto', border: `1px solid ${active ? c.sky : c.border}`, background: active ? '#E9F7FA' : '#fff', color: active ? c.skyDark : c.inkSoft, borderRadius: 999, padding: '8px 11px', fontSize: 11.5, fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }}>
             {r.emoji} {r.label}
           </button>
         )
@@ -161,9 +162,10 @@ function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState('Todos')
   const [region, setRegion] = useState('Todos')
+  const [contraccion, setContraccion] = useState('Todos')
   const primaryContext = focos?.includes('gimnasio') ? 'gimnasio' : focos?.[0] || 'gimnasio'
   const groups = useMemo(() => getExerciseGroups(), [])
-  const options = useMemo(() => getExerciseOptions(primaryContext, search, group, region).slice(0, search ? 90 : 36), [primaryContext, search, group, region])
+  const options = useMemo(() => getExerciseOptions(primaryContext, search, group, region, contraccion).slice(0, search ? 100 : 42), [primaryContext, search, group, region, contraccion])
 
   function addPreset(tipo, payload = {}) { onAdd({ ...makeEmptyItem(tipo), ...payload }) }
 
@@ -172,7 +174,7 @@ function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 13 }}>
         <div>
           <div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Agregar bloque</div>
-          <div style={{ fontSize: 19, fontWeight: 950, color: c.ink, marginTop: 3, letterSpacing: '-.03em' }}>Elegí por región o buscá directo</div>
+          <div style={{ fontSize: 19, fontWeight: 950, color: c.ink, marginTop: 3, letterSpacing: '-.03em' }}>Elegí por región, contracción o buscá directo</div>
         </div>
         <button type="button" onClick={onClose} style={{ ...miniBtn, width: 34, height: 34 }}>×</button>
       </div>
@@ -194,19 +196,25 @@ function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
 
       {activeType === 'ejercicio' && (
         <div style={{ marginTop: 15 }}>
-          <RegionChips region={region} setRegion={setRegion} />
+          <div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.09em', marginBottom: 7 }}>Región</div>
+          <HorizontalChips items={ARTICULACION_FILTROS} value={region} onChange={setRegion} />
+          <div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.09em', margin: '3px 0 7px' }}>Contracción</div>
+          <HorizontalChips items={CONTRACCION_FILTROS} value={contraccion} onChange={setContraccion} />
           <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(135px, 190px)', gap: 9 }}>
-            <input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar: sentadilla, isquios, rotación, hombro..." />
+            <input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar: excéntrico, camilla, polea, unilateral..." />
             <select style={input} value={group} onChange={e => setGroup(e.target.value)}>{groups.map(g => <option key={g}>{g}</option>)}</select>
           </div>
-          <div style={{ marginTop: 10, fontSize: 11, color: c.muted, fontWeight: 800 }}>Los ejercicios biarticulares aparecen en más de una región. Ej: isquios en rodilla y cadera, gemelos en tobillo y rodilla.</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 10, marginTop: 12, maxHeight: 380, overflowY: 'auto', paddingRight: 2 }}>
+          <div style={{ marginTop: 10, fontSize: 11, color: c.muted, fontWeight: 800 }}>Incluye variantes concéntricas, isométricas y excéntricas. Ej: subir con dos y bajar lento con una.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 10, marginTop: 12, maxHeight: 390, overflowY: 'auto', paddingRight: 2 }}>
             {options.map(item => (
-              <button key={`${item.group}-${item.name}`} type="button" onClick={() => addPreset('ejercicio', { nombre: item.name, group: item.group, imagen: item.images?.[0], series: '3', repeticiones: '10', segundos: '', pausa: '', indicacion: '' })} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit', boxShadow: '0 8px 18px rgba(13,53,64,.04)' }}>
+              <button key={`${item.group}-${item.name}`} type="button" onClick={() => addPreset('ejercicio', { nombre: item.name, group: item.group, imagen: item.images?.[0], series: '3', repeticiones: '10', segundos: '', pausa: '', indicacion: item.contracciones?.includes('excentrica') ? 'Bajada lenta y controlada' : '' })} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit', boxShadow: '0 8px 18px rgba(13,53,64,.04)' }}>
                 <ExerciseThumb item={item} />
                 <div style={{ padding: '10px 11px 11px' }}>
                   <div style={{ fontSize: 12.2, fontWeight: 950, color: c.ink, lineHeight: 1.25, minHeight: 31 }}>{item.name}</div>
-                  <div style={{ display: 'inline-flex', marginTop: 7, fontSize: 9.5, color: c.skyDark, background: '#E9F7FA', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }}>{item.group}</div>
+                  <div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 7 }}>
+                    <span style={{ display: 'inline-flex', fontSize: 9.5, color: c.skyDark, background: '#E9F7FA', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }}>{item.group}</span>
+                    {(item.contracciones || []).slice(0, 1).map(ct => <span key={ct} style={{ display: 'inline-flex', fontSize: 9.5, color: '#5B21B6', background: '#F6F1FF', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }}>{ct}</span>)}
+                  </div>
                 </div>
               </button>
             ))}
@@ -239,7 +247,7 @@ function RoutineItem({ item, index, update, remove, move }) {
           </div>
 
           {item.tipo === 'movilidad' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><input style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value })} placeholder="Movilidad / entrada en calor" /><div style={{ display: 'grid', gridTemplateColumns: '1fr 1.4fr', gap: 8 }}><input style={input} value={item.duracion || ''} onChange={e => update(index, { duracion: e.target.value })} placeholder="Duración" /><input style={input} value={item.detalle || ''} onChange={e => update(index, { detalle: e.target.value })} placeholder="Detalle" /></div></div>}
-          {item.tipo === 'ejercicio' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><input style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value })} placeholder="Nombre del ejercicio" /><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: 8 }}><input style={input} value={item.series || ''} onChange={e => update(index, { series: e.target.value })} placeholder="Series" /><input style={input} value={item.repeticiones || ''} onChange={e => update(index, { repeticiones: e.target.value })} placeholder="Reps" /><input style={input} value={item.segundos || ''} onChange={e => update(index, { segundos: e.target.value })} placeholder="Seg" /><input style={input} value={item.pausa || ''} onChange={e => update(index, { pausa: e.target.value })} placeholder="Pausa" /></div><input style={input} value={item.indicacion || ''} onChange={e => update(index, { indicacion: e.target.value })} placeholder="Indicación técnica" /></div>}
+          {item.tipo === 'ejercicio' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><input style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value })} placeholder="Nombre del ejercicio" /><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(82px, 1fr))', gap: 8 }}><input style={input} value={item.series || ''} onChange={e => update(index, { series: e.target.value })} placeholder="Series" /><input style={input} value={item.repeticiones || ''} onChange={e => update(index, { repeticiones: e.target.value })} placeholder="Reps" /><input style={input} value={item.segundos || ''} onChange={e => update(index, { segundos: e.target.value })} placeholder="Seg" /><input style={input} value={item.pausa || ''} onChange={e => update(index, { pausa: e.target.value })} placeholder="Pausa" /></div><input style={input} value={item.indicacion || ''} onChange={e => update(index, { indicacion: e.target.value })} placeholder="Indicación técnica / tempo" /></div>}
           {item.tipo === 'cardio' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><select style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value })}>{CARDIO_PRESETS.map(x => <option key={x}>{x}</option>)}</select><div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: 8 }}><input style={input} value={item.duracion || ''} onChange={e => update(index, { duracion: e.target.value })} placeholder="Duración" /><input style={input} value={item.intensidad || ''} onChange={e => update(index, { intensidad: e.target.value })} placeholder="Intensidad" /></div><input style={input} value={item.detalle || ''} onChange={e => update(index, { detalle: e.target.value })} placeholder="Detalle" /></div>}
           {item.tipo === 'campo' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><select style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value })}>{CAMPO_PRESETS.map(x => <option key={x}>{x}</option>)}</select><textarea style={{ ...input, minHeight: 82, resize: 'vertical' }} value={item.detalle || ''} onChange={e => update(index, { detalle: e.target.value })} placeholder={'Ej: 6 x 40 m, volver caminando\n8 x (30 seg rápido / 30 seg lento)'} /></div>}
           {item.tipo === 'agente' && <div style={{ marginTop: 12, display: 'grid', gap: 9 }}><select style={input} value={item.nombre || ''} onChange={e => update(index, { nombre: e.target.value, detalle: e.target.value === 'Baño de contraste' ? '1 min frío / 3 min calor · 3 a 4 rondas' : item.detalle })}>{AGENTES_FISICOS.map(x => <option key={x}>{x}</option>)}</select><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}><input style={input} value={item.duracion || ''} onChange={e => update(index, { duracion: e.target.value })} placeholder="Duración" /><input style={input} value={item.frecuencia || ''} onChange={e => update(index, { frecuencia: e.target.value })} placeholder="Frecuencia" /></div><input style={input} value={item.detalle || ''} onChange={e => update(index, { detalle: e.target.value })} placeholder="Detalle" /></div>}
