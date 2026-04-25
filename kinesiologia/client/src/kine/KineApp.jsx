@@ -5,6 +5,7 @@ import Login from './Login.jsx'
 import Dashboard from './Dashboard.jsx'
 import Pacientes from './Pacientes.jsx'
 import PacienteDetalle from './PacienteDetalle.jsx'
+import PatientClinicalRoutineBridge from './PatientClinicalRoutineBridge.jsx'
 import ClinicalRoutinePatientPage from './ClinicalRoutinePatientPage.jsx'
 import ClinicalRoutinesHub from './ClinicalRoutinesHub.jsx'
 import Ejercicios from './Ejercicios.jsx'
@@ -96,7 +97,6 @@ function AdminLayout({ usuario, onLogout }) {
   return (
     <div className="adm-shell">
       <style>{ADMIN_CSS}</style>
-
       <aside className="adm-sidebar" style={{ display: 'none' }}>
         <div style={{ padding: '26px 20px 22px', borderBottom: `0.5px solid rgba(13,53,64,0.1)` }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
@@ -130,7 +130,6 @@ function AdminLayout({ usuario, onLogout }) {
           <button onClick={onLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, fontSize: 11, fontFamily: "'DM Sans', sans-serif" }}>Salir</button>
         </div>
       </aside>
-
       <header className="adm-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <LogoSVG />
@@ -146,12 +145,11 @@ function AdminLayout({ usuario, onLogout }) {
           <button onClick={onLogout} style={{ background: 'none', border: `0.5px solid ${c.border}`, borderRadius: 8, padding: '5px 10px', fontSize: 11, color: c.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" }}>Salir</button>
         </div>
       </header>
-
       <main className="adm-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/pacientes" element={<Pacientes />} />
-          <Route path="/paciente/:id" element={<PacienteDetalle />} />
+          <Route path="/paciente/:id" element={<PatientClinicalRoutineBridge />} />
           <Route path="/paciente/:id/rutinas-clinicas" element={<ClinicalRoutinePatientPage />} />
           <Route path="/rutinas-clinicas" element={<ClinicalRoutinesHub />} />
           <Route path="/rutinas-clinicas/:id" element={<ClinicalRoutinePatientPage />} />
@@ -163,7 +161,6 @@ function AdminLayout({ usuario, onLogout }) {
           <Route path="*" element={<Navigate to="/kine" replace />} />
         </Routes>
       </main>
-
       <nav className="adm-bottom-nav">
         {NAV_ITEMS.map(item => {
           const active = activeId === item.id
