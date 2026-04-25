@@ -1,12 +1,14 @@
 import { useMemo, useState } from 'react'
 import {
   AGENTES_FISICOS,
+  ARTICULACION_FILTROS,
   CAMPO_PRESETS,
   CARDIO_PRESETS,
   CONTEXTOS_RUTINA,
   MOVILIDAD_PRESETS,
   QUICK_ROUTINE_FLOW,
   TIPOS_ITEM,
+  getExerciseGroups,
   getExerciseOptions,
   getRoutineContext,
   getRoutineFocus,
@@ -14,7 +16,6 @@ import {
   normalizeRoutineItems,
   summarizeItem,
 } from './clinicalRoutineUtils.js'
-import { exerciseLibrary } from './exerciseLibrary.js'
 
 const c = {
   ink: '#082B34', inkSoft: '#315F68', muted: '#789FAA', sky: '#2F9FB2', skyDark: '#176F82',
@@ -23,7 +24,7 @@ const c = {
 
 const typeInfo = {
   movilidad: { title: 'Movilidad / entrada en calor', short: 'Movilidad', icon: '🟢', hint: 'Primer bloque: caminar, bici, elíptico o movilidad articular.', bg: '#EAFBF5', border: '#BFEEDC', color: '#13795B' },
-  ejercicio: { title: 'Gimnasio / fuerza', short: 'Gimnasio', icon: '🏋️', hint: 'Máquina, polea, barra, mancuerna, banda o peso corporal.', bg: '#EFF8FF', border: '#B9E2F2', color: '#075985' },
+  ejercicio: { title: 'Gimnasio / fuerza', short: 'Gimnasio', icon: '🏋️', hint: 'Ejercicios por articulación: tobillo, rodilla, cadera, columna, hombro, brazo y core.', bg: '#EFF8FF', border: '#B9E2F2', color: '#075985' },
   campo: { title: 'Trabajo en campo', short: 'Campo', icon: '🏃', hint: 'Pasadas, intermitentes, trote, fondo o cambios de ritmo.', bg: '#FFF9E8', border: '#F3DA90', color: '#7A5C00' },
   cardio: { title: 'Cardio', short: 'Cardio', icon: '🚴', hint: 'Bloque aeróbico por tiempo o intensidad.', bg: '#F1F5FF', border: '#C8D7FF', color: '#334E99' },
   agente: { title: 'Agente físico post rutina', short: 'Agente', icon: '🧊', hint: 'Hielo, calor o baños de contraste al finalizar.', bg: '#F0FDFF', border: '#BAE6F0', color: '#0E7490' },
@@ -129,13 +130,40 @@ function TypePicker({ activeType, setActiveType }) {
   )
 }
 
+function ExerciseThumb({ item }) {
+  if (item.images?.[0]) {
+    return <img src={item.images[0]} alt={item.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', background: '#f8fafc', display: 'block' }} loading="lazy" />
+  }
+  return (
+    <div style={{ width: '100%', aspectRatio: '1/1', background: 'linear-gradient(135deg,#E9F7FA,#FFFFFF)', display: 'grid', placeItems: 'center', color: c.skyDark, fontWeight: 950, fontSize: 24 }}>
+      {item.group?.slice(0, 1) || 'R'}
+    </div>
+  )
+}
+
+function RegionChips({ region, setRegion }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, overflowX: 'auto', padding: '2px 2px 9px', marginTop: 12 }}>
+      {ARTICULACION_FILTROS.map(r => {
+        const active = region === r.id
+        return (
+          <button key={r.id} type="button" onClick={() => setRegion(r.id)} style={{ flex: '0 0 auto', border: `1px solid ${active ? c.sky : c.border}`, background: active ? '#E9F7FA' : '#fff', color: active ? c.skyDark : c.inkSoft, borderRadius: 999, padding: '8px 11px', fontSize: 11.5, fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }}>
+            {r.emoji} {r.label}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
 function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
   const [activeType, setActiveType] = useState(preferredType)
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState('Todos')
+  const [region, setRegion] = useState('Todos')
   const primaryContext = focos?.includes('gimnasio') ? 'gimnasio' : focos?.[0] || 'gimnasio'
-  const groups = useMemo(() => ['Todos', ...exerciseLibrary.map(g => g.title)], [])
-  const options = useMemo(() => getExerciseOptions(primaryContext, search, group).slice(0, search ? 80 : 24), [primaryContext, search, group])
+  const groups = useMemo(() => getExerciseGroups(), [])
+  const options = useMemo(() => getExerciseOptions(primaryContext, search, group, region).slice(0, search ? 90 : 36), [primaryContext, search, group, region])
 
   function addPreset(tipo, payload = {}) { onAdd({ ...makeEmptyItem(tipo), ...payload }) }
 
@@ -144,7 +172,7 @@ function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start', marginBottom: 13 }}>
         <div>
           <div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Agregar bloque</div>
-          <div style={{ fontSize: 19, fontWeight: 950, color: c.ink, marginTop: 3, letterSpacing: '-.03em' }}>Elegí rápido, ajustá después</div>
+          <div style={{ fontSize: 19, fontWeight: 950, color: c.ink, marginTop: 3, letterSpacing: '-.03em' }}>Elegí por región o buscá directo</div>
         </div>
         <button type="button" onClick={onClose} style={{ ...miniBtn, width: 34, height: 34 }}>×</button>
       </div>
@@ -166,16 +194,20 @@ function AddPanel({ preferredType = 'ejercicio', focos, onAdd, onClose }) {
 
       {activeType === 'ejercicio' && (
         <div style={{ marginTop: 15 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(130px, 190px)', gap: 9 }}>
-            <input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar: sentadilla, camilla, peso muerto..." />
+          <RegionChips region={region} setRegion={setRegion} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr minmax(135px, 190px)', gap: 9 }}>
+            <input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar: sentadilla, isquios, rotación, hombro..." />
             <select style={input} value={group} onChange={e => setGroup(e.target.value)}>{groups.map(g => <option key={g}>{g}</option>)}</select>
           </div>
-          <div style={{ marginTop: 10, fontSize: 11, color: c.muted, fontWeight: 800 }}>Mostrando opciones rápidas. Usá el buscador para ir directo al ejercicio.</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 10, marginTop: 12, maxHeight: 360, overflowY: 'auto', paddingRight: 2 }}>
+          <div style={{ marginTop: 10, fontSize: 11, color: c.muted, fontWeight: 800 }}>Los ejercicios biarticulares aparecen en más de una región. Ej: isquios en rodilla y cadera, gemelos en tobillo y rodilla.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 10, marginTop: 12, maxHeight: 380, overflowY: 'auto', paddingRight: 2 }}>
             {options.map(item => (
               <button key={`${item.group}-${item.name}`} type="button" onClick={() => addPreset('ejercicio', { nombre: item.name, group: item.group, imagen: item.images?.[0], series: '3', repeticiones: '10', segundos: '', pausa: '', indicacion: '' })} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 20, overflow: 'hidden', cursor: 'pointer', textAlign: 'left', padding: 0, fontFamily: 'inherit', boxShadow: '0 8px 18px rgba(13,53,64,.04)' }}>
-                <img src={item.images?.[0]} alt={item.name} style={{ width: '100%', aspectRatio: '1/1', objectFit: 'contain', background: '#f8fafc', display: 'block' }} loading="lazy" />
-                <div style={{ padding: '10px 11px 11px' }}><div style={{ fontSize: 12.2, fontWeight: 950, color: c.ink, lineHeight: 1.25, minHeight: 31 }}>{item.name}</div><div style={{ display: 'inline-flex', marginTop: 7, fontSize: 9.5, color: c.skyDark, background: '#E9F7FA', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }}>{item.group}</div></div>
+                <ExerciseThumb item={item} />
+                <div style={{ padding: '10px 11px 11px' }}>
+                  <div style={{ fontSize: 12.2, fontWeight: 950, color: c.ink, lineHeight: 1.25, minHeight: 31 }}>{item.name}</div>
+                  <div style={{ display: 'inline-flex', marginTop: 7, fontSize: 9.5, color: c.skyDark, background: '#E9F7FA', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }}>{item.group}</div>
+                </div>
               </button>
             ))}
           </div>
