@@ -221,6 +221,60 @@ span[style*="border-radius: 999"] { letter-spacing: .03em; }
   border-radius: 18px !important;
 }
 
+/* Compacta el selector de ejercicios del editor de rutinas clínicas.
+   La elección del kinesiólogo debe ser por texto; la imagen queda solo para vista previa futura. */
+div[style*="repeat(auto-fill, minmax(132px"] {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button {
+  display: grid !important;
+  grid-template-columns: 1fr auto !important;
+  align-items: center !important;
+  min-height: 58px !important;
+  padding: 11px 12px !important;
+  border-radius: 18px !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button > img,
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:first-child[style*="aspect-ratio"] {
+  display: none !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:last-child {
+  padding: 0 !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button::after {
+  content: '+ Agregar';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, var(--rp-brand), var(--rp-brand-dark));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+  box-shadow: 0 10px 20px rgba(23,111,130,.18);
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button img,
+section img[style*="width: 66px"],
+section img[style*="height: 66px"] {
+  display: none !important;
+}
+
+section div[style*="width: 66px"][style*="height: 66px"] {
+  width: 44px !important;
+  height: 44px !important;
+  border-radius: 14px !important;
+  font-size: 21px !important;
+}
+
 @media (min-width: 768px) {
   .adm-content { padding: 38px 44px 50px !important; }
 }
