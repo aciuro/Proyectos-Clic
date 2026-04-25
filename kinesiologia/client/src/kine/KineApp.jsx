@@ -17,6 +17,8 @@ import PortalPaciente from './PortalPaciente.jsx'
 import './kine.css'
 import './premium-refresh.css'
 
+const KINE_EMAIL = 'augustociuro@gmail.com'
+
 const c = {
   bg: '#F6FBFC', white: '#FFFFFF', sky: '#3FA7B8', skyDark: '#277F92',
   skyLight: '#E2F5F8', skyXlight: '#F3FBFD', aqua: '#79CDBB', aquaDark: '#4FA898',
@@ -25,20 +27,21 @@ const c = {
 }
 
 const NAV_ITEMS = [
-  { id: 'dashboard',  label: 'Dashboard', path: '/kine',
+  { id: 'dashboard',  label: 'Inicio', path: '/kine',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><path d="M3 11L11 4l8 7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M6 9v9h4v-4h2v4h4V9" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg> },
   { id: 'pacientes',  label: 'Pacientes', path: '/kine/pacientes',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="7" r="4" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M4 19c0-3.9 3.1-7 7-7s7 3.1 7 7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
   { id: 'agenda',     label: 'Agenda',    path: '/kine/agenda',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><rect x="3" y="5" width="16" height="14" rx="2" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M7 5V3M15 5V3M3 9h16" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
-  { id: 'ejercicios', label: 'Rutinas',   path: '/kine/ejercicios',
-    icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><path d="M4 6h14M4 11h9M4 16h7" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
-  { id: 'rutinas-clinicas', label: 'Rutinas clínicas', path: '/kine/rutinas-clinicas',
+  { id: 'rutinas-clinicas', label: 'Rutinas', path: '/kine/rutinas-clinicas',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><path d="M5 5h12v12H5z" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M8 9h6M8 13h4" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5" strokeLinecap="round"/></svg> },
   { id: 'cuenta',     label: 'Cuenta',    path: '/kine/cuenta',
     icon: (a) => <svg width="18" height="18" viewBox="0 0 22 22" fill="none"><circle cx="11" cy="11" r="8" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.5"/><path d="M11 7v1.5m0 5V15m-2-5.5c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2 .9-2 2 .9 2 2 2" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.3" strokeLinecap="round"/></svg> },
-  { id: 'notas',      label: 'Notas',     path: '/kine/notas',
-    icon: (a) => <svg width="18" height="18" viewBox="0 0 16 16" fill="none"><path d="M3 2h7l3 3v9H3V2z" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.2" strokeLinejoin="round"/><path d="M10 2v3h3" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.2" strokeLinejoin="round"/><path d="M5 7h6M5 9.5h4" stroke={a ? c.skyDark : 'rgba(13,53,64,0.35)'} strokeWidth="1.1" strokeLinecap="round"/></svg> },
+]
+
+const SECONDARY_NAV_ITEMS = [
+  { id: 'ejercicios', label: 'Biblioteca', path: '/kine/ejercicios' },
+  { id: 'notas', label: 'Notas', path: '/kine/notas' },
 ]
 
 const ADMIN_CSS = `
@@ -47,19 +50,23 @@ const ADMIN_CSS = `
   html, body, #root { height: 100%; }
   body { font-family: 'DM Sans', sans-serif; background: ${c.bg}; -webkit-font-smoothing: antialiased; color: ${c.ink}; }
   textarea, input { outline: none; }
-  .adm-shell { display: flex; min-height: 100vh; flex-direction: column; background: radial-gradient(circle at 58% -8%, rgba(91,184,204,.18), transparent 34%), linear-gradient(135deg, #F6FBFC 0%, #FAFDFD 56%, #EEF8FA 100%); }
-  .adm-topbar { background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 8px; }
-  .adm-content { flex: 1; padding: 4px 16px 130px; }
-  .adm-bottom-nav { position: fixed; bottom: 12px; left: 12px; right: 12px; background: rgba(255,255,255,.86); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid ${c.border}; border-radius: 24px; display: flex; justify-content: space-around; padding: 10px 4px env(safe-area-inset-bottom,10px); z-index: 100; box-shadow: 0 18px 48px rgba(13,53,64,.14); }
-  .adm-bnav-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; flex: 1; min-width: 48px; background: none; border: none; cursor: pointer; padding: 5px 2px; border-radius: 16px; }
-  .adm-bnav-label { font-size: 8.5px; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
+  .adm-shell { min-height: 100vh; background: radial-gradient(circle at 58% -8%, rgba(91,184,204,.18), transparent 34%), linear-gradient(135deg, #F6FBFC 0%, #FAFDFD 56%, #EEF8FA 100%); display: flex; flex-direction: column; }
+  .adm-sidebar { display: none !important; }
+  .adm-topbar { background: transparent; display: flex; align-items: center; justify-content: space-between; padding: 16px 18px 8px; max-width: 860px; width: 100%; margin: 0 auto; }
+  .adm-content { flex: 1; padding: 12px 18px 126px; max-width: 860px; margin: 0 auto; width: 100%; }
+  .adm-bottom-nav { position: fixed; bottom: 12px; left: 12px; right: 12px; background: rgba(255,255,255,.88); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border: 1px solid ${c.border}; border-radius: 24px; display: flex; justify-content: space-around; padding: 10px 4px env(safe-area-inset-bottom,10px); z-index: 100; box-shadow: 0 18px 48px rgba(13,53,64,.14); }
+  .adm-bnav-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; min-width: 48px; background: none; border: none; cursor: pointer; padding: 5px 2px; border-radius: 16px; }
+  .adm-bnav-label { font-size: 9px; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
   .adm-bnav-dot { width: 4px; height: 4px; border-radius: 50%; background: ${c.skyDark}; margin: 1px auto 0; }
+  .adm-secondary-nav { max-width: 860px; width: calc(100% - 36px); margin: 0 auto 10px; display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+  .adm-secondary-btn { border: 1px solid ${c.border}; background: rgba(255,255,255,.76); color: ${c.ink2}; border-radius: 999px; padding: 7px 12px; font-size: 11px; font-weight: 800; cursor: pointer; font-family: 'DM Sans', sans-serif; }
+  .adm-secondary-btn.active { background: rgba(63,167,184,.14); color: ${c.skyDark}; border-color: rgba(63,167,184,.28); }
   @media (min-width: 768px) {
-    .adm-shell { flex-direction: row; height: 100vh; overflow: hidden; }
-    .adm-sidebar { display: flex !important; width: 220px; background: linear-gradient(180deg, #EEE5D7 0%, #E7DDCD 100%); flex-direction: column; flex-shrink: 0; border-right: 1px solid rgba(13,53,64,.08); box-shadow: 8px 0 34px rgba(13,53,64,.045); }
-    .adm-topbar { display: none; }
-    .adm-bottom-nav { display: none; }
-    .adm-content { flex: 1; overflow-y: auto; padding: 36px 42px 48px; }
+    .adm-shell { height: 100vh; overflow: hidden; }
+    .adm-topbar { padding: 26px 40px 8px; max-width: 920px; }
+    .adm-content { overflow-y: auto; max-width: 920px; padding: 18px 40px 136px; }
+    .adm-bottom-nav { max-width: 520px; left: 50%; right: auto; width: calc(100% - 40px); transform: translateX(-50%); }
+    .adm-secondary-nav { max-width: 920px; width: calc(100% - 80px); }
   }
   ::-webkit-scrollbar { width: 4px; }
   ::-webkit-scrollbar-thumb { background: rgba(63,167,184,.35); border-radius: 2px; }
@@ -98,54 +105,33 @@ function AdminLayout({ usuario, onLogout }) {
   return (
     <div className="adm-shell">
       <style>{ADMIN_CSS}</style>
-      <aside className="adm-sidebar" style={{ display: 'none' }}>
-        <div style={{ padding: '28px 20px 24px', borderBottom: `1px solid rgba(13,53,64,0.08)` }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <LogoSVG />
-            <div>
-              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 17, color: c.ink, letterSpacing: '-.02em' }}>Rehabilitaplus</div>
-              <div style={{ fontSize: 9, color: c.muted, letterSpacing: '1.25px', textTransform: 'uppercase', marginTop: 2 }}>Panel profesional</div>
-            </div>
-          </div>
-        </div>
-        <div style={{ padding: '16px 12px', flex: 1, display: 'flex', flexDirection: 'column', gap: 4, overflowY: 'auto' }}>
-          {NAV_ITEMS.map(item => {
-            const active = activeId === item.id
-            return (
-              <button key={item.id} onClick={() => navigate(item.path)}
-                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', borderRadius: 16, cursor: 'pointer', border: 'none', background: active ? `rgba(63,167,184,0.14)` : 'transparent', width: '100%', textAlign: 'left', fontFamily: "'DM Sans', sans-serif", transition: 'all 0.16s ease', boxShadow: active ? 'inset 0 0 0 1px rgba(63,167,184,.16)' : 'none' }}>
-                {item.icon(active)}
-                <span style={{ fontSize: 12.5, color: active ? c.skyDark : 'rgba(13,53,64,0.52)', fontWeight: active ? 800 : 500 }}>{item.label}</span>
-              </button>
-            )
-          })}
-        </div>
-        <div style={{ padding: '16px 20px', borderTop: `1px solid rgba(13,53,64,0.08)`, display: 'flex', alignItems: 'center', gap: 9 }}>
-          <div style={{ width: 34, height: 34, borderRadius: '50%', background: `linear-gradient(135deg, ${c.sky} 0%, ${c.skyDark} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, color: '#fff', boxShadow: '0 10px 22px rgba(39,127,146,.18)' }}>
-            {nombre[0]}
-          </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 12, color: c.ink2, fontWeight: 800 }}>{usuario?.nombre}</div>
-            <div style={{ fontSize: 10, color: c.muted }}>Kinesiología</div>
-          </div>
-          <button onClick={onLogout} style={{ background: 'none', border: 'none', cursor: 'pointer', color: c.muted, fontSize: 11, fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>Salir</button>
-        </div>
-      </aside>
       <header className="adm-topbar">
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <LogoSVG />
           <div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 15, color: c.ink }}>Rehabilitaplus</div>
-            <div style={{ fontSize: 9, color: c.muted, letterSpacing: '1px', textTransform: 'uppercase' }}>Panel profesional</div>
+            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16, color: c.ink, letterSpacing: '-.02em' }}>Rehabilitaplus</div>
+            <div style={{ fontSize: 9, color: c.muted, letterSpacing: '1px', textTransform: 'uppercase' }}>Portal profesional</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ width: 32, height: 32, borderRadius: '50%', background: c.sky, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 800, color: '#fff' }}>
+          <div style={{ width: 32, height: 32, borderRadius: '50%', background: `linear-gradient(135deg, ${c.sky} 0%, ${c.skyDark} 100%)`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, fontWeight: 900, color: '#fff', boxShadow: '0 10px 22px rgba(39,127,146,.18)' }}>
             {nombre[0]}
           </div>
           <button onClick={onLogout} style={{ background: 'rgba(255,255,255,.85)', border: `1px solid ${c.border}`, borderRadius: 12, padding: '6px 11px', fontSize: 11, color: c.muted, cursor: 'pointer', fontFamily: "'DM Sans', sans-serif", fontWeight: 800 }}>Salir</button>
         </div>
       </header>
+
+      <div className="adm-secondary-nav">
+        {SECONDARY_NAV_ITEMS.map(item => {
+          const active = activeId === item.id
+          return (
+            <button key={item.id} className={`adm-secondary-btn ${active ? 'active' : ''}`} onClick={() => navigate(item.path)}>
+              {item.label}
+            </button>
+          )
+        })}
+      </div>
+
       <main className="adm-content">
         <Routes>
           <Route path="/" element={<Dashboard />} />
@@ -162,6 +148,7 @@ function AdminLayout({ usuario, onLogout }) {
           <Route path="*" element={<Navigate to="/kine" replace />} />
         </Routes>
       </main>
+
       <nav className="adm-bottom-nav">
         {NAV_ITEMS.map(item => {
           const active = activeId === item.id
@@ -231,8 +218,11 @@ export default function KineApp() {
     )
   }
 
-  if (auth.usuario.rol === 'admin') {
-    return <AdminLayout usuario={auth.usuario} onLogout={handleLogout} />
+  const userEmail = auth.usuario?.email?.toLowerCase?.() || ''
+  const isKinesiologo = auth.usuario?.rol === 'admin' || userEmail === KINE_EMAIL
+
+  if (isKinesiologo) {
+    return <AdminLayout usuario={{ ...auth.usuario, rol: 'admin' }} onLogout={handleLogout} />
   }
 
   return <PacienteLayout usuario={auth.usuario} paciente={auth.paciente} onLogout={handleLogout} />
