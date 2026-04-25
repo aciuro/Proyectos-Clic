@@ -1,0 +1,35 @@
+name: Kinesiologia Client Build
+
+on:
+  pull_request:
+    paths:
+      - 'kinesiologia/client/**'
+      - '.github/workflows/kinesiologia-client-build.yml'
+  push:
+    branches:
+      - rutinas-clinicas-unificadas
+    paths:
+      - 'kinesiologia/client/**'
+      - '.github/workflows/kinesiologia-client-build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: kinesiologia/client/package-lock.json
+
+      - name: Install dependencies
+        working-directory: kinesiologia/client
+        run: npm ci
+
+      - name: Build frontend
+        working-directory: kinesiologia/client
+        run: npm run build

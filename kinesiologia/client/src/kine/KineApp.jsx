@@ -5,6 +5,7 @@ import Login from './Login.jsx'
 import Dashboard from './Dashboard.jsx'
 import Pacientes from './Pacientes.jsx'
 import PacienteDetalle from './PacienteDetalle.jsx'
+import ClinicalRoutinePatientPage from './ClinicalRoutinePatientPage.jsx'
 import Ejercicios from './Ejercicios.jsx'
 import Agenda from './Agenda.jsx'
 import KineClaude from './KineClaude.jsx'
@@ -150,6 +151,7 @@ function AdminLayout({ usuario, onLogout }) {
           <Route path="/" element={<Dashboard />} />
           <Route path="/pacientes" element={<Pacientes />} />
           <Route path="/paciente/:id" element={<PacienteDetalle />} />
+          <Route path="/paciente/:id/rutinas-clinicas" element={<ClinicalRoutinePatientPage />} />
           <Route path="/agenda" element={<Agenda />} />
           <Route path="/ejercicios" element={<Ejercicios />} />
           <Route path="/claude" element={<KineClaude />} />
