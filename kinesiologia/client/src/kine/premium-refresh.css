@@ -1,0 +1,234 @@
+/* Premium visual refresh para RehabilitaPlus */
+:root {
+  --rp-bg: #F6FBFC;
+  --rp-bg-2: #EEF8FA;
+  --rp-surface: rgba(255,255,255,.94);
+  --rp-surface-solid: #FFFFFF;
+  --rp-ink: #0B2F38;
+  --rp-ink-soft: #315F68;
+  --rp-muted: #7FA5AE;
+  --rp-line: rgba(113, 167, 179, .28);
+  --rp-line-strong: rgba(79, 150, 166, .38);
+  --rp-brand: #3FA7B8;
+  --rp-brand-dark: #277F92;
+  --rp-mint: #79CDBB;
+  --rp-mint-soft: #E8F8F4;
+  --rp-cream: #EEE4D4;
+  --rp-cream-soft: #F7F1E7;
+  --rp-card-shadow: 0 18px 48px rgba(13, 53, 64, .075);
+  --rp-card-shadow-sm: 0 8px 26px rgba(13, 53, 64, .055);
+  --rp-radius: 24px;
+  --rp-radius-sm: 16px;
+}
+
+html, body, #root {
+  background: radial-gradient(circle at 55% 0%, rgba(91,184,204,.18), transparent 32%), linear-gradient(135deg, var(--rp-bg) 0%, #F9FCFD 48%, var(--rp-bg-2) 100%) !important;
+}
+
+body {
+  color: var(--rp-ink) !important;
+  letter-spacing: -.01em;
+}
+
+button, input, textarea, select {
+  font-family: 'DM Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+button {
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease, border-color .16s ease, color .16s ease, opacity .16s ease !important;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+input, textarea, select {
+  border-color: rgba(126, 166, 178, .28) !important;
+  color: var(--rp-ink) !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: rgba(63,167,184,.65) !important;
+  box-shadow: 0 0 0 4px rgba(63,167,184,.12) !important;
+}
+
+::placeholder {
+  color: #9CB6BE !important;
+}
+
+.adm-shell {
+  background: radial-gradient(circle at 58% -8%, rgba(91,184,204,.18), transparent 34%), linear-gradient(135deg, var(--rp-bg) 0%, #FAFDFD 56%, #EEF8FA 100%) !important;
+}
+
+.adm-sidebar {
+  background: linear-gradient(180deg, #EEE5D7 0%, #E7DDCD 100%) !important;
+  border-right: 1px solid rgba(13,53,64,.08);
+  box-shadow: 8px 0 34px rgba(13,53,64,.045);
+}
+
+.adm-sidebar button {
+  border-radius: 16px !important;
+}
+
+.adm-content {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(63,167,184,.35) transparent;
+}
+
+.adm-content > div,
+.adm-content main,
+.adm-content section {
+  scroll-margin-top: 24px;
+}
+
+.adm-bottom-nav {
+  background: rgba(255,255,255,.86) !important;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--rp-line) !important;
+  box-shadow: 0 18px 48px rgba(13,53,64,.14) !important;
+}
+
+.adm-bnav-btn.active,
+.adm-sidebar button[style*="rgba(91,184,204,0.18)"] {
+  box-shadow: inset 0 0 0 1px rgba(63,167,184,.16);
+}
+
+.kine-page,
+.adm-content > div {
+  max-width: 1180px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.kine-page-title,
+h1, h2, h3 {
+  letter-spacing: -.035em !important;
+  color: var(--rp-ink) !important;
+}
+
+.kine-page-header,
+.adm-content header {
+  text-align: center;
+}
+
+.adm-content header h1,
+.adm-content header h2,
+.kine-page-title {
+  text-align: center;
+}
+
+.kine-btn-primary,
+button[style*="background: rgb(5, 150, 105)"],
+button[style*="background: #059669"],
+button[style*="background: linear-gradient"] {
+  border-radius: 16px !important;
+  box-shadow: 0 12px 28px rgba(39,127,146,.18) !important;
+}
+
+.kine-btn-primary {
+  background: linear-gradient(135deg, var(--rp-brand) 0%, var(--rp-brand-dark) 100%) !important;
+}
+
+.kine-btn-secondary,
+.kine-search,
+.kine-select {
+  border-radius: 16px !important;
+}
+
+.paciente-card,
+.kine-lesiones-sidebar,
+.kine-sesiones-panel,
+.kine-ejercicios-panel,
+.kine-ej-card,
+.kine-modal,
+[class*="card"],
+section[style*="border-radius: 22"],
+section[style*="border-radius: 24"],
+section[style*="border-radius: 26"],
+section[style*="border-radius: 28"],
+div[style*="border-radius: 22"],
+div[style*="border-radius: 24"],
+div[style*="border-radius: 26"],
+div[style*="border-radius: 28"] {
+  border-color: var(--rp-line) !important;
+}
+
+.paciente-card,
+.kine-lesiones-sidebar,
+.kine-sesiones-panel,
+.kine-ejercicios-panel,
+.kine-modal {
+  background: var(--rp-surface) !important;
+  box-shadow: var(--rp-card-shadow-sm) !important;
+  border-radius: var(--rp-radius) !important;
+}
+
+.paciente-card:hover,
+.kine-ej-card:hover,
+.kine-sesion-card:hover {
+  box-shadow: var(--rp-card-shadow) !important;
+  border-color: var(--rp-line-strong) !important;
+}
+
+.kine-tab,
+.kine-link {
+  border-radius: 999px !important;
+}
+
+.kine-tab.active,
+.kine-link.active {
+  background: rgba(63,167,184,.12) !important;
+  color: var(--rp-brand-dark) !important;
+}
+
+.saldo-chip,
+.kine-estado,
+.kine-ej-cat,
+span[style*="border-radius: 999"] {
+  letter-spacing: .03em;
+}
+
+/* Clinical routines visual polish */
+.rp-center-title {
+  text-align: center !important;
+}
+
+.rp-glass-card {
+  background: linear-gradient(135deg, rgba(255,255,255,.96) 0%, rgba(246,251,252,.94) 100%) !important;
+  border: 1px solid var(--rp-line) !important;
+  box-shadow: var(--rp-card-shadow-sm) !important;
+  border-radius: var(--rp-radius) !important;
+}
+
+.rp-premium-button {
+  background: linear-gradient(135deg, var(--rp-brand) 0%, var(--rp-brand-dark) 100%) !important;
+  color: #fff !important;
+  border: 0 !important;
+  box-shadow: 0 14px 32px rgba(39,127,146,.22) !important;
+  border-radius: 18px !important;
+}
+
+.rp-soft-button {
+  background: rgba(255,255,255,.92) !important;
+  border: 1px solid var(--rp-line) !important;
+  color: var(--rp-brand-dark) !important;
+  border-radius: 18px !important;
+}
+
+@media (min-width: 768px) {
+  .adm-content {
+    padding: 36px 42px 48px !important;
+  }
+}
+
+@media (max-width: 767px) {
+  .adm-content {
+    padding: 12px 14px 124px !important;
+  }
+  .adm-content header,
+  .kine-page-header {
+    justify-content: center !important;
+  }
+  h1 { font-size: 24px !important; }
+}
