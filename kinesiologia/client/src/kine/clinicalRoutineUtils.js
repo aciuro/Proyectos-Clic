@@ -13,22 +13,8 @@ export const TIPOS_ITEM = [
   { id: 'indicacion', label: 'Indicación', emoji: '🟪' },
 ]
 
-export const CARDIO_PRESETS = [
-  'Bicicleta fija',
-  'Cinta',
-  'Caminata',
-  'Elíptico',
-  'Trote continuo',
-]
-
-export const CAMPO_PRESETS = [
-  'Pasadas',
-  'Intermitente',
-  'Trote',
-  'Fondo',
-  'Cambios de ritmo',
-  'Trabajo técnico',
-]
+export const CARDIO_PRESETS = ['Bicicleta fija', 'Cinta', 'Caminata', 'Elíptico', 'Trote continuo']
+export const CAMPO_PRESETS = ['Pasadas', 'Intermitente', 'Trote', 'Fondo', 'Cambios de ritmo', 'Trabajo técnico']
 
 function hasGymKeyword(name = '') {
   const s = name.toLowerCase()
@@ -38,6 +24,20 @@ function hasGymKeyword(name = '') {
 function hasHomeKeyword(name = '') {
   const s = name.toLowerCase()
   return ['banda', 'peso corporal', 'puente', 'plancha', 'bird dog', 'dead bug', 'flexión', 'flexion', 'sentadilla libre', 'step up', 'clamshell', 'movilidad'].some(k => s.includes(k))
+}
+
+export function parseRoutineMeta(rutina = {}) {
+  if (!rutina.ejercicios_libres) return {}
+  try {
+    const parsed = JSON.parse(rutina.ejercicios_libres)
+    return parsed && typeof parsed === 'object' ? parsed : {}
+  } catch {
+    return {}
+  }
+}
+
+export function makeRoutineMeta(contexto = 'gimnasio') {
+  return JSON.stringify({ version: 1, contexto })
 }
 
 export function getExerciseImage(nombre) {
@@ -75,7 +75,7 @@ export function getExerciseOptions(contexto = 'gimnasio', search = '', group = '
 export function normalizeRoutineItems(rutina = {}) {
   const base = Array.isArray(rutina.ejercicios) ? rutina.ejercicios : []
   return base.map((item) => {
-    if (item.tipo) return item
+    if (item.tipo) return { ...item, imagen: item.imagen || getExerciseImage(item.nombre) }
     return {
       tipo: 'ejercicio',
       nombre: item.nombre || item.name || 'Ejercicio',
@@ -90,15 +90,15 @@ export function normalizeRoutineItems(rutina = {}) {
 }
 
 export function getRoutineContext(rutina = {}) {
-  return rutina.contexto || rutina.contexto_rutina || 'gimnasio'
+  const meta = parseRoutineMeta(rutina)
+  return rutina.contexto || rutina.contexto_rutina || meta.contexto || 'gimnasio'
 }
 
 export function buildRoutinePayload(rutina, contexto, items) {
   return {
     ...rutina,
-    contexto,
-    contexto_rutina: contexto,
     ejercicios: items,
+    ejercicios_libres: makeRoutineMeta(contexto),
   }
 }
 
