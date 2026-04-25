@@ -23,6 +23,56 @@ async function req(method, path, body) {
   return res.json()
 }
 
+function safeJson(value, fallback = null) {
+  if (!value || typeof value !== 'string') return fallback
+  try { return JSON.parse(value) } catch { return fallback }
+}
+
+function cleanRoutineItem(item = {}, index = 0) {
+  const tipo = item.tipo || 'ejercicio'
+  const nombre =
+    item.nombre || item.name || item.titulo || item.texto ||
+    (tipo === 'agente' ? 'Agente físico' : tipo === 'indicacion' ? 'Indicación' : `Ejercicio ${index + 1}`)
+
+  const descripcion = [
+    item.indicacion,
+    item.detalle,
+    item.descripcion,
+    tipo === 'indicacion' ? item.texto : null,
+  ].filter(Boolean).join(' · ')
+
+  return {
+    ...item,
+    id: item.id || `${tipo}-${index}`,
+    nombre,
+    categoria: item.categoria || item.group || item.bloque || tipo,
+    descripcion,
+    video_url: item.video_url || item.video || '',
+    imagen: item.imagen || item.image || null,
+    series: item.series || '',
+    repeticiones: item.repeticiones || item.reps || '',
+    segundos: item.segundos || '',
+    pausa: item.pausa || '',
+  }
+}
+
+function normalizeRoutine(rutina = {}) {
+  const meta = safeJson(rutina.ejercicios_libres, {}) || {}
+  const ejercicios = Array.isArray(rutina.ejercicios) ? rutina.ejercicios : []
+  return {
+    ...rutina,
+    ejercicios: ejercicios.map(cleanRoutineItem),
+    frecuencia: meta.frecuencia || rutina.frecuencia || '2-3 veces antes del próximo control',
+    focos: Array.isArray(meta.focos) ? meta.focos : undefined,
+    contexto: meta.contexto || rutina.contexto,
+    ejercicios_libres: '',
+  }
+}
+
+function normalizeRutinas(rutinas) {
+  return Array.isArray(rutinas) ? rutinas.map(normalizeRoutine) : rutinas
+}
+
 export const api = {
   // Auth
   login:  (data) => req('POST', '/login', data),
@@ -39,18 +89,18 @@ export const api = {
   // Lesiones
   getLesiones:   (pacienteId) => req('GET', `/pacientes/${pacienteId}/lesiones`),
   createLesion:  (data) => req('POST', '/lesiones', data),
-  updateLesion:  (id, data) => req('PUT', `/lesiones/${id}`, data),
+  updateLesion:  (id, data) => req('PUT', `/lesiones/${id}`),
   deleteLesion:  (id) => req('DELETE', `/lesiones/${id}`),
 
   // Sesiones
   getSesiones:   (lesionId) => req('GET', `/lesiones/${lesionId}/sesiones`),
   createSesion:  (data) => req('POST', '/sesiones', data),
-  updateSesion:  (id, data) => req('PUT', `/sesiones/${id}`, data),
+  updateSesion:  (id, data) => req('PUT', `/sesiones/${id}`),
   deleteSesion:  (id) => req('DELETE', `/sesiones/${id}`),
 
   // Ejercicios
   getEjercicios:   () => req('GET', '/ejercicios'),
-  createEjercicio: (data) => req('POST', '/ejercicios', data),
+  createEjercicio: (data) => req('POST', '/ejercicios'),
   updateEjercicio: (id, data) => req('PUT', `/ejercicios/${id}`, data),
   deleteEjercicio: (id) => req('DELETE', `/ejercicios/${id}`),
 
@@ -113,8 +163,8 @@ export const api = {
   },
 
   // Rutinas
-  getRutinasPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/rutinas`),
-  getRutinas:    (motivoId) => req('GET', `/motivos/${motivoId}/rutinas`),
+  getRutinasPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/rutinas`).then(normalizeRutinas),
+  getRutinas:    (motivoId) => req('GET', `/motivos/${motivoId}/rutinas`).then(normalizeRutinas),
   createRutina:  (motivoId, data) => req('POST', `/motivos/${motivoId}/rutinas`, data),
   updateRutina:  (id, data) => req('PUT', `/rutinas/${id}`, data),
   deleteRutina:  (id) => req('DELETE', `/rutinas/${id}`),
