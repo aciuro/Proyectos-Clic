@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:22-slim
 
 RUN apt-get update && apt-get install -y \
     python3 \
@@ -13,6 +13,8 @@ COPY package*.json ./
 RUN npm ci --omit=dev
 
 COPY . .
+
+RUN cd client && npm ci && npm run build
 
 RUN mkdir -p /data/uploads
 
