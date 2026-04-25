@@ -60,7 +60,7 @@ function RutinaCard({ rutina, onEdit, onDelete }) {
 
 function EditorModal({ motivoId, rutina, onClose, onSaved }) {
   const [form, setForm] = useState({ ...EMPTY_RUTINA, ...rutina })
-  const [editorData, setEditorData] = useState({ contexto: getRoutineContext(form), ejercicios: normalizeRoutineItems(form) })
+  const [editorData, setEditorData] = useState({ contexto: getRoutineContext(form), ejercicios: normalizeRoutineItems(form), frecuencia: undefined, focos: undefined })
   const [saving, setSaving] = useState(false)
 
   useEffect(() => {
@@ -71,6 +71,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
     const previousBodyPosition = body.style.position
     const previousBodyWidth = body.style.width
     const previousBodyTop = body.style.top
+    const previousOverscroll = body.style.overscrollBehavior
     const scrollY = window.scrollY || window.pageYOffset || 0
 
     html.style.overflow = 'hidden'
@@ -78,6 +79,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
     body.style.position = 'fixed'
     body.style.width = '100%'
     body.style.top = `-${scrollY}px`
+    body.style.overscrollBehavior = 'none'
 
     return () => {
       html.style.overflow = previousHtmlOverflow
@@ -85,13 +87,19 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
       body.style.position = previousBodyPosition
       body.style.width = previousBodyWidth
       body.style.top = previousBodyTop
+      body.style.overscrollBehavior = previousOverscroll
       window.scrollTo(0, scrollY)
     }
   }, [])
 
   async function save() {
     setSaving(true)
-    const payload = buildRoutinePayload({ ...form }, editorData.contexto, editorData.ejercicios)
+    const payload = buildRoutinePayload(
+      { ...form },
+      editorData.contexto,
+      editorData.ejercicios,
+      { frecuencia: editorData.frecuencia, focos: editorData.focos }
+    )
     try {
       if (form.id) await api.updateRutina(form.id, payload)
       else await api.createRutina(motivoId, payload)
@@ -102,9 +110,9 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
   }
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 14, backdropFilter: 'blur(7px)', overflow: 'hidden', overscrollBehavior: 'none', touchAction: 'none' }}>
-      <div style={{ width: 'min(980px, 100%)', height: 'min(92dvh, 920px)', maxHeight: '92dvh', overflowY: 'auto', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehavior: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
-        <div style={{ position: 'sticky', top: 0, zIndex: 3, background: 'rgba(244,250,251,.94)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${c.border}`, padding: 16, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'stretch', justifyContent: 'center', padding: '10px 12px', backdropFilter: 'blur(7px)', overflow: 'hidden', overscrollBehavior: 'contain' }}>
+      <div style={{ width: 'min(980px, 100%)', height: 'calc(100dvh - 20px)', maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto', overflowX: 'hidden', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+        <div style={{ position: 'sticky', top: 0, zIndex: 3, background: 'rgba(244,250,251,.96)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${c.border}`, padding: 16, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 950, letterSpacing: '.1em', textTransform: 'uppercase', color: c.muted }}>{form.id ? 'Editar rutina' : 'Nueva rutina'}</div>
             <div style={{ fontSize: 20, fontWeight: 950, color: c.ink, marginTop: 3, letterSpacing: '-.035em' }}>Rutina clínica unificada</div>
@@ -115,7 +123,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
           </div>
         </div>
 
-        <div style={{ padding: '16px 16px 28px', display: 'grid', gap: 14 }}>
+        <div style={{ padding: '16px 16px 34px', display: 'grid', gap: 14 }}>
           <section style={{ ...glass, padding: 14, display: 'grid', gap: 10 }}>
             <div style={{ display: 'grid', gridTemplateColumns: '1.4fr .6fr .6fr', gap: 10 }}>
               <input style={fld} value={form.nombre || ''} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre: Rodilla semana 2" />
