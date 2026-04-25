@@ -1,20 +1,42 @@
 import { exerciseLibrary } from './exerciseLibrary.js'
 
 export const CONTEXTOS_RUTINA = [
-  { id: 'casa', label: 'Casa', emoji: '🏠', hint: 'Peso corporal, bandas, movilidad y control.' },
   { id: 'gimnasio', label: 'Gimnasio', emoji: '🏋️', hint: 'Máquinas, barra, mancuernas y poleas.' },
-  { id: 'campo', label: 'Campo', emoji: '🏃', hint: 'Trote, pasadas, intermitentes y retorno deportivo.' },
+  { id: 'campo', label: 'Campo', emoji: '🏃', hint: 'Pasadas, intermitentes, trote y retorno deportivo.' },
+  { id: 'casa', label: 'Casa', emoji: '🏠', hint: 'Peso corporal, bandas, movilidad y control.' },
 ]
 
 export const TIPOS_ITEM = [
-  { id: 'ejercicio', label: 'Ejercicio', emoji: '🟩' },
-  { id: 'cardio', label: 'Cardio', emoji: '🟦' },
-  { id: 'campo', label: 'Campo', emoji: '🟨' },
-  { id: 'indicacion', label: 'Indicación', emoji: '🟪' },
+  { id: 'movilidad', label: 'Movilidad', emoji: '🟢' },
+  { id: 'ejercicio', label: 'Gimnasio / Fuerza', emoji: '🔵' },
+  { id: 'campo', label: 'Campo', emoji: '🟡' },
+  { id: 'cardio', label: 'Cardio', emoji: '🟣' },
+  { id: 'agente', label: 'Agente físico', emoji: '🧊' },
+  { id: 'indicacion', label: 'Indicación', emoji: '📝' },
+]
+
+export const MOVILIDAD_PRESETS = [
+  'Caminar',
+  'Bicicleta fija',
+  'Elíptico',
+  'Movilidad de hombro',
+  'Movilidad cervical',
+  'Movilidad torácica',
+  'Movilidad de cadera',
+  'Activación escapular',
+  'Activación de glúteo',
 ]
 
 export const CARDIO_PRESETS = ['Bicicleta fija', 'Cinta', 'Caminata', 'Elíptico', 'Trote continuo']
-export const CAMPO_PRESETS = ['Pasadas', 'Intermitente', 'Trote', 'Fondo', 'Cambios de ritmo', 'Trabajo técnico']
+export const CAMPO_PRESETS = ['Pasadas', 'Intermitente', 'Trote', 'Fondo', 'Cambios de ritmo', 'Trabajo técnico', 'Aceleraciones', 'Desaceleraciones']
+export const AGENTES_FISICOS = ['Hielo', 'Calor', 'Baño de contraste']
+
+export const QUICK_ROUTINE_FLOW = [
+  { id: 'movilidad', label: '1. Entrada en calor', helper: 'Movilidad, bici, caminata o activación inicial.' },
+  { id: 'ejercicio', label: '2. Gimnasio / fuerza', helper: 'Ejercicios con carga, máquina, polea, banda o peso corporal.' },
+  { id: 'campo', label: '3. Campo', helper: 'Pasadas, intermitentes, trote o retorno deportivo.' },
+  { id: 'agente', label: '4. Post entrenamiento', helper: 'Hielo, calor o contraste después de entrenar.' },
+]
 
 function hasGymKeyword(name = '') {
   const s = name.toLowerCase()
@@ -36,8 +58,8 @@ export function parseRoutineMeta(rutina = {}) {
   }
 }
 
-export function makeRoutineMeta(contexto = 'gimnasio') {
-  return JSON.stringify({ version: 1, contexto })
+export function makeRoutineMeta(contexto = 'gimnasio', extra = {}) {
+  return JSON.stringify({ version: 2, contexto, ...extra })
 }
 
 export function getExerciseImage(nombre) {
@@ -78,6 +100,7 @@ export function normalizeRoutineItems(rutina = {}) {
     if (item.tipo) return { ...item, imagen: item.imagen || getExerciseImage(item.nombre) }
     return {
       tipo: 'ejercicio',
+      bloque: 'gimnasio',
       nombre: item.nombre || item.name || 'Ejercicio',
       series: item.series ?? '',
       repeticiones: item.repeticiones ?? item.reps ?? '',
@@ -94,15 +117,28 @@ export function getRoutineContext(rutina = {}) {
   return rutina.contexto || rutina.contexto_rutina || meta.contexto || 'gimnasio'
 }
 
-export function buildRoutinePayload(rutina, contexto, items) {
+export function getRoutineFrequency(rutina = {}) {
+  const meta = parseRoutineMeta(rutina)
+  return meta.frecuencia || rutina.frecuencia || '2-3 veces antes del próximo control'
+}
+
+export function getRoutineFocus(rutina = {}) {
+  const meta = parseRoutineMeta(rutina)
+  return Array.isArray(meta.focos) ? meta.focos : ['gimnasio']
+}
+
+export function buildRoutinePayload(rutina, contexto, items, extraMeta = {}) {
   return {
     ...rutina,
     ejercicios: items,
-    ejercicios_libres: makeRoutineMeta(contexto),
+    ejercicios_libres: makeRoutineMeta(contexto, extraMeta),
   }
 }
 
 export function summarizeItem(item) {
+  if (item.tipo === 'movilidad') {
+    return [item.duracion, item.detalle].filter(Boolean).join(' · ') || 'Entrada en calor / movilidad'
+  }
   if (item.tipo === 'ejercicio') {
     const parts = []
     if (item.series) parts.push(`${item.series} series`)
@@ -113,6 +149,10 @@ export function summarizeItem(item) {
   }
   if (item.tipo === 'cardio') return [item.duracion, item.intensidad, item.detalle].filter(Boolean).join(' · ') || 'Cardio libre'
   if (item.tipo === 'campo') return item.detalle || 'Trabajo de campo libre'
+  if (item.tipo === 'agente') {
+    if (item.nombre === 'Baño de contraste') return item.detalle || '1 min frío / 3 min calor · 3 a 4 rondas'
+    return [item.duracion, item.frecuencia, item.detalle].filter(Boolean).join(' · ') || item.nombre || 'Agente físico'
+  }
   if (item.tipo === 'indicacion') return item.texto || 'Indicación clínica'
   return item.nombre || 'Ítem'
 }
