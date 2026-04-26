@@ -18,7 +18,27 @@
 
   function isPatientPortal() {
     const body = document.body?.innerText || ''
-    return !!token() && (body.includes('Rutina') || body.includes('Dolor') || body.includes('Próximo turno') || body.includes('Kinesiología'))
+    return !!token() && (body.includes('Dolor') || body.includes('Próximo turno') || body.includes('Kinesiología') || body.includes('Rutinas'))
+  }
+
+  function isRutinasTabActive() {
+    const root = document.getElementById('rp-patient-routine-progress')
+    const navBtns = Array.from(document.querySelectorAll('.nav-btn, button'))
+    const rutinasBtn = navBtns.find(btn => /rutinas/i.test(btn.innerText || '') && btn.querySelector('.nav-dot'))
+    if (rutinasBtn) return true
+
+    const text = (document.querySelector('.pac-content')?.innerText || document.body?.innerText || '').toLowerCase()
+    const onHome = text.includes('rutina de hoy') || text.includes('próximo turno') || text.includes('seguimiento')
+    const onTurns = text.includes('reservar turno') || text.includes('turnos próximos')
+    const onPain = text.includes('registro de dolor')
+    const hasRoutineList = text.includes('activas') || text.includes('pendientes') || text.includes('hechos') || text.includes('mis rutinas') || text.includes('rutinas activas')
+    if (hasRoutineList && !onHome && !onTurns && !onPain) return true
+    return !!root?.dataset?.forceVisible
+  }
+
+  function removeRootIfHidden() {
+    const root = document.getElementById('rp-patient-routine-progress')
+    if (root && !isRutinasTabActive()) root.remove()
   }
 
   function h(tag, attrs = {}, children = []) {
@@ -118,6 +138,7 @@
   }
 
   function render() {
+    if (!isRutinasTabActive()) { removeRootIfHidden(); hideUnavailableImageTexts(); return }
     const root = ensureRoot(); if (!root) return
     clear(root)
     const rutinas = activeRutinas()
@@ -142,6 +163,7 @@
   }
 
   function ensureRoot() {
+    if (!isRutinasTabActive()) return null
     let content = document.querySelector('.pac-content') || document.querySelector('#root')
     if (!content) return null
     let root = document.getElementById('rp-patient-routine-progress')
@@ -167,12 +189,14 @@
 
   async function loadAll() {
     if (!isPatientPortal() || !token()) return
+    if (!isRutinasTabActive()) { removeRootIfHidden(); hideUnavailableImageTexts(); return }
     try {
       const me = await api('/me')
       const pacienteId = me?.paciente?.id
       if (!pacienteId) return
       state.pacienteId = pacienteId
-      state.rutinas = Array.isArray(await api(`/pacientes/${pacienteId}/rutinas`)) ? await api(`/pacientes/${pacienteId}/rutinas`) : []
+      const rutinas = await api(`/pacientes/${pacienteId}/rutinas`)
+      state.rutinas = Array.isArray(rutinas) ? rutinas : []
       const progresses = await Promise.all(activeRutinas().map(async r => { try { return [r.id, await api(`/rutinas/${r.id}/progreso`)] } catch { return [r.id, null] } }))
       progresses.forEach(([id, p]) => { if (p) state.progress[id] = p })
       render()
@@ -183,8 +207,15 @@
     if (state.mounted) return
     state.mounted = true
     setTimeout(loadAll, 1200)
-    setInterval(() => { if (isPatientPortal()) { loadAll(); hideUnavailableImageTexts() } }, 25000)
-    new MutationObserver(() => { if (isPatientPortal()) { setTimeout(() => { render(); hideUnavailableImageTexts() }, 200) } }).observe(document.body, { childList: true, subtree: true })
+    setInterval(() => { if (isPatientPortal()) { loadAll(); hideUnavailableImageTexts(); removeRootIfHidden() } }, 25000)
+    new MutationObserver(() => {
+      if (!isPatientPortal()) return
+      setTimeout(() => {
+        if (isRutinasTabActive()) loadAll()
+        else removeRootIfHidden()
+        hideUnavailableImageTexts()
+      }, 180)
+    }).observe(document.body, { childList: true, subtree: true })
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot)
