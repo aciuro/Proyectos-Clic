@@ -32,19 +32,28 @@ function safeJson(value, fallback = null) {
 function summarizeCleanItem(item = {}) {
   const parts = []
   if (item.series) parts.push(`${item.series} series`)
-  if (item.repeticiones) parts.push(`${item.repeticiones} reps`)
+  if (item.repeticiones || item.reps) parts.push(`${item.repeticiones || item.reps} reps`)
   if (item.segundos) parts.push(`${item.segundos} seg`)
   if (item.pausa) parts.push(`pausa ${item.pausa}`)
   const dose = parts.join(' · ')
-  const extra = item.descripcion || item.indicacion || item.detalle || ''
+  const extra = item.descripcion || item.indicacion || item.detalle || item.texto || ''
   return [dose, extra].filter(Boolean).join(' · ')
 }
 
 function cleanRoutineItem(item = {}, index = 0) {
-  const tipo = item.tipo || 'ejercicio'
+  const tipo = item.tipo || item.bloque || 'ejercicio'
   const nombre =
-    item.nombre || item.name || item.titulo || item.texto ||
+    item.nombre || item.name || item.titulo || item.texto || item.ejercicio_nombre || item.nombre_ejercicio ||
+    item.ejercicio?.nombre || item.ejercicio?.name ||
     (tipo === 'agente' ? 'Agente físico' : tipo === 'indicacion' ? 'Indicación' : `Ejercicio ${index + 1}`)
+
+  const categoria = item.categoria || item.group || item.bloque || item.tipo || item.ejercicio?.categoria || 'ejercicio'
+  const repeticiones = item.repeticiones || item.reps || item.ejercicio?.repeticiones || ''
+  const series = item.series || item.ejercicio?.series || ''
+  const segundos = item.segundos || item.ejercicio?.segundos || ''
+  const pausa = item.pausa || item.ejercicio?.pausa || ''
+  const video = item.video_url || item.video || item.ejercicio?.video_url || item.ejercicio?.video || ''
+  const imagen = item.imagen || item.image || item.imagen_url || item.foto || item.ejercicio?.imagen || item.ejercicio?.image || null
 
   const descripcion = [
     item.indicacion,
@@ -53,23 +62,49 @@ function cleanRoutineItem(item = {}, index = 0) {
     tipo === 'indicacion' ? item.texto : null,
   ].filter(Boolean).join(' · ')
 
-  return {
+  const limpio = {
     ...item,
     id: item.id || `${tipo}-${index}`,
+    tipo,
     nombre,
     name: nombre,
     titulo: nombre,
-    categoria: item.categoria || item.group || item.bloque || tipo,
+    texto: item.texto || nombre,
+    display_name: nombre,
+    ejercicio_nombre: nombre,
+    nombre_ejercicio: nombre,
+    categoria,
     descripcion,
     detalle: item.detalle || descripcion,
-    video_url: item.video_url || item.video || '',
-    imagen: item.imagen || item.image || null,
-    series: item.series || '',
-    repeticiones: item.repeticiones || item.reps || '',
-    reps: item.repeticiones || item.reps || '',
-    segundos: item.segundos || '',
-    pausa: item.pausa || '',
+    indicacion: item.indicacion || item.detalle || descripcion,
+    video_url: video,
+    video,
+    imagen,
+    image: imagen,
+    imagen_url: imagen,
+    foto: imagen,
+    series,
+    repeticiones,
+    reps: repeticiones,
+    segundos,
+    pausa,
   }
+
+  // Compatibilidad con pantallas viejas que esperan un objeto anidado `ejercicio`.
+  limpio.ejercicio = {
+    ...(item.ejercicio || {}),
+    nombre,
+    name: nombre,
+    titulo: nombre,
+    categoria,
+    descripcion,
+    video_url: video,
+    video,
+    imagen,
+    image: imagen,
+  }
+
+  return limpio
 }
 
 function normalizeRoutine(rutina = {}) {
@@ -81,9 +116,18 @@ function normalizeRoutine(rutina = {}) {
     .map((ej, i) => `${i + 1}. ${ej.nombre}${summarizeCleanItem(ej) ? ` — ${summarizeCleanItem(ej)}` : ''}`)
     .join('\n')
 
+  const activa = !rutina.estado || rutina.estado === 'Activa' || rutina.estado === 'activa'
+
   return {
     ...rutina,
+    estado: rutina.estado || 'Activa',
+    activa,
     ejercicios: cleanEjercicios,
+    items: cleanEjercicios,
+    bloques: cleanEjercicios,
+    rutina_items: cleanEjercicios,
+    total_ejercicios: cleanEjercicios.length,
+    ejercicios_count: cleanEjercicios.length,
     frecuencia: meta.frecuencia || rutina.frecuencia || '2-3 veces antes del próximo control',
     focos: Array.isArray(meta.focos) ? meta.focos : undefined,
     contexto: meta.contexto || rutina.contexto,
@@ -92,6 +136,7 @@ function normalizeRoutine(rutina = {}) {
     ejercicios_libres: resumenEjercicios,
     resumen: rutina.resumen || resumenEjercicios,
     descripcion: rutina.descripcion || resumenEjercicios,
+    indicaciones: resumenEjercicios,
   }
 }
 
