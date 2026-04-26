@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import PacienteDetalle from './PacienteDetalle.jsx'
+import AdherencePanelStub from './AdherencePanelStub.jsx'
 
 function normalize(text = '') {
   return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -89,6 +90,7 @@ export default function PatientClinicalRoutineBridge() {
           + Nueva rutina clínica
         </button>
       </div>
+      <AdherencePanelStub pacienteId={id} />
       <PacienteDetalle />
     </>
   )
