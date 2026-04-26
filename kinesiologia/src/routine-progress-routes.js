@@ -70,6 +70,12 @@ function puedeAccederRutina(req, rutina) {
   return !!p && String(p.id) === String(rutina.paciente_id)
 }
 
+function puedeAccederPaciente(req, pacienteId) {
+  if (req.user?.rol === 'admin') return true
+  const p = getPacienteDelUsuario(req.user.id)
+  return !!p && String(p.id) === String(pacienteId)
+}
+
 function currentPeriodKey() {
   const now = new Date()
   const tmp = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()))
@@ -182,6 +188,49 @@ function getProgressPayload(rutina, periodoKey = currentPeriodKey()) {
   }
 }
 
+function getRutinasPacienteRows(pacienteId) {
+  return db.prepare(`
+    SELECT r.*, m.paciente_id, m.sintoma AS motivo_sintoma
+    FROM rutinas r
+    JOIN motivos m ON m.id = r.motivo_id
+    WHERE m.paciente_id = ? AND (r.estado IS NULL OR lower(r.estado) = 'activa')
+    ORDER BY r.created_at DESC, r.id DESC
+  `).all(pacienteId)
+}
+
+function getPacienteAdherencia(pacienteId, periodoKey = currentPeriodKey()) {
+  const rutinas = getRutinasPacienteRows(pacienteId)
+  const detalle = rutinas.map((r) => {
+    const progress = getProgressPayload(r, periodoKey)
+    const omitidos = progress.items.filter(i => !i.hecho).map(i => i.nombre)
+    const pct = progress.objetivo ? Math.min(100, Math.round((progress.completadas / progress.objetivo) * 100)) : 0
+    return {
+      rutina_id: r.id,
+      nombre: r.nombre,
+      motivo_sintoma: r.motivo_sintoma,
+      periodo_key: periodoKey,
+      completadas: progress.completadas,
+      objetivo: progress.objetivo,
+      porcentaje: pct,
+      intento_actual: progress.intento_numero,
+      ejercicios_hechos: progress.hechos,
+      ejercicios_total: progress.total_items,
+      omitidos,
+    }
+  })
+  const totalObjetivo = detalle.reduce((a, r) => a + (Number(r.objetivo) || 0), 0)
+  const totalCompletadas = detalle.reduce((a, r) => a + (Number(r.completadas) || 0), 0)
+  return {
+    paciente_id: Number(pacienteId),
+    periodo_key: periodoKey,
+    rutinas_activas: detalle.length,
+    completadas: totalCompletadas,
+    objetivo: totalObjetivo,
+    porcentaje: totalObjetivo ? Math.min(100, Math.round((totalCompletadas / totalObjetivo) * 100)) : 0,
+    detalle,
+  }
+}
+
 function syncCompletionIfNeeded(intentoId, totalItems) {
   if (!totalItems) return
   const hechos = db.prepare('SELECT COUNT(*) AS total FROM rutina_progreso_items WHERE intento_id=? AND hecho=1').get(intentoId)?.total || 0
@@ -204,6 +253,11 @@ router.get('/rutinas/:id/progreso', auth, (req, res) => {
   const rutina = getRutinaConPaciente(req.params.id)
   if (!puedeAccederRutina(req, rutina)) return res.status(403).json({ error: 'Sin acceso' })
   res.json(getProgressPayload(rutina, req.query.periodo || currentPeriodKey()))
+})
+
+router.get('/pacientes/:id/adherencia-rutinas', auth, (req, res) => {
+  if (!puedeAccederPaciente(req, req.params.id)) return res.status(403).json({ error: 'Sin acceso' })
+  res.json(getPacienteAdherencia(req.params.id, req.query.periodo || currentPeriodKey()))
 })
 
 router.patch('/rutinas/:id/progreso/items/:itemIndex', auth, (req, res) => {
