@@ -24,8 +24,20 @@ async function req(method, path, body) {
 }
 
 function safeJson(value, fallback = null) {
-  if (!value || typeof value !== 'string') return fallback
+  if (!value) return fallback
+  if (typeof value !== 'string') return value
   try { return JSON.parse(value) } catch { return fallback }
+}
+
+function summarizeCleanItem(item = {}) {
+  const parts = []
+  if (item.series) parts.push(`${item.series} series`)
+  if (item.repeticiones) parts.push(`${item.repeticiones} reps`)
+  if (item.segundos) parts.push(`${item.segundos} seg`)
+  if (item.pausa) parts.push(`pausa ${item.pausa}`)
+  const dose = parts.join(' · ')
+  const extra = item.descripcion || item.indicacion || item.detalle || ''
+  return [dose, extra].filter(Boolean).join(' · ')
 }
 
 function cleanRoutineItem(item = {}, index = 0) {
@@ -45,12 +57,16 @@ function cleanRoutineItem(item = {}, index = 0) {
     ...item,
     id: item.id || `${tipo}-${index}`,
     nombre,
+    name: nombre,
+    titulo: nombre,
     categoria: item.categoria || item.group || item.bloque || tipo,
     descripcion,
+    detalle: item.detalle || descripcion,
     video_url: item.video_url || item.video || '',
     imagen: item.imagen || item.image || null,
     series: item.series || '',
     repeticiones: item.repeticiones || item.reps || '',
+    reps: item.repeticiones || item.reps || '',
     segundos: item.segundos || '',
     pausa: item.pausa || '',
   }
@@ -58,14 +74,24 @@ function cleanRoutineItem(item = {}, index = 0) {
 
 function normalizeRoutine(rutina = {}) {
   const meta = safeJson(rutina.ejercicios_libres, {}) || {}
-  const ejercicios = Array.isArray(rutina.ejercicios) ? rutina.ejercicios : []
+  const rawEjercicios = safeJson(rutina.ejercicios, rutina.ejercicios)
+  const ejercicios = Array.isArray(rawEjercicios) ? rawEjercicios : []
+  const cleanEjercicios = ejercicios.map(cleanRoutineItem)
+  const resumenEjercicios = cleanEjercicios
+    .map((ej, i) => `${i + 1}. ${ej.nombre}${summarizeCleanItem(ej) ? ` — ${summarizeCleanItem(ej)}` : ''}`)
+    .join('\n')
+
   return {
     ...rutina,
-    ejercicios: ejercicios.map(cleanRoutineItem),
+    ejercicios: cleanEjercicios,
     frecuencia: meta.frecuencia || rutina.frecuencia || '2-3 veces antes del próximo control',
     focos: Array.isArray(meta.focos) ? meta.focos : undefined,
     contexto: meta.contexto || rutina.contexto,
-    ejercicios_libres: '',
+    // Compatibilidad con la vista vieja del paciente: si esa pantalla todavía imprime
+    // ejercicios_libres, que vea una rutina legible y no JSON ni texto vacío.
+    ejercicios_libres: resumenEjercicios,
+    resumen: rutina.resumen || resumenEjercicios,
+    descripcion: rutina.descripcion || resumenEjercicios,
   }
 }
 
@@ -100,7 +126,7 @@ export const api = {
 
   // Ejercicios
   getEjercicios:   () => req('GET', '/ejercicios'),
-  createEjercicio: (data) => req('POST', '/ejercicios'),
+  createEjercicio: (data) => req('POST', '/ejercicios', data),
   updateEjercicio: (id, data) => req('PUT', `/ejercicios/${id}`, data),
   deleteEjercicio: (id) => req('DELETE', `/ejercicios/${id}`),
 
