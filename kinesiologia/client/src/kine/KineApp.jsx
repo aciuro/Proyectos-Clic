@@ -17,6 +17,7 @@ import PortalPaciente from './PortalPaciente.jsx'
 import PatientRoutineProgressMount from './PatientRoutineProgressMount.jsx'
 import './kine.css'
 import './premium-refresh.css'
+import './clinical-routine-mobile.css'
 
 const KINE_EMAIL = 'augustociuro@gmail.com'
 
