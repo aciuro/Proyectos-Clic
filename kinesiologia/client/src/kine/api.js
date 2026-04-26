@@ -90,7 +90,6 @@ function cleanRoutineItem(item = {}, index = 0) {
     pausa,
   }
 
-  // Compatibilidad con pantallas viejas que esperan un objeto anidado `ejercicio`.
   limpio.ejercicio = {
     ...(item.ejercicio || {}),
     nombre,
@@ -131,8 +130,6 @@ function normalizeRoutine(rutina = {}) {
     frecuencia: meta.frecuencia || rutina.frecuencia || '2-3 veces antes del próximo control',
     focos: Array.isArray(meta.focos) ? meta.focos : undefined,
     contexto: meta.contexto || rutina.contexto,
-    // Compatibilidad con la vista vieja del paciente: si esa pantalla todavía imprime
-    // ejercicios_libres, que vea una rutina legible y no JSON ni texto vacío.
     ejercicios_libres: resumenEjercicios,
     resumen: rutina.resumen || resumenEjercicios,
     descripcion: rutina.descripcion || resumenEjercicios,
@@ -145,45 +142,37 @@ function normalizeRutinas(rutinas) {
 }
 
 export const api = {
-  // Auth
   login:  (data) => req('POST', '/login', data),
   me:     () => req('GET', '/me'),
 
-  // Pacientes
   getPacientes:   () => req('GET', '/pacientes'),
   getPaciente:    (id) => req('GET', `/pacientes/${id}`),
-  createPaciente: (data) => req('POST', '/pacientes', data), // devuelve { paciente, acceso }
+  createPaciente: (data) => req('POST', '/pacientes', data),
   updatePaciente: (id, data) => req('PUT', `/pacientes/${id}`, data),
   deletePaciente: (id) => req('DELETE', `/pacientes/${id}`),
   crearAcceso:    (id, data) => req('POST', `/pacientes/${id}/crear-acceso`, data),
 
-  // Lesiones
   getLesiones:   (pacienteId) => req('GET', `/pacientes/${pacienteId}/lesiones`),
   createLesion:  (data) => req('POST', '/lesiones', data),
   updateLesion:  (id, data) => req('PUT', `/lesiones/${id}`),
   deleteLesion:  (id) => req('DELETE', `/lesiones/${id}`),
 
-  // Sesiones
   getSesiones:   (lesionId) => req('GET', `/lesiones/${lesionId}/sesiones`),
   createSesion:  (data) => req('POST', '/sesiones', data),
   updateSesion:  (id, data) => req('PUT', `/sesiones/${id}`),
   deleteSesion:  (id) => req('DELETE', `/sesiones/${id}`),
 
-  // Ejercicios
   getEjercicios:   () => req('GET', '/ejercicios'),
   createEjercicio: (data) => req('POST', '/ejercicios', data),
   updateEjercicio: (id, data) => req('PUT', `/ejercicios/${id}`, data),
   deleteEjercicio: (id) => req('DELETE', `/ejercicios/${id}`),
 
-  // Ejercicios por paciente
   getEjerciciosPaciente: (id) => req('GET', `/pacientes/${id}/ejercicios`),
   asignarEjercicio:      (id, data) => req('POST', `/pacientes/${id}/ejercicios`, data),
   quitarEjercicio:       (id) => req('DELETE', `/paciente-ejercicios/${id}`),
 
-  // Dashboard
   getDashboard: () => req('GET', '/dashboard'),
 
-  // Turnos
   getTurnos:   (mes) => req('GET', `/turnos${mes ? `?mes=${mes}` : ''}`),
   getTurnosPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/turnos`),
   createTurno: (data) => req('POST', '/turnos', data),
@@ -191,7 +180,6 @@ export const api = {
   updateTurno: (id, data) => req('PUT', `/turnos/${id}`, data),
   deleteTurno: (id) => req('DELETE', `/turnos/${id}`),
 
-  // Documentos
   getDocumentos:   (pacienteId) => req('GET', `/pacientes/${pacienteId}/documentos`),
   deleteDocumento: (id) => req('DELETE', `/documentos/${id}`),
   uploadDocumento: (pacienteId, formData) => {
@@ -203,13 +191,11 @@ export const api = {
     }).then(r => r.json())
   },
 
-  // Motivos de consulta
   getMotivos:       (pacienteId) => req('GET', `/pacientes/${pacienteId}/motivos`),
   createMotivo:     (pacienteId, data) => req('POST', `/pacientes/${pacienteId}/motivos`, data),
   updateMotivo:     (id, data) => req('PUT', `/motivos/${id}`, data),
   deleteMotivo:     (id) => req('DELETE', `/motivos/${id}`),
 
-  // Evoluciones
   getEvoluciones:   (motivoId) => req('GET', `/motivos/${motivoId}/evoluciones`),
   createEvolucion:  (motivoId, data) => req('POST', `/motivos/${motivoId}/evoluciones`, data),
   updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`, data),
@@ -218,10 +204,8 @@ export const api = {
   pagarTodo:        (pacienteId) => req('POST', `/pacientes/${pacienteId}/pagar-todo`),
   getSaldo:         (pacienteId) => req('GET', `/pacientes/${pacienteId}/saldo`),
 
-  // Ejercicios de gimnasio (última sesión)
   getEjerciciosGimnasio: (pacienteId) => req('GET', `/pacientes/${pacienteId}/ejercicios-gimnasio`),
 
-  // Estudios
   getEstudios:      (motivoId) => req('GET', `/motivos/${motivoId}/estudios`),
   deleteEstudio:    (id) => req('DELETE', `/estudios/${id}`),
   uploadEstudio:    (motivoId, formData) => {
@@ -233,31 +217,29 @@ export const api = {
     }).then(r => r.json())
   },
 
-  // Rutinas
   getRutinasPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/rutinas`).then(normalizeRutinas),
   getRutinas:    (motivoId) => req('GET', `/motivos/${motivoId}/rutinas`).then(normalizeRutinas),
   createRutina:  (motivoId, data) => req('POST', `/motivos/${motivoId}/rutinas`, data),
   updateRutina:  (id, data) => req('PUT', `/rutinas/${id}`, data),
   deleteRutina:  (id) => req('DELETE', `/rutinas/${id}`),
+  getRutinaProgreso: (rutinaId) => req('GET', `/rutinas/${rutinaId}/progreso`),
+  marcarRutinaItem: (rutinaId, itemIndex, hecho) => req('PATCH', `/rutinas/${rutinaId}/progreso/items/${itemIndex}`, { hecho }),
+  reiniciarRutinaIntento: (rutinaId) => req('POST', `/rutinas/${rutinaId}/progreso/reiniciar-intento`, {}),
+  getAdherenciaRutinas: (pacienteId) => req('GET', `/pacientes/${pacienteId}/adherencia-rutinas`),
 
-  // Dolor
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
 
-  // Claude
   claudeRutina: (descripcion) => req('POST', '/claude/rutina', { descripcion }),
 
-  // Notas admin
   getNotas:     () => req('GET', '/notas'),
   createNota:   (texto) => req('POST', '/notas', { texto }),
   updateNota:   (id, texto) => req('PUT', `/notas/${id}`, { texto }),
   deleteNota:   (id) => req('DELETE', `/notas/${id}`),
 
-  // Movimientos
   getMovimientos:    (tipo) => req('GET', `/movimientos${tipo ? `?tipo=${tipo}` : ''}`),
   createMovimiento:  (data) => req('POST', '/movimientos', data),
   deleteMovimiento:  (id) => req('DELETE', `/movimientos/${id}`),
 
-  // Saldos
   getSaldosTodos:      () => req('GET', '/saldos'),
   pagarSaldoPaciente:  (pacienteId) => req('POST', `/saldos/${pacienteId}/pagar`),
 }
