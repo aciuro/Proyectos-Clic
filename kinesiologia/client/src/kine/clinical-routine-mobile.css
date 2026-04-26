@@ -1,0 +1,184 @@
+/* Mobile/premium polish para el editor de rutina clinica */
+
+body::after {
+  display: none !important;
+  content: none !important;
+}
+
+/* Modal: menos ancho, header/footer sticky y scroll interno mas estable */
+div[style*="rgba(8,43,52,.38)"][style*="position: fixed"] {
+  padding: 10px 10px !important;
+  align-items: center !important;
+  overscroll-behavior: none !important;
+}
+
+div[style*="width: min(980px, 100%)"][style*="height: calc(100dvh"] {
+  width: min(720px, calc(100vw - 20px)) !important;
+  height: min(90dvh, calc(100dvh - 18px)) !important;
+  max-height: min(90dvh, calc(100dvh - 18px)) !important;
+  border-radius: 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+div[style*="position: sticky"][style*="Nueva rutina"],
+div[style*="position: sticky"][style*="Editar rutina"] {
+  flex-shrink: 0 !important;
+}
+
+/* Header del modal de rutina */
+div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] {
+  padding: 13px 14px !important;
+  gap: 8px !important;
+  align-items: flex-start !important;
+}
+
+div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] div[style*="font-size: 20"] {
+  font-size: 23px !important;
+  line-height: 1.04 !important;
+  max-width: 210px !important;
+}
+
+div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] button {
+  border-radius: 15px !important;
+  padding: 9px 11px !important;
+  font-size: 12px !important;
+}
+
+/* Body del modal */
+div[style*="width: min(980px, 100%)"] > div[style*="padding: 16px 16px 34px"] {
+  flex: 1 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: 12px 12px 96px !important;
+}
+
+/* Form superior mas mobile-friendly */
+div[style*="grid-template-columns: 1.4fr .6fr .6fr"] {
+  grid-template-columns: 1fr !important;
+}
+
+/* Filtros: chips mas finos */
+div[style*="overflowX: auto"] button,
+div[style*="overflow-x: auto"] button {
+  min-height: 34px !important;
+  padding: 7px 11px !important;
+  font-size: 12px !important;
+  border-radius: 999px !important;
+}
+
+/* Selector de ejercicios: listado compacto con boton Agregar visible */
+div[style*="repeat(auto-fill, minmax(132px"] {
+  grid-template-columns: 1fr !important;
+  gap: 8px !important;
+  max-height: 48dvh !important;
+  padding-right: 0 !important;
+  overscroll-behavior: contain !important;
+  -webkit-overflow-scrolling: touch !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  align-items: center !important;
+  min-height: 58px !important;
+  padding: 11px 12px !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button > img,
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:first-child[style*="aspect-ratio"],
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:first-child[style*="aspectRatio"] {
+  display: none !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:last-child {
+  padding: 0 !important;
+  min-width: 0 !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button > div:last-child > div:first-child {
+  font-size: 16px !important;
+  line-height: 1.18 !important;
+  min-height: 0 !important;
+  display: -webkit-box !important;
+  -webkit-line-clamp: 2 !important;
+  -webkit-box-orient: vertical !important;
+  overflow: hidden !important;
+}
+
+div[style*="repeat(auto-fill, minmax(132px"] > button::after {
+  content: '+ Agregar';
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 10px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--rp-brand, #2F9FB2), var(--rp-brand-dark, #176F82));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+  box-shadow: 0 10px 20px rgba(23,111,130,.18);
+}
+
+/* Cards de la secuencia: sin fotos gigantes */
+section img[style*="width: 66"],
+section img[style*="height: 66"] {
+  display: none !important;
+}
+
+section div[style*="width: 66"][style*="height: 66"] {
+  width: 42px !important;
+  height: 42px !important;
+  min-width: 42px !important;
+  border-radius: 13px !important;
+  font-size: 20px !important;
+}
+
+/* Buscador y selects mas sobrios */
+input[placeholder*="Buscar:"] {
+  height: 44px !important;
+  border-radius: 14px !important;
+  font-size: 14px !important;
+}
+
+/* Ajustes especificos mobile */
+@media (max-width: 520px) {
+  div[style*="width: min(980px, 100%)"][style*="height: calc(100dvh"] {
+    width: calc(100vw - 18px) !important;
+    height: min(89dvh, calc(100dvh - 18px)) !important;
+    max-height: min(89dvh, calc(100dvh - 18px)) !important;
+    border-radius: 22px !important;
+  }
+
+  div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] {
+    padding: 12px 12px !important;
+  }
+
+  div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] div[style*="font-size: 20"] {
+    font-size: 21px !important;
+    max-width: 178px !important;
+  }
+
+  div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] > div:last-child {
+    gap: 6px !important;
+  }
+
+  div[style*="position: sticky"][style*="rgba(244,250,251,.96)"] button {
+    padding: 8px 10px !important;
+    min-height: 38px !important;
+  }
+
+  div[style*="repeat(auto-fill, minmax(132px"] > button::after {
+    content: '+';
+    width: 34px;
+    padding: 0;
+    font-size: 16px;
+  }
+}
