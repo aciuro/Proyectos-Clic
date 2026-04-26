@@ -14,6 +14,7 @@ import KineClaude from './KineClaude.jsx'
 import Notas from './Notas.jsx'
 import Cuenta from './Cuenta.jsx'
 import PortalPaciente from './PortalPaciente.jsx'
+import PatientRoutineProgressMount from './PatientRoutineProgressMount.jsx'
 import './kine.css'
 import './premium-refresh.css'
 
@@ -167,9 +168,12 @@ function AdminLayout({ usuario, onLogout }) {
 
 function PacienteLayout({ usuario, paciente, onLogout }) {
   return (
-    <Routes>
-      <Route path="/*" element={<PortalPaciente usuario={usuario} paciente={paciente} onLogout={onLogout} />} />
-    </Routes>
+    <>
+      <PatientRoutineProgressMount pacienteId={paciente?.id} />
+      <Routes>
+        <Route path="/*" element={<PortalPaciente usuario={usuario} paciente={paciente} onLogout={onLogout} />} />
+      </Routes>
+    </>
   )
 }
 
