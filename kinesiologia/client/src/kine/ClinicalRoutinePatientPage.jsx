@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { api } from './api.js'
-import ClinicalRoutineEditor from './ClinicalRoutineEditor.jsx'
+import ClinicalRoutineEditorPremium from './ClinicalRoutineEditorPremium.jsx'
 import { buildRoutinePayload, getRoutineContext, normalizeRoutineItems, summarizeItem } from './clinicalRoutineUtils.js'
 
 const c = {
   ink: '#082B34', ink2: '#315F68', muted: '#789FAA', sky: '#2F9FB2', skyDark: '#176F82',
-  border: 'rgba(83,151,166,.30)', soft: '#F4FAFB', white: '#fff', danger: '#B91C1C', mint: '#72CDB8'
+  border: 'rgba(83,151,166,.30)', soft: '#F4FAFB', white: '#fff', danger: '#B91C1C'
 }
 
 const fld = {
@@ -15,12 +15,11 @@ const fld = {
 }
 const btn = { border: 'none', borderRadius: 18, padding: '11px 15px', fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }
 const glass = { background: 'rgba(255,255,255,.94)', border: `1px solid ${c.border}`, borderRadius: 26, boxShadow: '0 14px 40px rgba(13,53,64,.075)' }
+const pill = { display: 'inline-flex', alignItems: 'center', borderRadius: 999, padding: '5px 9px', background: '#E9F7FA', color: c.skyDark, fontSize: 11, fontWeight: 900, textTransform: 'capitalize' }
 
 const EMPTY_RUTINA = {
   nombre: '', estado: 'Activa', resumen: '', ejercicios: [], hielo: null, calor: null, contraste: null, notas: '', veces: 1, ejercicios_libres: null,
 }
-
-const pill = { display: 'inline-flex', alignItems: 'center', borderRadius: 999, padding: '5px 9px', background: '#E9F7FA', color: c.skyDark, fontSize: 11, fontWeight: 900, textTransform: 'capitalize' }
 
 function RutinaCard({ rutina, onEdit, onDelete }) {
   const items = normalizeRoutineItems(rutina)
@@ -45,7 +44,7 @@ function RutinaCard({ rutina, onEdit, onDelete }) {
       <div style={{ display: 'grid', gap: 8, marginTop: 14 }}>
         {items.slice(0, 6).map((item, i) => (
           <div key={i} style={{ display: 'flex', gap: 9, alignItems: 'center', border: '1px solid rgba(83,151,166,.20)', background: '#F8FCFD', borderRadius: 16, padding: 9 }}>
-            {item.imagen ? <img src={item.imagen} alt={item.nombre} style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 12, background: '#fff', flexShrink: 0 }} /> : <div style={{ width: 44, height: 44, borderRadius: 12, background: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, color: c.skyDark, fontWeight: 900 }}>{i + 1}</div>}
+            <div style={{ width: 36, height: 36, borderRadius: 12, background: '#fff', display: 'grid', placeItems: 'center', flexShrink: 0, color: c.skyDark, fontWeight: 900 }}>{i + 1}</div>
             <div style={{ minWidth: 0 }}>
               <div style={{ fontSize: 13.5, fontWeight: 900, color: c.ink, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.nombre || item.texto || item.tipo}</div>
               <div style={{ fontSize: 11.5, color: c.muted, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 2 }}>{summarizeItem(item)}</div>
@@ -66,28 +65,26 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
   useEffect(() => {
     const html = document.documentElement
     const body = document.body
-    const previousHtmlOverflow = html.style.overflow
-    const previousBodyOverflow = body.style.overflow
-    const previousBodyPosition = body.style.position
-    const previousBodyWidth = body.style.width
-    const previousBodyTop = body.style.top
-    const previousOverscroll = body.style.overscrollBehavior
+    const oldHtml = html.style.overflow
+    const oldBody = body.style.overflow
+    const oldPosition = body.style.position
+    const oldWidth = body.style.width
+    const oldTop = body.style.top
+    const oldOverscroll = body.style.overscrollBehavior
     const scrollY = window.scrollY || window.pageYOffset || 0
-
     html.style.overflow = 'hidden'
     body.style.overflow = 'hidden'
     body.style.position = 'fixed'
     body.style.width = '100%'
     body.style.top = `-${scrollY}px`
     body.style.overscrollBehavior = 'none'
-
     return () => {
-      html.style.overflow = previousHtmlOverflow
-      body.style.overflow = previousBodyOverflow
-      body.style.position = previousBodyPosition
-      body.style.width = previousBodyWidth
-      body.style.top = previousBodyTop
-      body.style.overscrollBehavior = previousOverscroll
+      html.style.overflow = oldHtml
+      body.style.overflow = oldBody
+      body.style.position = oldPosition
+      body.style.width = oldWidth
+      body.style.top = oldTop
+      body.style.overscrollBehavior = oldOverscroll
       window.scrollTo(0, scrollY)
     }
   }, [])
@@ -111,7 +108,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'stretch', justifyContent: 'center', padding: '10px 12px', backdropFilter: 'blur(7px)', overflow: 'hidden', overscrollBehavior: 'contain' }}>
-      <div style={{ width: 'min(980px, 100%)', height: 'calc(100dvh - 20px)', maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto', overflowX: 'hidden', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+      <div style={{ width: 'min(720px, calc(100vw - 24px))', height: 'calc(100dvh - 20px)', maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto', overflowX: 'hidden', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 3, background: 'rgba(244,250,251,.96)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${c.border}`, padding: 16, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 950, letterSpacing: '.1em', textTransform: 'uppercase', color: c.muted }}>{form.id ? 'Editar rutina' : 'Nueva rutina'}</div>
@@ -123,9 +120,9 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
           </div>
         </div>
 
-        <div style={{ padding: '16px 16px 34px', display: 'grid', gap: 14 }}>
+        <div style={{ padding: '16px 16px 34px', display: 'grid', gap: 14, overflowX: 'hidden' }}>
           <section style={{ ...glass, padding: 14, display: 'grid', gap: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1.4fr .6fr .6fr', gap: 10 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
               <input style={fld} value={form.nombre || ''} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre: Rodilla semana 2" />
               <select style={fld} value={form.estado || 'Activa'} onChange={e => setForm({ ...form, estado: e.target.value })}><option>Activa</option><option>Pausada</option><option>Finalizada</option></select>
               <input style={fld} type="number" min="1" value={form.veces || 1} onChange={e => setForm({ ...form, veces: e.target.value })} placeholder="Veces" />
@@ -134,7 +131,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
             <textarea style={{ ...fld, minHeight: 72, resize: 'vertical' }} value={form.notas || ''} onChange={e => setForm({ ...form, notas: e.target.value })} placeholder="Notas generales" />
           </section>
 
-          <ClinicalRoutineEditor rutina={{ ...form, ejercicios: editorData.ejercicios }} onChange={setEditorData} />
+          <ClinicalRoutineEditorPremium rutina={{ ...form, ejercicios: editorData.ejercicios }} onChange={setEditorData} />
         </div>
       </div>
     </div>
