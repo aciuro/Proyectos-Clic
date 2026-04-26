@@ -93,6 +93,14 @@ function itemName(item, index) {
   return item?.nombre || item?.name || item?.titulo || item?.texto || item?.ejercicio?.nombre || `Ejercicio ${index + 1}`
 }
 
+function itemImage(item) {
+  return item?.imagen || item?.image || item?.imagen_url || item?.foto || item?.ejercicio?.imagen || item?.ejercicio?.image || item?.ejercicio?.imagen_url || null
+}
+
+function itemVideo(item) {
+  return item?.video_url || item?.video || item?.ejercicio?.video_url || item?.ejercicio?.video || ''
+}
+
 function getTargetCount(rutina) {
   try {
     const meta = rutina.ejercicios_libres ? JSON.parse(rutina.ejercicios_libres) : {}
@@ -141,9 +149,17 @@ function getProgressPayload(rutina, periodoKey = currentPeriodKey()) {
       hecho_at: row?.hecho_at || null,
       series: item?.series || '',
       repeticiones: item?.repeticiones || item?.reps || '',
+      reps: item?.repeticiones || item?.reps || '',
       segundos: item?.segundos || '',
       pausa: item?.pausa || '',
       indicacion: item?.indicacion || item?.detalle || item?.descripcion || '',
+      descripcion: item?.descripcion || item?.detalle || item?.indicacion || '',
+      imagen: itemImage(item),
+      image: itemImage(item),
+      imagen_url: itemImage(item),
+      foto: itemImage(item),
+      video_url: itemVideo(item),
+      video: itemVideo(item),
     }
   })
   const completadas = db.prepare(`
