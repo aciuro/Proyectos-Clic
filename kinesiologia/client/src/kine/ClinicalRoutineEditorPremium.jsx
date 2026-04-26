@@ -7,14 +7,13 @@ import {
   CONTEXTOS_RUTINA,
   CONTRACCION_FILTROS,
   MOVILIDAD_PRESETS,
-  getExerciseGroups,
-  getExerciseOptions,
   getRoutineContext,
   getRoutineFocus,
   getRoutineFrequency,
   normalizeRoutineItems,
   summarizeItem,
 } from './clinicalRoutineUtils.js'
+import { getPremiumExerciseGroups, getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
 
 const c = { ink:'#082B34', muted:'#789FAA', sky:'#2F9FB2', skyDark:'#176F82', border:'rgba(83,151,166,.30)', white:'#fff', danger:'#B91C1C' }
 const input = { width:'100%', borderRadius:16, border:`1px solid ${c.border}`, background:'#fff', padding:'11px 13px', fontSize:14, color:c.ink, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
@@ -63,9 +62,9 @@ function AddPanel({ preferredType, focos, onAdd, onClose }) {
   const [group, setGroup] = useState('Todos')
   const [region, setRegion] = useState('Todos')
   const [contraction, setContraction] = useState('Todos')
-  const groups = useMemo(() => getExerciseGroups(), [])
+  const groups = useMemo(() => getPremiumExerciseGroups(), [])
   const context = focos?.includes('gimnasio') ? 'gimnasio' : focos?.[0] || 'gimnasio'
-  const options = useMemo(() => getExerciseOptions(context, search, group, region, contraction).slice(0, 80), [context, search, group, region, contraction])
+  const options = useMemo(() => getPremiumExerciseOptions(context, search, group, region, contraction).slice(0, 80), [context, search, group, region, contraction])
 
   function add(tipo, patch={}) { onAdd({ ...emptyItem(tipo), ...patch }) }
   const presets = { movilidad:MOVILIDAD_PRESETS, cardio:CARDIO_PRESETS, campo:CAMPO_PRESETS, agente:AGENTES_FISICOS, indicacion:['Repetir 2 a 3 veces antes del próximo control','No superar dolor 5/10','Priorizar técnica y control','Suspender si aumenta inflamación'] }
