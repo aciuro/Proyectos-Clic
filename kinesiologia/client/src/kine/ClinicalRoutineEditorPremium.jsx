@@ -14,6 +14,7 @@ import {
   summarizeItem,
 } from './clinicalRoutineUtils.js'
 import { getPremiumExerciseGroups, getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
+import { CLINICAL_ROUTINE_TEMPLATES } from './clinicalRoutineTemplates.js'
 
 const c = { ink:'#082B34', muted:'#789FAA', sky:'#2F9FB2', skyDark:'#176F82', border:'rgba(83,151,166,.30)', white:'#fff', danger:'#B91C1C' }
 const input = { width:'100%', borderRadius:16, border:`1px solid ${c.border}`, background:'#fff', padding:'11px 13px', fontSize:14, color:c.ink, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
@@ -56,6 +57,25 @@ function ChipGroup({ title, items, value, onChange }) {
   return <div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.08em', margin:'6px 0 7px' }}>{title}</div><div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>{items.map(it => { const a=value===it.id; return <button key={it.id} type="button" onClick={() => onChange(it.id)} style={{ border:`1px solid ${a?c.sky:c.border}`, background:a?'#E9F7FA':'#fff', color:a?c.skyDark:c.ink, borderRadius:999, padding:'8px 10px', fontSize:12, fontWeight:900, cursor:'pointer', fontFamily:'inherit' }}>{it.emoji ? `${it.emoji} ` : ''}{it.label}</button> })}</div></div>
 }
 
+function TemplatePanel({ onApply }) {
+  const [open, setOpen] = useState(false)
+  if (!open) {
+    return <section style={{ ...card, padding:14, display:'flex', justifyContent:'space-between', gap:12, alignItems:'center', flexWrap:'wrap' }}>
+      <div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Plantillas clínicas</div><div style={{ marginTop:3, fontSize:15, fontWeight:950, color:c.ink }}>Cargar rutina base por lesión/fase</div></div>
+      <button type="button" onClick={() => setOpen(true)} style={ghost}>Usar plantilla</button>
+    </section>
+  }
+  return <section style={{ ...card, padding:14 }}>
+    <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center', marginBottom:10 }}><div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Plantillas clínicas</div><div style={{ marginTop:3, fontSize:15, fontWeight:950, color:c.ink }}>Elegí una base y después ajustala</div></div><button type="button" onClick={() => setOpen(false)} style={small}>×</button></div>
+    <div style={{ display:'grid', gap:8 }}>
+      {CLINICAL_ROUTINE_TEMPLATES.map(t => <button key={t.id} type="button" onClick={() => { onApply(t); setOpen(false) }} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:16, padding:12, textAlign:'left', cursor:'pointer', fontFamily:'inherit' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}><div style={{ fontSize:15, fontWeight:950, color:c.ink }}>{t.title}</div><span style={tag}>{t.region}</span></div>
+        <div style={{ marginTop:5, fontSize:12, color:c.muted, lineHeight:1.35 }}>{t.goal}</div>
+      </button>)}
+    </div>
+  </section>
+}
+
 function AddPanel({ preferredType, focos, onAdd, onClose }) {
   const [type, setType] = useState(preferredType || null)
   const [search, setSearch] = useState('')
@@ -90,13 +110,13 @@ function Header({ rutina, frecuencia, setFrecuencia, focos, toggleFoco, itemsCou
   return <section style={{ ...card, padding:16, background:'linear-gradient(135deg,#FFFFFF 0%,#ECF8FA 100%)' }}><div style={{ display:'flex', justifyContent:'space-between', gap:12 }}><div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Después de la sesión</div><div style={{ marginTop:3, fontSize:21, color:c.ink, fontWeight:950 }}>{rutina?.nombre || 'Rutina semanal'}</div><div style={{ marginTop:6, fontSize:13, color:c.muted, lineHeight:1.4 }}>Mezclá movilidad, gimnasio, campo, agentes físicos e indicaciones.</div></div><div style={{ minWidth:80, background:'#fff', border:`1px solid ${c.border}`, borderRadius:18, padding:12, textAlign:'center' }}><div style={{ fontSize:24, color:c.ink, fontWeight:950 }}>{itemsCount}</div><div style={{ fontSize:10, color:c.muted, fontWeight:850 }}>ítems</div></div></div><div style={{ display:'grid', gap:10, marginTop:14 }}><select style={input} value={frecuencia} onChange={e=>setFrecuencia(e.target.value)}><option>2 veces antes del próximo control</option><option>3 veces antes del próximo control</option><option>2-3 veces antes del próximo control</option><option>Día por medio hasta el próximo control</option><option>Todos los días suave</option></select><div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>{CONTEXTOS_RUTINA.map(x=>{const a=focos.includes(x.id);return <button key={x.id} type="button" onClick={()=>toggleFoco(x.id)} style={{ border:`1px solid ${a?c.sky:c.border}`, background:a?'#E9F7FA':'#fff', borderRadius:999, padding:'8px 11px', fontSize:12, fontWeight:900, color:a?c.skyDark:c.ink, cursor:'pointer', fontFamily:'inherit' }}>{x.emoji} {x.label}</button>})}</div><div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))', gap:8 }}><button type="button" onClick={()=>openAdd('movilidad')} style={ghost}>＋ Movilidad</button><button type="button" onClick={()=>openAdd('ejercicio')} style={ghost}>＋ Gimnasio</button><button type="button" onClick={()=>openAdd('agente')} style={ghost}>＋ Agente</button></div></div></section>
 }
 const ghost = { border:`1px solid ${c.border}`, background:'#fff', color:c.skyDark, borderRadius:16, padding:'10px 12px', fontSize:13, fontWeight:950, cursor:'pointer', fontFamily:'inherit' }
+const small = { border:`1px solid ${c.border}`, background:'#fff', borderRadius:12, width:30, height:30, fontWeight:900, cursor:'pointer' }
 
 function Item({ item, index, update, remove, move }) {
   const t = TYPES[item.tipo] || TYPES.ejercicio
   const title = item.nombre || item.texto || t.label
   return <div style={{ border:`1px solid ${c.border}`, background:`linear-gradient(135deg,${t.bg} 0%,#fff 82%)`, borderRadius:20, padding:12 }}><div style={{ display:'flex', gap:10, alignItems:'flex-start' }}><div style={{ width:42, height:42, borderRadius:14, background:'#fff', color:t.color, display:'grid', placeItems:'center', fontWeight:950 }}>{t.icon}</div><div style={{ flex:1, minWidth:0 }}><div style={{ display:'flex', justifyContent:'space-between', gap:8 }}><div><div style={{ fontSize:10, color:t.color, fontWeight:950, textTransform:'uppercase' }}>{index+1}. {t.label}</div><div style={{ marginTop:4, fontSize:16, fontWeight:950, color:c.ink }}>{title}</div><div style={{ marginTop:4, fontSize:12, color:c.muted }}>{summarizeItem(item)}</div></div><div style={{ display:'flex', gap:4 }}><button type="button" onClick={()=>move(index,-1)} style={small}>↑</button><button type="button" onClick={()=>move(index,1)} style={small}>↓</button><button type="button" onClick={()=>remove(index)} style={{...small,color:c.danger}}>×</button></div></div><Fields item={item} index={index} update={update} /></div></div></div>
 }
-const small = { border:`1px solid ${c.border}`, background:'#fff', borderRadius:12, width:30, height:30, fontWeight:900, cursor:'pointer' }
 
 function Fields({ item, index, update }) {
   if (item.tipo === 'indicacion') return <textarea style={{...input,marginTop:10,minHeight:78}} value={item.texto||''} onChange={e=>update(index,{texto:e.target.value})} />
@@ -114,9 +134,10 @@ export default function ClinicalRoutineEditorPremium({ rutina, onChange }) {
   function emit(nextItems=items,nextContexto=contexto,nextFrecuencia=frecuencia,nextFocos=focos){setItems(nextItems);setContexto(nextContexto);setFrecuencia(nextFrecuencia);setFocos(nextFocos);onChange?.({contexto:nextContexto,ejercicios:nextItems,frecuencia:nextFrecuencia,focos:nextFocos})}
   function openAdd(type=null){setPreferredType(type);setAddOpen(true)}
   function addItem(item){emit([...items,item]);setAddOpen(false)}
+  function applyTemplate(t){emit((t.items||[]).map(x=>({...x})), t.focos?.[0] || contexto, t.frecuencia || frecuencia, t.focos || focos)}
   function updateItem(i,patch){emit(items.map((it,idx)=>idx===i?{...it,...patch}:it))}
   function removeItem(i){emit(items.filter((_,idx)=>idx!==i))}
   function moveItem(i,dir){const t=i+dir;if(t<0||t>=items.length)return;const copy=[...items];const [it]=copy.splice(i,1);copy.splice(t,0,it);emit(copy)}
   function toggleFoco(id){const next=focos.includes(id)?focos.filter(x=>x!==id):[...focos,id];emit(items,next[0]||contexto,frecuencia,next.length?next:[id])}
-  return <div style={{ display:'grid', gap:12, overflowX:'hidden' }}><Header rutina={rutina} frecuencia={frecuencia} setFrecuencia={(v)=>emit(items,contexto,v,focos)} focos={focos} toggleFoco={toggleFoco} itemsCount={items.length} openAdd={openAdd} />{addOpen&&<AddPanel preferredType={preferredType} focos={focos} onAdd={addItem} onClose={()=>setAddOpen(false)} />}<section style={{...card,padding:16}}><div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}><div><div style={{ fontSize:18, fontWeight:950, color:c.ink }}>Secuencia semanal</div><div style={{ fontSize:12, color:c.muted, marginTop:4 }}>Orden real de la rutina.</div></div><button type="button" onClick={()=>openAdd(null)} style={ghost}>+ Agregar bloque</button></div><div style={{ display:'grid', gap:10, marginTop:12 }}>{items.length===0&&<div style={{border:`1px dashed ${c.border}`,borderRadius:20,padding:22,textAlign:'center',color:c.muted}}>Todavía no hay ítems.</div>}{items.map((item,i)=><Item key={i} item={item} index={i} update={updateItem} remove={removeItem} move={moveItem} />)}</div></section></div>
+  return <div style={{ display:'grid', gap:12, overflowX:'hidden' }}><Header rutina={rutina} frecuencia={frecuencia} setFrecuencia={(v)=>emit(items,contexto,v,focos)} focos={focos} toggleFoco={toggleFoco} itemsCount={items.length} openAdd={openAdd} /><TemplatePanel onApply={applyTemplate} />{addOpen&&<AddPanel preferredType={preferredType} focos={focos} onAdd={addItem} onClose={()=>setAddOpen(false)} />}<section style={{...card,padding:16}}><div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}><div><div style={{ fontSize:18, fontWeight:950, color:c.ink }}>Secuencia semanal</div><div style={{ fontSize:12, color:c.muted, marginTop:4 }}>Orden real de la rutina.</div></div><button type="button" onClick={()=>openAdd(null)} style={ghost}>+ Agregar bloque</button></div><div style={{ display:'grid', gap:10, marginTop:12 }}>{items.length===0&&<div style={{border:`1px dashed ${c.border}`,borderRadius:20,padding:22,textAlign:'center',color:c.muted}}>Todavía no hay ítems.</div>}{items.map((item,i)=><Item key={i} item={item} index={i} update={updateItem} remove={removeItem} move={moveItem} />)}</div></section></div>
 }
