@@ -11,7 +11,7 @@ import {
   normalizeRoutineItems,
   summarizeItem,
 } from './clinicalRoutineUtils.js'
-import { getPremiumExerciseGroups, getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
+import { getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
 import { CLINICAL_ROUTINE_TEMPLATES } from './clinicalRoutineTemplates.js'
 
 const c = {
@@ -42,6 +42,68 @@ const STEP_LABELS = [
   { title: 'Seleccionar ejercicios', sub: 'Armado por bloque' },
   { title: 'Resumen', sub: 'Revisá y guardá' },
 ]
+
+const MUSCLES_BY_ARTICULATION = {
+  Todos: ['Todos'],
+  tobillo: ['Todos', 'Gemelos', 'Sóleo', 'Tibial anterior', 'Tibial posterior', 'Peroneos', 'Flexores plantares', 'Extensores del pie'],
+  rodilla: ['Todos', 'Cuádriceps', 'Recto femoral', 'Vasto medial', 'Vasto lateral', 'Isquiotibiales', 'Bíceps femoral', 'Semitendinoso', 'Semimembranoso', 'Gemelos', 'Poplíteo', 'Sartorio', 'Grácil', 'Tensor fascia lata'],
+  cadera: ['Todos', 'Glúteo mayor', 'Glúteo medio', 'Glúteo menor', 'Psoas', 'Ilíaco', 'Aductores', 'Abductores', 'Isquiotibiales', 'Piriforme', 'Rotadores externos', 'Tensor fascia lata', 'Cuádriceps'],
+  lumbar: ['Todos', 'Erectores espinales', 'Multífidos', 'Cuadrado lumbar', 'Transverso abdominal', 'Oblicuos', 'Recto abdominal', 'Glúteos', 'Psoas'],
+  dorsal: ['Todos', 'Dorsal ancho', 'Trapecio', 'Romboides', 'Serrato anterior', 'Erectores torácicos', 'Rotadores torácicos'],
+  hombro: ['Todos', 'Deltoides', 'Supraespinoso', 'Infraespinoso', 'Redondo menor', 'Subescapular', 'Bíceps', 'Tríceps', 'Pectoral', 'Dorsal ancho', 'Trapecio', 'Serrato anterior', 'Romboides'],
+  brazo: ['Todos', 'Bíceps', 'Tríceps', 'Braquial', 'Braquiorradial', 'Pronadores', 'Supinadores', 'Flexores de muñeca', 'Extensores de muñeca'],
+  core: ['Todos', 'Transverso abdominal', 'Recto abdominal', 'Oblicuos', 'Multífidos', 'Diafragma', 'Piso pélvico', 'Glúteos'],
+}
+
+function normalizeText(text = '') {
+  return String(text).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function exerciseMatchesMuscle(option, muscle) {
+  if (!muscle || muscle === 'Todos') return true
+  const haystack = normalizeText([
+    option.name,
+    option.group,
+    ...(option.tags || []),
+    ...(option.regiones || []),
+    ...(option.contracciones || []),
+  ].filter(Boolean).join(' '))
+  const wanted = normalizeText(muscle)
+  const aliases = {
+    'cuadriceps': ['cuadriceps', 'camilla de cuadriceps', 'extension de rodilla', 'sentadilla', 'prensa'],
+    'recto femoral': ['recto femoral', 'cuadriceps', 'elevacion de pierna'],
+    'vasto medial': ['vasto medial', 'cuadriceps', 'extension de rodilla'],
+    'vasto lateral': ['vasto lateral', 'cuadriceps', 'extension de rodilla'],
+    'isquiotibiales': ['isquiotibiales', 'isquiosurales', 'femoral', 'curl femoral', 'nordico', 'peso muerto'],
+    'biceps femoral': ['biceps femoral', 'femoral', 'isquiotibiales', 'curl femoral'],
+    'semitendinoso': ['semitendinoso', 'isquiotibiales', 'femoral'],
+    'semimembranoso': ['semimembranoso', 'isquiotibiales', 'femoral'],
+    'gemelos': ['gemelo', 'gemelos', 'talon', 'talones', 'elevacion de talones'],
+    'soleo': ['soleo', 'rodilla flexionada', 'talon', 'talones'],
+    'gluteo mayor': ['gluteo mayor', 'gluteo', 'hip thrust', 'puente'],
+    'gluteo medio': ['gluteo medio', 'abduccion', 'caminata lateral', 'clamshell'],
+    'gluteo menor': ['gluteo menor', 'abduccion', 'clamshell'],
+    'psoas': ['psoas', 'flexor de cadera', 'elevacion de pierna'],
+    'aductores': ['aductor', 'aductores', 'copenhagen', 'aduccion'],
+    'abductores': ['abductor', 'abductores', 'abduccion', 'gluteo medio'],
+    'rotadores externos': ['rotacion externa', 'piriforme', 'rotadores'],
+    'deltoides': ['deltoides', 'elevacion', 'hombro'],
+    'supraespinoso': ['supraespinoso', 'plano escapular', 'rotadores'],
+    'infraespinoso': ['infraespinoso', 'rotacion externa', 'rotadores'],
+    'redondo menor': ['redondo menor', 'rotacion externa', 'rotadores'],
+    'subescapular': ['subescapular', 'rotacion interna', 'rotadores'],
+    'serrato anterior': ['serrato', 'push up plus', 'serrato punch'],
+    'dorsal ancho': ['dorsal ancho', 'pullover', 'jalon', 'dorsal'],
+    'trapecio': ['trapecio', 'face pull', 'remo', 'escapular'],
+    'romboides': ['romboides', 'remo', 'escapular'],
+    'transverso abdominal': ['transverso', 'core', 'dead bug', 'pallof'],
+    'oblicuos': ['oblicuo', 'oblicuos', 'plancha lateral', 'pallof'],
+    'recto abdominal': ['recto abdominal', 'curl up', 'plancha'],
+    'erectores espinales': ['erectores', 'extension lumbar', 'bisagra'],
+    'multifidos': ['multifido', 'multifidos', 'bird dog', 'lumbar'],
+  }
+  return (aliases[wanted] || [wanted]).some(alias => haystack.includes(alias))
+}
 
 function itemType(item) {
   if (item.tipo === 'ejercicio') return 'ejercicio'
@@ -126,13 +188,18 @@ function SelectedItem({ item, index, update, remove }) {
   </div>
 }
 
+function FilterField({ label, children }) {
+  return <label style={{ display: 'grid', gap: 6, minWidth: 0 }}><span style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.08em' }}>{label}</span>{children}</label>
+}
+
 function ExerciseLibrary({ selectedBlock, items, setItems }) {
   const [search, setSearch] = useState('')
-  const [group, setGroup] = useState('Todos')
   const [region, setRegion] = useState('Todos')
+  const [muscle, setMuscle] = useState('Todos')
   const [contraction, setContraction] = useState('Todos')
-  const groups = useMemo(() => getPremiumExerciseGroups(), [])
-  const options = useMemo(() => getPremiumExerciseOptions('gimnasio', search, group, region, contraction).slice(0, 60), [search, group, region, contraction])
+  const muscleOptions = MUSCLES_BY_ARTICULATION[region] || MUSCLES_BY_ARTICULATION.Todos
+  const allOptions = useMemo(() => getPremiumExerciseOptions('gimnasio', search, 'Todos', region, contraction), [search, region, contraction])
+  const options = useMemo(() => allOptions.filter(opt => exerciseMatchesMuscle(opt, muscle)).slice(0, 60), [allOptions, muscle])
   const selected = items.filter(x => itemType(x) === selectedBlock)
   const presets = { movilidad: MOVILIDAD_PRESETS, cardio: CARDIO_PRESETS, campo: CAMPO_PRESETS, agente: AGENTES_FISICOS, indicacion: ['No superar dolor 5/10', 'Priorizar técnica y control', 'Suspender si aumenta inflamación', 'Repetir 2 a 3 veces antes del próximo control'] }
 
@@ -158,7 +225,14 @@ function ExerciseLibrary({ selectedBlock, items, setItems }) {
     <section style={{ ...card, padding: 14, minWidth: 0 }}>
       <div style={{ fontSize: 17, fontWeight: 950, color: c.ink }}>Biblioteca</div>
       {selectedBlock === 'ejercicio' ? <>
-        <div style={{ display: 'grid', gap: 8, marginTop: 12 }}><input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ejercicio..." /><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}><select style={input} value={region} onChange={e => setRegion(e.target.value)}>{ARTICULACION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select><select style={input} value={contraction} onChange={e => setContraction(e.target.value)}>{CONTRACCION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select><select style={input} value={group} onChange={e => setGroup(e.target.value)}>{groups.map(g => <option key={g}>{g}</option>)}</select></div></div>
+        <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          <input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ejercicio..." />
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(145px,1fr))', gap: 8 }}>
+            <FilterField label="Articulación"><select style={input} value={region} onChange={e => { setRegion(e.target.value); setMuscle('Todos') }}>{ARTICULACION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></FilterField>
+            <FilterField label="Músculo"><select style={input} value={muscle} onChange={e => setMuscle(e.target.value)}>{muscleOptions.map(x => <option key={x} value={x}>{x}</option>)}</select></FilterField>
+            <FilterField label="Tipo de contracción"><select style={input} value={contraction} onChange={e => setContraction(e.target.value)}>{CONTRACCION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select></FilterField>
+          </div>
+        </div>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 12 }}>{options.map(opt => <button key={`${opt.group}-${opt.name}`} type="button" onClick={() => addItem(emptyItem('ejercicio', { nombre: opt.name, group: opt.group, imagen: opt.images?.[0], indicacion: opt.contracciones?.includes('excentrica') ? 'Bajada lenta y controlada' : '' }))} style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}><div style={{ fontSize: 14, fontWeight: 950, color: c.ink }}>{opt.name}</div><div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}><span style={tag}>{opt.group}</span>{(opt.contracciones || []).slice(0, 2).map(x => <span key={x} style={tag2}>{x}</span>)}</div><div style={{ marginTop: 10, color: c.skyDark, fontSize: 12, fontWeight: 950 }}>Agregar</div></button>)}</div>
       </> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 12 }}>{(presets[selectedBlock] || []).map(name => <button key={name} type="button" onClick={() => addItem(emptyItem(selectedBlock, selectedBlock === 'indicacion' ? { texto: name } : { nombre: name }))} style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}><div style={{ fontSize: 14, fontWeight: 950, color: c.ink }}>{name}</div><div style={{ marginTop: 5, color: c.muted, fontSize: 12 }}>Agregar y ajustar dosis</div></button>)}</div>}
     </section>
@@ -227,7 +301,7 @@ export default function ClinicalRoutineEditorPremium({ rutina, onChange, onGener
     </div>}
 
     {step === 3 && <section style={{ display: 'grid', gap: 12 }}>
-      <section style={{ ...card, padding: 12 }}><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Bloques de la rutina</div><div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 10 }}>{blocks.map(id => { const b = BLOCKS[id]; const a = selectedBlock === id; return <button key={id} type="button" onClick={() => setSelectedBlock(id)} style={{ border: `1px solid ${a ? b.color : c.border}`, background: a ? b.bg : '#fff', color: a ? b.color : c.ink, borderRadius: 999, padding: '9px 12px', fontWeight: 950, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{b.icon} {b.label}</button> })}</div></section>
+      <section style={{ ...card, padding: 12 }}><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Bloques seleccionados</div><div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', overflowX: 'visible', paddingTop: 10 }}>{blocks.map(id => { const b = BLOCKS[id]; const a = selectedBlock === id; return <button key={id} type="button" onClick={() => setSelectedBlock(id)} style={{ border: `1px solid ${a ? b.color : c.border}`, background: a ? b.bg : '#fff', color: a ? b.color : c.ink, borderRadius: 999, padding: '9px 12px', fontWeight: 950, fontFamily: 'inherit', whiteSpace: 'normal', lineHeight: 1.15, maxWidth: '100%' }}>{b.icon} {b.label}</button> })}</div></section>
       <ExerciseLibrary selectedBlock={selectedBlock} items={items} setItems={setItems} />
       <Footer step={step} setStep={setStep} />
     </section>}
