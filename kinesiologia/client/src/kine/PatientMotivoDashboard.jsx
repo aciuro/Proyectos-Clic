@@ -14,9 +14,12 @@ const s = {
   card: { background: 'rgba(255,255,255,.96)', border: `1px solid ${c.border}`, borderRadius: 28, boxShadow: '0 14px 38px rgba(13,53,64,.07)' },
   btn: { border: `1px solid ${c.border}`, background: c.white, color: c.skyDark, borderRadius: 16, padding: '10px 13px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' },
   primary: { border: 0, background: `linear-gradient(135deg, ${c.sky}, ${c.skyDark})`, color: '#fff', borderRadius: 18, padding: '12px 16px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 14px 28px rgba(23,111,130,.22)' },
-  input: { width: '100%', border: `1px solid ${c.border}`, borderRadius: 15, padding: '12px 13px', color: c.ink, background: '#FFFFFF', outline: 'none', fontFamily: 'inherit', fontSize: 14, boxSizing: 'border-box' },
-  label: { fontSize: 12, color: c.ink2, fontWeight: 950, marginBottom: 6 },
+  input: { width: '100%', border: `1px solid ${c.border}`, borderRadius: 18, padding: '14px 15px', color: c.ink, background: '#FFFFFF', outline: 'none', fontFamily: 'inherit', fontSize: 16, boxSizing: 'border-box' },
+  label: { fontSize: 14, color: c.ink2, fontWeight: 950, marginBottom: 7, textAlign: 'center' },
 }
+
+const GRADO_OPTIONS = ['I', 'II', 'III', 'IV', 'NO APLICA']
+const painLabels = ['sin dolor', 'leve', 'leve', 'leve', 'moderado', 'moderado', 'moderado', 'intenso', 'intenso', 'intenso', 'máximo']
 
 function initials(p = {}) {
   const text = [p.nombre, p.apellido].filter(Boolean).join(' ') || p.nombre || 'Paciente'
@@ -41,11 +44,11 @@ function formatDate(value) {
   try { return new Date(`${value}T12:00`).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }) } catch { return value }
 }
 
-function SectionTitle({ eyebrow, title, children }) {
-  return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-end', marginBottom: 10 }}>
+function SectionTitle({ eyebrow, title, children, centered = false }) {
+  return <div style={{ display: 'flex', justifyContent: centered ? 'center' : 'space-between', gap: 12, alignItems: 'flex-end', marginBottom: 10, textAlign: centered ? 'center' : 'left' }}>
     <div>
       {eyebrow && <div style={{ fontSize: 11, letterSpacing: '.12em', textTransform: 'uppercase', color: c.muted, fontWeight: 950 }}>{eyebrow}</div>}
-      <div style={{ marginTop: 3, fontSize: 20, fontWeight: 950, color: c.ink, letterSpacing: '-.04em' }}>{title}</div>
+      <div style={{ marginTop: 3, fontSize: centered ? 28 : 20, fontWeight: 950, color: c.ink, letterSpacing: '-.04em', lineHeight: 1.05 }}>{title}</div>
     </div>
     {children}
   </div>
@@ -53,6 +56,16 @@ function SectionTitle({ eyebrow, title, children }) {
 
 function Field({ label, children }) {
   return <label style={{ display: 'block' }}><div style={s.label}>{label}</div>{children}</label>
+}
+
+function FormSection({ number, title, text, children }) {
+  return <section style={{ borderTop: `1px solid ${c.line}`, paddingTop: 18, display: 'grid', gap: 12 }}>
+    <div style={{ textAlign: 'center' }}>
+      <div style={{ fontSize: 21, fontWeight: 950, color: c.ink, letterSpacing: '-.03em' }}>{number}. {title}</div>
+      {text && <div style={{ margin: '6px auto 0', maxWidth: 310, color: c.muted, fontSize: 15, lineHeight: 1.25, fontWeight: 850 }}>{text}</div>}
+    </div>
+    {children}
+  </section>
 }
 
 function PatientHero({ paciente, saldo, onBack, onNewMotivo, onLegacy }) {
@@ -109,9 +122,12 @@ function MiniStat({ label, value }) {
 }
 
 function MotivoModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ sintoma: '', diagnostico: '', grado: 'No aplica', monto_sesion: '', estado: 'activo' })
+  const [form, setForm] = useState({
+    sintoma: '', diagnostico: '', grado: 'NO APLICA', signos_sintomas: '', dolor: '', monto_sesion: '', estado: 'activo'
+  })
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+
   async function submit(e) {
     e.preventDefault()
     setError('')
@@ -124,6 +140,8 @@ function MotivoModal({ onClose, onSave }) {
         sintoma,
         lesion: sintoma,
         diagnostico: form.diagnostico.trim(),
+        signos_sintomas: form.signos_sintomas.trim(),
+        dolor: form.dolor === '' ? null : Number(form.dolor),
         monto_sesion: form.monto_sesion || null,
       })
       onClose()
@@ -131,25 +149,91 @@ function MotivoModal({ onClose, onSave }) {
       setError(err?.message || 'No se pudo guardar el motivo de consulta.')
     } finally { setSaving(false) }
   }
-  return <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.44)', zIndex: 200, display: 'grid', placeItems: 'center', padding: 16 }}>
-    <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{ ...s.card, width: '100%', maxWidth: 440, padding: 18, display: 'grid', gap: 12, background: '#FFFFFF' }}>
-      <SectionTitle eyebrow="Nuevo" title="Motivo de consulta" />
-      <Field label="Motivo / lesión">
-        <input style={s.input} value={form.sintoma} onChange={e => setForm(f => ({ ...f, sintoma: e.target.value }))} placeholder="Ej: Tendinopatía rotuliana" required />
-      </Field>
-      <Field label="Diagnóstico o detalle">
-        <input style={s.input} value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} placeholder="Ej: grado II, cadena posterior, edema óseo..." />
-      </Field>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
-        <Field label="Grado">
-          <input style={s.input} value={form.grado} onChange={e => setForm(f => ({ ...f, grado: e.target.value }))} placeholder="No aplica" />
+
+  return <div
+    onClick={onClose}
+    style={{
+      position: 'fixed', inset: 0, background: 'rgba(8,43,52,.44)', zIndex: 200,
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      padding: 'max(14px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom))',
+      boxSizing: 'border-box', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+    }}
+  >
+    <form
+      onSubmit={submit}
+      onClick={e => e.stopPropagation()}
+      style={{
+        ...s.card, width: '100%', maxWidth: 460, maxHeight: 'calc(100dvh - 24px)',
+        overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 18px 0',
+        display: 'grid', gap: 16, background: '#FFFFFF', boxSizing: 'border-box', textAlign: 'center'
+      }}
+    >
+      <SectionTitle eyebrow="Nuevo" title="Motivo de consulta" centered />
+
+      <FormSection number="1" title="Motivo de consulta" text="Qué trae al paciente a consulta.">
+        <Field label="Motivo de consulta">
+          <input style={s.input} value={form.sintoma} onChange={e => setForm(f => ({ ...f, sintoma: e.target.value }))} placeholder="Ej: Dolor rodilla derecha" required />
         </Field>
+      </FormSection>
+
+      <FormSection number="2" title="Diagnóstico médico" text="Diagnóstico informado o presuntivo, con grado si corresponde.">
+        <Field label="Diagnóstico médico">
+          <input style={s.input} value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} placeholder="Ej: Tendinopatía rotuliana" />
+        </Field>
+        <Field label="Grado">
+          <select style={s.input} value={form.grado} onChange={e => setForm(f => ({ ...f, grado: e.target.value }))}>
+            {GRADO_OPTIONS.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+          </select>
+        </Field>
+      </FormSection>
+
+      <FormSection number="3" title="Signos, síntomas y dolor" text="Registro clínico rápido para seguir la evolución.">
+        <Field label="Signos y síntomas">
+          <textarea
+            style={{ ...s.input, minHeight: 104, resize: 'vertical' }}
+            value={form.signos_sintomas}
+            onChange={e => setForm(f => ({ ...f, signos_sintomas: e.target.value }))}
+            placeholder="Ej: dolor al bajar escaleras, edema leve, dolor a la palpación, rigidez matinal..."
+          />
+        </Field>
+        <div>
+          <div style={s.label}>Dolor actual</div>
+          <div style={{ marginTop: -2, marginBottom: 9, color: c.muted, fontSize: 12, fontWeight: 800 }}>Escala 0 a 10: 0 sin dolor, 10 peor dolor imaginable.</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
+            {Array.from({ length: 11 }, (_, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, dolor: i }))}
+                style={{
+                  border: `1px solid ${form.dolor === i ? c.sky : c.border}`,
+                  background: form.dolor === i ? c.sky : '#fff',
+                  color: form.dolor === i ? '#fff' : c.ink,
+                  borderRadius: 12,
+                  padding: '9px 0',
+                  fontWeight: 950,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer'
+                }}
+              >{i}</button>
+            ))}
+          </div>
+          <div style={{ marginTop: 8, color: c.ink2, fontSize: 12, fontWeight: 900 }}>{form.dolor === '' ? 'Sin seleccionar' : `${form.dolor}/10 · ${painLabels[form.dolor]}`}</div>
+        </div>
+      </FormSection>
+
+      <FormSection number="4" title="Monto de sesión" text="Dato administrativo para cobros y saldo.">
         <Field label="Monto sesión">
           <input style={s.input} value={form.monto_sesion} onChange={e => setForm(f => ({ ...f, monto_sesion: e.target.value }))} placeholder="$" inputMode="numeric" />
         </Field>
-      </div>
-      {error && <div style={{ border: `1px solid #F5A897`, background: c.redSoft, color: c.red, borderRadius: 14, padding: '10px 12px', fontSize: 13, fontWeight: 800 }}>{error}</div>}
-      <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
+      </FormSection>
+
+      {error && <div style={{ border: `1px solid #F5A897`, background: c.redSoft, color: c.red, borderRadius: 16, padding: '11px 12px', fontSize: 13, fontWeight: 850 }}>{error}</div>}
+
+      <div style={{
+        display: 'flex', gap: 9, justifyContent: 'center', flexWrap: 'wrap', position: 'sticky', bottom: 0,
+        background: '#FFFFFF', padding: '13px 0 16px', borderTop: `1px solid ${c.line}`, zIndex: 2
+      }}>
         <button type="button" onClick={onClose} style={s.btn}>Cancelar</button>
         <button type="submit" disabled={saving} style={{ ...s.primary, opacity: saving ? .65 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
       </div>
