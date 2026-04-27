@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { api } from './api.js'
 import ClinicalRoutineEditorWizard from './ClinicalRoutineEditorWizard.jsx'
 import { buildRoutinePayload, getRoutineContext, normalizeRoutineItems, summarizeItem } from './clinicalRoutineUtils.js'
@@ -148,6 +148,8 @@ function EmptyState({ onCreate }) {
 export default function ClinicalRoutinePatientPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const requestedMotivoId = new URLSearchParams(location.search).get('motivoId') || ''
   const [paciente, setPaciente] = useState(null)
   const [motivos, setMotivos] = useState([])
   const [motivoId, setMotivoId] = useState('')
@@ -161,7 +163,8 @@ export default function ClinicalRoutinePatientPage() {
       const [p, ms] = await Promise.all([api.getPaciente(id), api.getMotivos(id)])
       setPaciente(p)
       setMotivos(ms)
-      const selected = motivoId || ms[0]?.id || ''
+      const requestedExists = requestedMotivoId && ms.some(m => String(m.id) === String(requestedMotivoId))
+      const selected = motivoId || (requestedExists ? requestedMotivoId : '') || ms[0]?.id || ''
       setMotivoId(selected)
       if (selected) setRutinas(await api.getRutinas(selected))
       else setRutinas([])
@@ -170,7 +173,7 @@ export default function ClinicalRoutinePatientPage() {
     }
   }
 
-  useEffect(() => { load() }, [id])
+  useEffect(() => { load() }, [id, requestedMotivoId])
   useEffect(() => {
     if (!motivoId) return
     api.getRutinas(motivoId).then(setRutinas).catch(() => setRutinas([]))
