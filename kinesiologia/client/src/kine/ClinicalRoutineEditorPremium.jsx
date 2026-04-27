@@ -4,10 +4,8 @@ import {
   ARTICULACION_FILTROS,
   CAMPO_PRESETS,
   CARDIO_PRESETS,
-  CONTEXTOS_RUTINA,
   CONTRACCION_FILTROS,
   MOVILIDAD_PRESETS,
-  getRoutineContext,
   getRoutineFocus,
   getRoutineFrequency,
   normalizeRoutineItems,
@@ -16,131 +14,230 @@ import {
 import { getPremiumExerciseGroups, getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
 import { CLINICAL_ROUTINE_TEMPLATES } from './clinicalRoutineTemplates.js'
 
-const c = { ink:'#082B34', muted:'#789FAA', sky:'#2F9FB2', skyDark:'#176F82', border:'rgba(83,151,166,.30)', white:'#fff', danger:'#B91C1C' }
-const input = { width:'100%', borderRadius:16, border:`1px solid ${c.border}`, background:'#fff', padding:'11px 13px', fontSize:14, color:c.ink, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }
-const card = { background:'rgba(255,255,255,.96)', border:`1px solid ${c.border}`, borderRadius:24, boxShadow:'0 12px 34px rgba(13,53,64,.06)' }
-const tag = { fontSize:10, color:c.skyDark, background:'#E9F7FA', borderRadius:999, padding:'4px 7px', fontWeight:900 }
-const tag2 = { fontSize:10, color:'#5B21B6', background:'#F6F1FF', borderRadius:999, padding:'4px 7px', fontWeight:900 }
-const addBtn = { border:'none', borderRadius:14, background:'linear-gradient(135deg,#2F9FB2 0%,#176F82 100%)', color:'#fff', padding:'10px 12px', fontWeight:950, cursor:'pointer', fontFamily:'inherit', flexShrink:0 }
-const ghost = { border:`1px solid ${c.border}`, background:'#fff', color:c.skyDark, borderRadius:16, padding:'10px 12px', fontSize:13, fontWeight:950, cursor:'pointer', fontFamily:'inherit' }
-const small = { border:`1px solid ${c.border}`, background:'#fff', borderRadius:12, width:30, height:30, fontWeight:900, cursor:'pointer' }
-
-const TYPES = {
-  movilidad:{ label:'Movilidad', icon:'●', hint:'Caminar, bici, elíptico o movilidad articular.', bg:'#EAFBF5', color:'#13795B' },
-  ejercicio:{ label:'Gimnasio', icon:'⌁', hint:'Ejercicios por articulación y tipo de contracción.', bg:'#EFF8FF', color:'#075985' },
-  campo:{ label:'Campo', icon:'↗', hint:'Pasadas, trote e intermitentes.', bg:'#FFF9E8', color:'#7A5C00' },
-  cardio:{ label:'Cardio', icon:'◌', hint:'Bloque aeróbico por tiempo o intensidad.', bg:'#F1F5FF', color:'#334E99' },
-  agente:{ label:'Agente físico', icon:'❄', hint:'Hielo, calor o contraste al finalizar.', bg:'#F0FDFF', color:'#0E7490' },
-  indicacion:{ label:'Indicación', icon:'□', hint:'Dolor permitido, técnica o cuidados.', bg:'#F6F1FF', color:'#5B21B6' },
+const c = {
+  ink: '#082B34', ink2: '#315F68', muted: '#789FAA', sky: '#2F9FB2', skyDark: '#176F82',
+  border: 'rgba(83,151,166,.30)', white: '#fff', soft: '#F4FAFB', danger: '#B91C1C', green: '#159A6A', purple: '#7C5CE8'
 }
 
-function emptyItem(tipo) {
-  if (tipo === 'movilidad') return { tipo, bloque:'movilidad', nombre:'Bicicleta fija', duracion:'10 min', detalle:'Entrada en calor suave' }
-  if (tipo === 'cardio') return { tipo, bloque:'gimnasio', nombre:'Bicicleta fija', duracion:'10 min', intensidad:'suave', detalle:'' }
-  if (tipo === 'campo') return { tipo, bloque:'campo', nombre:'Intermitente', detalle:'8 x (30 seg rápido / 30 seg lento)' }
-  if (tipo === 'agente') return { tipo, bloque:'post', nombre:'Hielo', duracion:'15 min', frecuencia:'post entrenamiento', detalle:'' }
-  if (tipo === 'indicacion') return { tipo, bloque:'indicacion', texto:'Repetir 2 a 3 veces antes del próximo control. No superar dolor 5/10.' }
-  return { tipo:'ejercicio', bloque:'gimnasio', nombre:'Ejercicio libre', series:'3', repeticiones:'10', pausa:'', indicacion:'' }
+const card = { background: 'rgba(255,255,255,.96)', border: `1px solid ${c.border}`, borderRadius: 24, boxShadow: '0 12px 34px rgba(13,53,64,.06)' }
+const input = { width: '100%', borderRadius: 16, border: `1px solid ${c.border}`, background: '#fff', padding: '12px 13px', fontSize: 14, color: c.ink, outline: 'none', fontFamily: 'inherit', boxSizing: 'border-box' }
+const ghost = { border: `1px solid ${c.border}`, background: '#fff', color: c.skyDark, borderRadius: 16, padding: '10px 13px', fontSize: 13, fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }
+const primary = { border: 'none', background: `linear-gradient(135deg, ${c.sky} 0%, ${c.skyDark} 100%)`, color: '#fff', borderRadius: 18, padding: '12px 16px', fontSize: 13, fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 14px 28px rgba(23,111,130,.22)' }
+const tag = { fontSize: 10, color: c.skyDark, background: '#E9F7FA', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }
+const tag2 = { fontSize: 10, color: '#5B21B6', background: '#F6F1FF', borderRadius: 999, padding: '4px 7px', fontWeight: 900 }
+
+const BLOCKS = {
+  movilidad: { label: 'Movilidad', icon: '●', hint: 'Caminar, bici, elíptico o movilidad articular.', bg: '#EAFBF5', color: '#13795B' },
+  ejercicio: { label: 'Gimnasio', icon: '⌁', hint: 'Ejercicios por articulación y tipo de contracción.', bg: '#EFF8FF', color: '#075985' },
+  agente: { label: 'Agente físico', icon: '❄', hint: 'Frío, calor o contraste.', bg: '#F0FDFF', color: '#0E7490' },
+  campo: { label: 'Intermitente / campo', icon: '↗', hint: 'Pasadas, trote, cambios de ritmo.', bg: '#FFF9E8', color: '#7A5C00' },
+  cardio: { label: 'Cardio', icon: '◌', hint: 'Bloque aeróbico por tiempo o intensidad.', bg: '#F1F5FF', color: '#334E99' },
+  indicacion: { label: 'Indicación', icon: '□', hint: 'Cuidados, dolor permitido o técnica.', bg: '#F6F1FF', color: '#5B21B6' },
 }
 
-function TypeSelector({ type, setType }) {
-  if (type) {
-    const t = TYPES[type]
-    return <div style={{ border:`1px solid ${c.border}`, borderRadius:18, background:'#fff', padding:12, display:'flex', justifyContent:'space-between', gap:10, alignItems:'center' }}>
-      <div style={{ display:'flex', gap:10, alignItems:'center', minWidth:0 }}><div style={{ width:40, height:40, borderRadius:14, background:t.bg, color:t.color, display:'grid', placeItems:'center', fontWeight:950, flexShrink:0 }}>{t.icon}</div><div style={{ minWidth:0 }}><div style={{ fontSize:12, color:c.muted }}>Tipo seleccionado</div><div style={{ fontSize:17, fontWeight:950, color:c.ink }}>{t.label}</div></div></div>
-      <button type="button" onClick={() => setType(null)} style={{ border:'none', background:'transparent', color:c.skyDark, fontWeight:950, cursor:'pointer', fontFamily:'inherit' }}>Cambiar</button>
-    </div>
-  }
-  return <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(145px,1fr))', gap:10 }}>
-    {Object.entries(TYPES).map(([id,t]) => <button key={id} type="button" onClick={() => setType(id)} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:22, padding:15, textAlign:'left', cursor:'pointer', minHeight:112, fontFamily:'inherit' }}>
-      <div style={{ width:40, height:40, borderRadius:15, background:t.bg, color:t.color, display:'grid', placeItems:'center', fontWeight:950 }}>{t.icon}</div><div style={{ marginTop:9, fontSize:16, fontWeight:950, color:c.ink }}>{t.label}</div><div style={{ marginTop:5, fontSize:12, color:c.muted, lineHeight:1.32 }}>{t.hint}</div>
-    </button>)}
+const BLOCK_ORDER = ['movilidad', 'ejercicio', 'agente', 'campo', 'cardio', 'indicacion']
+const STEP_LABELS = [
+  { title: 'Info general', sub: 'Datos principales' },
+  { title: 'Bloques y frecuencia', sub: 'Estructura' },
+  { title: 'Seleccionar ejercicios', sub: 'Armado por bloque' },
+  { title: 'Resumen', sub: 'Revisá y guardá' },
+]
+
+function itemType(item) {
+  if (item.tipo === 'ejercicio') return 'ejercicio'
+  if (item.tipo && BLOCKS[item.tipo]) return item.tipo
+  if (item.bloque === 'gimnasio') return 'ejercicio'
+  if (item.bloque && BLOCKS[item.bloque]) return item.bloque
+  return 'ejercicio'
+}
+
+function emptyItem(tipo, patch = {}) {
+  if (tipo === 'movilidad') return { tipo, bloque: 'movilidad', nombre: 'Bicicleta fija', duracion: '10 min', detalle: 'Entrada en calor suave', ...patch }
+  if (tipo === 'cardio') return { tipo, bloque: 'cardio', nombre: 'Bicicleta fija', duracion: '10 min', intensidad: 'suave', detalle: '', ...patch }
+  if (tipo === 'campo') return { tipo, bloque: 'campo', nombre: 'Intermitente', detalle: '8 x (30 seg rápido / 30 seg lento)', ...patch }
+  if (tipo === 'agente') return { tipo, bloque: 'post', nombre: 'Hielo', duracion: '15 min', frecuencia: 'post entrenamiento', detalle: '', ...patch }
+  if (tipo === 'indicacion') return { tipo, bloque: 'indicacion', texto: 'No superar dolor 5/10. Priorizar técnica.', ...patch }
+  return { tipo: 'ejercicio', bloque: 'gimnasio', nombre: 'Ejercicio libre', series: '3', repeticiones: '10', pausa: '60 seg', indicacion: '', ...patch }
+}
+
+function Stepper({ step, setStep }) {
+  return <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 8, margin: '6px 0 12px' }}>
+    {STEP_LABELS.map((st, i) => {
+      const n = i + 1
+      const done = step > n
+      const active = step === n
+      return <button key={st.title} type="button" onClick={() => setStep(n)} style={{ border: 'none', background: 'transparent', padding: 0, display: 'flex', gap: 8, alignItems: 'center', textAlign: 'left', fontFamily: 'inherit', cursor: 'pointer', minWidth: 0 }}>
+        <span style={{ width: 28, height: 28, borderRadius: 999, display: 'grid', placeItems: 'center', flexShrink: 0, background: done || active ? c.sky : '#EFF6F8', color: done || active ? '#fff' : c.skyDark, border: `1px solid ${done || active ? c.sky : c.border}`, fontWeight: 950, fontSize: 13 }}>{done ? '✓' : n}</span>
+        <span style={{ minWidth: 0 }}><span style={{ display: 'block', color: active ? c.ink : c.ink2, fontWeight: 950, fontSize: 12, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{st.title}</span><span style={{ display: 'block', color: c.muted, fontWeight: 700, fontSize: 10, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{st.sub}</span></span>
+      </button>
+    })}
   </div>
-}
-
-function ChipGroup({ title, items, value, onChange }) {
-  return <div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.08em', margin:'6px 0 7px' }}>{title}</div><div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>{items.map(it => { const a=value===it.id; return <button key={it.id} type="button" onClick={() => onChange(it.id)} style={{ border:`1px solid ${a?c.sky:c.border}`, background:a?'#E9F7FA':'#fff', color:a?c.skyDark:c.ink, borderRadius:999, padding:'8px 10px', fontSize:12, fontWeight:900, cursor:'pointer', fontFamily:'inherit' }}>{it.emoji ? `${it.emoji} ` : ''}{it.label}</button> })}</div></div>
 }
 
 function TemplatePanel({ onApply }) {
   const [open, setOpen] = useState(false)
-  if (!open) {
-    return <section style={{ ...card, padding:14, display:'flex', justifyContent:'space-between', gap:12, alignItems:'center', flexWrap:'wrap' }}>
-      <div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Plantillas clínicas</div><div style={{ marginTop:3, fontSize:15, fontWeight:950, color:c.ink }}>Cargar rutina base por lesión/fase</div></div>
-      <button type="button" onClick={() => setOpen(true)} style={ghost}>Usar plantilla</button>
-    </section>
-  }
-  return <section style={{ ...card, padding:14 }}>
-    <div style={{ display:'flex', justifyContent:'space-between', gap:10, alignItems:'center', marginBottom:10 }}><div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Plantillas clínicas</div><div style={{ marginTop:3, fontSize:15, fontWeight:950, color:c.ink }}>Elegí una base y después ajustala</div></div><button type="button" onClick={() => setOpen(false)} style={small}>×</button></div>
-    <div style={{ display:'grid', gap:8 }}>
-      {CLINICAL_ROUTINE_TEMPLATES.map(t => <button key={t.id} type="button" onClick={() => { onApply(t); setOpen(false) }} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:16, padding:12, textAlign:'left', cursor:'pointer', fontFamily:'inherit' }}>
-        <div style={{ display:'flex', justifyContent:'space-between', gap:10 }}><div style={{ fontSize:15, fontWeight:950, color:c.ink }}>{t.title}</div><span style={tag}>{t.region}</span></div>
-        <div style={{ marginTop:5, fontSize:12, color:c.muted, lineHeight:1.35 }}>{t.goal}</div>
-      </button>)}
+  return <section style={{ ...card, padding: 14 }}>
+    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+      <div><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Plantillas clínicas</div><div style={{ marginTop: 3, fontSize: 15, fontWeight: 950, color: c.ink }}>Cargar rutina base por lesión/fase</div></div>
+      <button type="button" onClick={() => setOpen(v => !v)} style={ghost}>{open ? 'Ocultar' : 'Usar plantilla'}</button>
     </div>
+    {open && <div style={{ display: 'grid', gap: 8, marginTop: 12 }}>
+      {CLINICAL_ROUTINE_TEMPLATES.map(t => <button key={t.id} type="button" onClick={() => { onApply(t); setOpen(false) }} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 16, padding: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10 }}><div style={{ fontSize: 15, fontWeight: 950, color: c.ink }}>{t.title}</div><span style={tag}>{t.region}</span></div>
+        <div style={{ marginTop: 5, fontSize: 12, color: c.muted, lineHeight: 1.35 }}>{t.goal}</div>
+      </button>)}
+    </div>}
   </section>
 }
 
-function AddPanel({ preferredType, focos, onAdd, onClose }) {
-  const [type, setType] = useState(preferredType || null)
+function Footer({ step, setStep, canNext = true }) {
+  return <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, marginTop: 14 }}>
+    <button type="button" onClick={() => setStep(Math.max(1, step - 1))} disabled={step === 1} style={{ ...ghost, opacity: step === 1 ? .45 : 1 }}>Atrás</button>
+    {step < 4 && <button type="button" onClick={() => setStep(Math.min(4, step + 1))} disabled={!canNext} style={{ ...primary, opacity: canNext ? 1 : .5 }}>Siguiente →</button>}
+  </div>
+}
+
+function BlockCard({ id, active, onToggle }) {
+  const b = BLOCKS[id]
+  return <button type="button" onClick={() => onToggle(id)} style={{ border: `1px solid ${active ? b.color : c.border}`, background: active ? `linear-gradient(135deg, ${b.bg} 0%, #fff 75%)` : '#fff', borderRadius: 20, padding: 13, minHeight: 126, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit', position: 'relative' }}>
+    <div style={{ position: 'absolute', top: 12, right: 12, width: 22, height: 22, borderRadius: 8, border: `1px solid ${active ? b.color : c.border}`, background: active ? b.color : '#fff', color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 950 }}>{active ? '✓' : ''}</div>
+    <div style={{ width: 42, height: 42, borderRadius: 15, background: b.bg, color: b.color, display: 'grid', placeItems: 'center', fontWeight: 950 }}>{b.icon}</div>
+    <div style={{ marginTop: 10, fontSize: 16, fontWeight: 950, color: c.ink }}>{b.label}</div>
+    <div style={{ marginTop: 5, fontSize: 12, color: c.muted, lineHeight: 1.3 }}>{b.hint}</div>
+  </button>
+}
+
+function SelectedItem({ item, index, update, remove }) {
+  const tipo = itemType(item)
+  const b = BLOCKS[tipo] || BLOCKS.ejercicio
+  return <div style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 10 }}>
+    <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+      <div style={{ width: 34, height: 34, borderRadius: 12, display: 'grid', placeItems: 'center', background: b.bg, color: b.color, fontWeight: 950, flexShrink: 0 }}>{index + 1}</div>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}><div style={{ color: c.ink, fontSize: 14, fontWeight: 950 }}>{item.nombre || item.texto || b.label}</div><button type="button" onClick={remove} style={{ border: 'none', background: 'transparent', color: c.danger, fontWeight: 950, cursor: 'pointer' }}>×</button></div>
+        <div style={{ marginTop: 8, display: 'grid', gap: 7 }}>
+          {tipo !== 'indicacion' && <input style={input} value={item.nombre || ''} onChange={e => update({ nombre: e.target.value })} placeholder="Nombre" />}
+          {tipo === 'ejercicio' && <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 7 }}><input style={input} value={item.series || ''} onChange={e => update({ series: e.target.value })} placeholder="Series" /><input style={input} value={item.repeticiones || ''} onChange={e => update({ repeticiones: e.target.value })} placeholder="Reps" /><input style={input} value={item.pausa || ''} onChange={e => update({ pausa: e.target.value })} placeholder="Pausa" /></div>}
+          {tipo !== 'ejercicio' && tipo !== 'indicacion' && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 7 }}><input style={input} value={item.duracion || ''} onChange={e => update({ duracion: e.target.value })} placeholder="Duración" /><input style={input} value={item.frecuencia || item.intensidad || ''} onChange={e => update(tipo === 'cardio' ? { intensidad: e.target.value } : { frecuencia: e.target.value })} placeholder="Frecuencia/intensidad" /></div>}
+          <textarea style={{ ...input, minHeight: 66, resize: 'vertical' }} value={item.indicacion || item.detalle || item.texto || ''} onChange={e => update(tipo === 'indicacion' ? { texto: e.target.value } : tipo === 'ejercicio' ? { indicacion: e.target.value } : { detalle: e.target.value })} placeholder="Indicaciones / detalle" />
+        </div>
+      </div>
+    </div>
+  </div>
+}
+
+function ExerciseLibrary({ selectedBlock, items, setItems }) {
   const [search, setSearch] = useState('')
   const [group, setGroup] = useState('Todos')
   const [region, setRegion] = useState('Todos')
   const [contraction, setContraction] = useState('Todos')
   const groups = useMemo(() => getPremiumExerciseGroups(), [])
-  const context = focos?.includes('gimnasio') ? 'gimnasio' : focos?.[0] || 'gimnasio'
-  const options = useMemo(() => getPremiumExerciseOptions(context, search, group, region, contraction).slice(0, 80), [context, search, group, region, contraction])
-  const presets = { movilidad:MOVILIDAD_PRESETS, cardio:CARDIO_PRESETS, campo:CAMPO_PRESETS, agente:AGENTES_FISICOS, indicacion:['Repetir 2 a 3 veces antes del próximo control','No superar dolor 5/10','Priorizar técnica y control','Suspender si aumenta inflamación'] }
-  function add(tipo, patch={}) { onAdd({ ...emptyItem(tipo), ...patch }) }
+  const options = useMemo(() => getPremiumExerciseOptions('gimnasio', search, group, region, contraction).slice(0, 60), [search, group, region, contraction])
+  const selected = items.filter(x => itemType(x) === selectedBlock)
+  const presets = { movilidad: MOVILIDAD_PRESETS, cardio: CARDIO_PRESETS, campo: CAMPO_PRESETS, agente: AGENTES_FISICOS, indicacion: ['No superar dolor 5/10', 'Priorizar técnica y control', 'Suspender si aumenta inflamación', 'Repetir 2 a 3 veces antes del próximo control'] }
 
-  return <section style={{ ...card, padding:0, overflow:'hidden', display:'flex', flexDirection:'column', maxHeight:'min(72dvh,680px)', overscrollBehavior:'contain' }}>
-    <div style={{ padding:16, paddingBottom:12, background:'rgba(255,255,255,.98)', borderBottom:`1px solid ${c.border}`, flexShrink:0 }}>
-      <div style={{ display:'flex', justifyContent:'space-between', gap:12, marginBottom:12, alignItems:'flex-start' }}><div style={{ minWidth:0 }}><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Agregar bloque</div><div style={{ fontSize:19, fontWeight:950, color:c.ink, marginTop:3 }}>{type ? 'Filtrá y elegí' : 'Elegí qué querés agregar'}</div></div><button type="button" onClick={onClose} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:12, width:34, height:34, fontWeight:950, flexShrink:0 }}>×</button></div>
-      <TypeSelector type={type} setType={setType} />
-    </div>
-    <div style={{ flex:1, minHeight:0, overflowY:'auto', overflowX:'hidden', WebkitOverflowScrolling:'touch', overscrollBehaviorY:'contain', padding:'14px 16px 34px', scrollPaddingBottom:34 }}>
-      {!type && <div style={{ border:`1px dashed ${c.border}`, borderRadius:20, padding:18, textAlign:'center', color:c.muted }}>Elegí una categoría arriba para empezar.</div>}
-      {type === 'ejercicio' && <div style={{ overflowX:'hidden' }}>
-        <ChipGroup title="Región" items={ARTICULACION_FILTROS} value={region} onChange={setRegion} />
-        <ChipGroup title="Contracción" items={CONTRACCION_FILTROS} value={contraction} onChange={setContraction} />
-        <div style={{ display:'grid', gap:8, marginTop:11 }}><input style={input} value={search} onChange={e=>setSearch(e.target.value)} placeholder="Buscar: excéntrico, camilla, polea, unilateral..." /><select style={input} value={group} onChange={e=>setGroup(e.target.value)}>{groups.map(g=><option key={g}>{g}</option>)}</select></div>
-        <div style={{ marginTop:12, display:'grid', gap:8, paddingBottom:8 }}>{options.map(item => <div key={`${item.group}-${item.name}`} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:16, padding:12, display:'flex', justifyContent:'space-between', gap:10, alignItems:'center' }}><div style={{ minWidth:0 }}><div style={{ fontSize:15, fontWeight:950, color:c.ink }}>{item.name}</div><div style={{ display:'flex', gap:5, flexWrap:'wrap', marginTop:8 }}><span style={tag}>{item.group}</span>{(item.contracciones||[]).slice(0,2).map(x=><span key={x} style={tag2}>{x}</span>)}</div></div><button type="button" onClick={()=>add('ejercicio',{ nombre:item.name, group:item.group, imagen:item.images?.[0], series:'3', repeticiones:'10', indicacion:item.contracciones?.includes('excentrica')?'Bajada lenta y controlada':'' })} style={addBtn}>＋ Agregar</button></div>)}</div>
-      </div>}
-      {type && type !== 'ejercicio' && <div style={{ display:'grid', gap:8, paddingBottom:8 }}>{(presets[type]||[]).map(name => <button key={name} type="button" onClick={()=>add(type, type==='indicacion'?{texto:name}:{nombre:name, detalle:name==='Baño de contraste'?'1 min frío / 3 min calor · 3 a 4 rondas':''})} style={{ border:`1px solid ${c.border}`, background:'#fff', borderRadius:16, padding:13, textAlign:'left', cursor:'pointer', fontFamily:'inherit' }}><div style={{ fontSize:15, color:c.ink, fontWeight:950 }}>{name}</div><div style={{ marginTop:4, fontSize:12, color:c.muted }}>Agregar y ajustar parámetros.</div></button>)}</div>}
-    </div>
-  </section>
+  function addItem(item) { setItems([...items, item]) }
+  function updateSelected(localIndex, patch) {
+    let count = -1
+    setItems(items.map(it => {
+      if (itemType(it) !== selectedBlock) return it
+      count += 1
+      return count === localIndex ? { ...it, ...patch } : it
+    }))
+  }
+  function removeSelected(localIndex) {
+    let count = -1
+    setItems(items.filter(it => {
+      if (itemType(it) !== selectedBlock) return true
+      count += 1
+      return count !== localIndex
+    }))
+  }
+
+  return <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1.35fr) minmax(290px,.85fr)', gap: 14 }}>
+    <section style={{ ...card, padding: 14, minWidth: 0 }}>
+      <div style={{ fontSize: 17, fontWeight: 950, color: c.ink }}>Biblioteca</div>
+      {selectedBlock === 'ejercicio' ? <>
+        <div style={{ display: 'grid', gap: 8, marginTop: 12 }}><input style={input} value={search} onChange={e => setSearch(e.target.value)} placeholder="Buscar ejercicio..." /><div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}><select style={input} value={region} onChange={e => setRegion(e.target.value)}>{ARTICULACION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select><select style={input} value={contraction} onChange={e => setContraction(e.target.value)}>{CONTRACCION_FILTROS.map(x => <option key={x.id} value={x.id}>{x.label}</option>)}</select><select style={input} value={group} onChange={e => setGroup(e.target.value)}>{groups.map(g => <option key={g}>{g}</option>)}</select></div></div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 12 }}>{options.map(opt => <button key={`${opt.group}-${opt.name}`} type="button" onClick={() => addItem(emptyItem('ejercicio', { nombre: opt.name, group: opt.group, imagen: opt.images?.[0], indicacion: opt.contracciones?.includes('excentrica') ? 'Bajada lenta y controlada' : '' }))} style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}><div style={{ fontSize: 14, fontWeight: 950, color: c.ink }}>{opt.name}</div><div style={{ display: 'flex', gap: 5, flexWrap: 'wrap', marginTop: 8 }}><span style={tag}>{opt.group}</span>{(opt.contracciones || []).slice(0, 2).map(x => <span key={x} style={tag2}>{x}</span>)}</div><div style={{ marginTop: 10, color: c.skyDark, fontSize: 12, fontWeight: 950 }}>Agregar</div></button>)}</div>
+      </> : <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 10, marginTop: 12 }}>{(presets[selectedBlock] || []).map(name => <button key={name} type="button" onClick={() => addItem(emptyItem(selectedBlock, selectedBlock === 'indicacion' ? { texto: name } : { nombre: name }))} style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 12, textAlign: 'left', cursor: 'pointer', fontFamily: 'inherit' }}><div style={{ fontSize: 14, fontWeight: 950, color: c.ink }}>{name}</div><div style={{ marginTop: 5, color: c.muted, fontSize: 12 }}>Agregar y ajustar dosis</div></button>)}</div>}
+    </section>
+
+    <section style={{ ...card, padding: 14, minWidth: 0 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'center' }}><div><div style={{ fontSize: 17, fontWeight: 950, color: c.ink }}>Seleccionados</div><div style={{ color: c.muted, fontSize: 12, fontWeight: 750, marginTop: 3 }}>{BLOCKS[selectedBlock]?.label}</div></div><span style={tag}>{selected.length}</span></div>
+      <div style={{ display: 'grid', gap: 9, marginTop: 12 }}>{selected.length === 0 && <div style={{ border: `1px dashed ${c.border}`, borderRadius: 18, padding: 18, textAlign: 'center', color: c.muted, fontSize: 13 }}>Todavía no agregaste ítems a este bloque.</div>}{selected.map((item, i) => <SelectedItem key={i} item={item} index={i} update={patch => updateSelected(i, patch)} remove={() => removeSelected(i)} />)}</div>
+    </section>
+  </div>
 }
 
-function Header({ rutina, frecuencia, setFrecuencia, focos, toggleFoco, itemsCount, openAdd }) {
-  return <section style={{ ...card, padding:16, background:'linear-gradient(135deg,#FFFFFF 0%,#ECF8FA 100%)' }}><div style={{ display:'flex', justifyContent:'space-between', gap:12 }}><div><div style={{ fontSize:11, color:c.muted, fontWeight:950, textTransform:'uppercase', letterSpacing:'.1em' }}>Después de la sesión</div><div style={{ marginTop:3, fontSize:21, color:c.ink, fontWeight:950 }}>{rutina?.nombre || 'Rutina semanal'}</div><div style={{ marginTop:6, fontSize:13, color:c.muted, lineHeight:1.4 }}>Mezclá movilidad, gimnasio, campo, agentes físicos e indicaciones.</div></div><div style={{ minWidth:80, background:'#fff', border:`1px solid ${c.border}`, borderRadius:18, padding:12, textAlign:'center' }}><div style={{ fontSize:24, color:c.ink, fontWeight:950 }}>{itemsCount}</div><div style={{ fontSize:10, color:c.muted, fontWeight:850 }}>ítems</div></div></div><div style={{ display:'grid', gap:10, marginTop:14 }}><select style={input} value={frecuencia} onChange={e=>setFrecuencia(e.target.value)}><option>2 veces antes del próximo control</option><option>3 veces antes del próximo control</option><option>2-3 veces antes del próximo control</option><option>Día por medio hasta el próximo control</option><option>Todos los días suave</option></select><div style={{ display:'flex', flexWrap:'wrap', gap:7 }}>{CONTEXTOS_RUTINA.map(x=>{const a=focos.includes(x.id);return <button key={x.id} type="button" onClick={()=>toggleFoco(x.id)} style={{ border:`1px solid ${a?c.sky:c.border}`, background:a?'#E9F7FA':'#fff', borderRadius:999, padding:'8px 11px', fontSize:12, fontWeight:900, color:a?c.skyDark:c.ink, cursor:'pointer', fontFamily:'inherit' }}>{x.emoji} {x.label}</button>})}</div><div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(130px,1fr))', gap:8 }}><button type="button" onClick={()=>openAdd('movilidad')} style={ghost}>＋ Movilidad</button><button type="button" onClick={()=>openAdd('ejercicio')} style={ghost}>＋ Gimnasio</button><button type="button" onClick={()=>openAdd('agente')} style={ghost}>＋ Agente</button></div></div></section>
-}
-
-function Item({ item, index, update, remove, move }) {
-  const t = TYPES[item.tipo] || TYPES.ejercicio
-  const title = item.nombre || item.texto || t.label
-  return <div style={{ border:`1px solid ${c.border}`, background:`linear-gradient(135deg,${t.bg} 0%,#fff 82%)`, borderRadius:20, padding:12 }}><div style={{ display:'flex', gap:10, alignItems:'flex-start' }}><div style={{ width:42, height:42, borderRadius:14, background:'#fff', color:t.color, display:'grid', placeItems:'center', fontWeight:950 }}>{t.icon}</div><div style={{ flex:1, minWidth:0 }}><div style={{ display:'flex', justifyContent:'space-between', gap:8 }}><div><div style={{ fontSize:10, color:t.color, fontWeight:950, textTransform:'uppercase' }}>{index+1}. {t.label}</div><div style={{ marginTop:4, fontSize:16, fontWeight:950, color:c.ink }}>{title}</div><div style={{ marginTop:4, fontSize:12, color:c.muted }}>{summarizeItem(item)}</div></div><div style={{ display:'flex', gap:4 }}><button type="button" onClick={()=>move(index,-1)} style={small}>↑</button><button type="button" onClick={()=>move(index,1)} style={small}>↓</button><button type="button" onClick={()=>remove(index)} style={{...small,color:c.danger}}>×</button></div></div><Fields item={item} index={index} update={update} /></div></div></div>
-}
-
-function Fields({ item, index, update }) {
-  if (item.tipo === 'indicacion') return <textarea style={{...input,marginTop:10,minHeight:78}} value={item.texto||''} onChange={e=>update(index,{texto:e.target.value})} />
-  if (item.tipo === 'campo') return <textarea style={{...input,marginTop:10,minHeight:78}} value={item.detalle||''} onChange={e=>update(index,{detalle:e.target.value})} />
-  return <div style={{ marginTop:10, display:'grid', gap:8 }}><input style={input} value={item.nombre||''} onChange={e=>update(index,{nombre:e.target.value})} placeholder="Nombre" /><div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8 }}><input style={input} value={item.series||item.duracion||''} onChange={e=>update(index, item.tipo==='movilidad'||item.tipo==='cardio'?{duracion:e.target.value}:{series:e.target.value})} placeholder="Series/min" /><input style={input} value={item.repeticiones||item.intensidad||''} onChange={e=>update(index, item.tipo==='cardio'?{intensidad:e.target.value}:{repeticiones:e.target.value})} placeholder="Reps/int" /><input style={input} value={item.pausa||''} onChange={e=>update(index,{pausa:e.target.value})} placeholder="Pausa" /></div><input style={input} value={item.indicacion||item.detalle||''} onChange={e=>update(index, item.tipo==='movilidad'||item.tipo==='cardio'?{detalle:e.target.value}:{indicacion:e.target.value})} placeholder="Indicación / detalle" /></div>
-}
-
-export default function ClinicalRoutineEditorPremium({ rutina, onChange }) {
-  const [contexto, setContexto] = useState(getRoutineContext(rutina))
+export default function ClinicalRoutineEditorPremium({ rutina, onChange, onGeneralChange }) {
+  const [step, setStep] = useState(1)
+  const [nombre, setNombre] = useState(rutina?.nombre || '')
+  const [notas, setNotas] = useState(rutina?.notas || '')
   const [frecuencia, setFrecuencia] = useState(getRoutineFrequency(rutina))
-  const [focos, setFocos] = useState(getRoutineFocus(rutina))
-  const [items, setItems] = useState(() => normalizeRoutineItems(rutina))
-  const [addOpen, setAddOpen] = useState(false)
-  const [preferredType, setPreferredType] = useState(null)
-  function emit(nextItems=items,nextContexto=contexto,nextFrecuencia=frecuencia,nextFocos=focos){setItems(nextItems);setContexto(nextContexto);setFrecuencia(nextFrecuencia);setFocos(nextFocos);onChange?.({contexto:nextContexto,ejercicios:nextItems,frecuencia:nextFrecuencia,focos:nextFocos})}
-  function openAdd(type=null){setPreferredType(type);setAddOpen(true)}
-  function addItem(item){emit([...items,item]);setAddOpen(false)}
-  function applyTemplate(t){emit((t.items||[]).map(x=>({...x})), t.focos?.[0] || contexto, t.frecuencia || frecuencia, t.focos || focos)}
-  function updateItem(i,patch){emit(items.map((it,idx)=>idx===i?{...it,...patch}:it))}
-  function removeItem(i){emit(items.filter((_,idx)=>idx!==i))}
-  function moveItem(i,dir){const t=i+dir;if(t<0||t>=items.length)return;const copy=[...items];const [it]=copy.splice(i,1);copy.splice(t,0,it);emit(copy)}
-  function toggleFoco(id){const next=focos.includes(id)?focos.filter(x=>x!==id):[...focos,id];emit(items,next[0]||contexto,frecuencia,next.length?next:[id])}
-  return <div style={{ display:'grid', gap:12, overflowX:'hidden' }}><Header rutina={rutina} frecuencia={frecuencia} setFrecuencia={(v)=>emit(items,contexto,v,focos)} focos={focos} toggleFoco={toggleFoco} itemsCount={items.length} openAdd={openAdd} /><TemplatePanel onApply={applyTemplate} />{addOpen&&<AddPanel preferredType={preferredType} focos={focos} onAdd={addItem} onClose={()=>setAddOpen(false)} />}<section style={{...card,padding:16}}><div style={{ display:'flex', justifyContent:'space-between', gap:10, flexWrap:'wrap' }}><div><div style={{ fontSize:18, fontWeight:950, color:c.ink }}>Secuencia semanal</div><div style={{ fontSize:12, color:c.muted, marginTop:4 }}>Orden real de la rutina.</div></div><button type="button" onClick={()=>openAdd(null)} style={ghost}>+ Agregar bloque</button></div><div style={{ display:'grid', gap:10, marginTop:12 }}>{items.length===0&&<div style={{border:`1px dashed ${c.border}`,borderRadius:20,padding:22,textAlign:'center',color:c.muted}}>Todavía no hay ítems.</div>}{items.map((item,i)=><Item key={i} item={item} index={i} update={updateItem} remove={removeItem} move={moveItem} />)}</div></section></div>
+  const initialItems = useMemo(() => normalizeRoutineItems(rutina), [])
+  const [items, setItemsState] = useState(initialItems)
+  const initialBlocks = useMemo(() => {
+    const fromItems = Array.from(new Set(initialItems.map(itemType))).filter(Boolean)
+    return fromItems.length ? fromItems : getRoutineFocus(rutina).filter(x => BLOCKS[x])
+  }, [])
+  const [blocks, setBlocks] = useState(initialBlocks.length ? initialBlocks : ['ejercicio'])
+  const [selectedBlock, setSelectedBlock] = useState((initialBlocks.length ? initialBlocks : ['ejercicio'])[0])
+
+  function emit(nextItems = items, nextFrecuencia = frecuencia, nextBlocks = blocks, general = { nombre, notas }) {
+    onGeneralChange?.({ nombre: general.nombre, notas: general.notas, resumen: general.notas })
+    onChange?.({ contexto: nextBlocks[0] || 'gimnasio', ejercicios: nextItems, frecuencia: nextFrecuencia, focos: nextBlocks })
+  }
+  function setItems(next) { setItemsState(next); emit(next) }
+  function toggleBlock(id) {
+    const next = blocks.includes(id) ? blocks.filter(x => x !== id) : [...blocks, id]
+    const safe = next.length ? next : [id]
+    setBlocks(safe)
+    if (!safe.includes(selectedBlock)) setSelectedBlock(safe[0])
+    emit(items, frecuencia, safe)
+  }
+  function applyTemplate(t) {
+    const nextItems = (t.items || []).map(x => ({ ...x }))
+    const nextBlocks = Array.from(new Set(nextItems.map(itemType))).filter(Boolean)
+    setItemsState(nextItems)
+    setBlocks(nextBlocks.length ? nextBlocks : blocks)
+    setSelectedBlock((nextBlocks.length ? nextBlocks : blocks)[0] || 'ejercicio')
+    setFrecuencia(t.frecuencia || frecuencia)
+    emit(nextItems, t.frecuencia || frecuencia, nextBlocks.length ? nextBlocks : blocks)
+  }
+
+  return <div style={{ display: 'grid', gap: 12, overflowX: 'hidden' }}>
+    <Stepper step={step} setStep={setStep} />
+
+    {step === 1 && <section style={{ ...card, padding: 16, display: 'grid', gap: 12 }}>
+      <div><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Información general</div><div style={{ marginTop: 4, fontSize: 20, fontWeight: 950, color: c.ink }}>Datos principales</div></div>
+      <label><div style={{ fontSize: 13, fontWeight: 950, color: c.ink2, marginBottom: 7 }}>Nombre de la rutina</div><input style={input} value={nombre} onChange={e => { setNombre(e.target.value); emit(items, frecuencia, blocks, { nombre: e.target.value, notas }) }} placeholder="Ej: Rodilla derecha · Semana 2" /></label>
+      <label><div style={{ fontSize: 13, fontWeight: 950, color: c.ink2, marginBottom: 7 }}>Notas generales</div><textarea style={{ ...input, minHeight: 108, resize: 'vertical' }} value={notas} onChange={e => { setNotas(e.target.value); emit(items, frecuencia, blocks, { nombre, notas: e.target.value }) }} placeholder="Indicaciones generales, objetivo de la rutina, cuidados o señales de alerta..." /></label>
+      <Footer step={step} setStep={setStep} canNext={!!nombre.trim()} />
+    </section>}
+
+    {step === 2 && <div style={{ display: 'grid', gap: 12 }}>
+      <TemplatePanel onApply={applyTemplate} />
+      <section style={{ ...card, padding: 16, display: 'grid', gap: 12 }}>
+        <div><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Bloques y frecuencia</div><div style={{ marginTop: 4, fontSize: 20, fontWeight: 950, color: c.ink }}>Elegí la estructura de la rutina</div></div>
+        <label><div style={{ fontSize: 13, fontWeight: 950, color: c.ink2, marginBottom: 7 }}>Frecuencia</div><select style={input} value={frecuencia} onChange={e => { setFrecuencia(e.target.value); emit(items, e.target.value, blocks) }}><option>2 veces antes del próximo control</option><option>3 veces antes del próximo control</option><option>2-3 veces antes del próximo control</option><option>Día por medio hasta el próximo control</option><option>Todos los días suave</option></select></label>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10 }}>{BLOCK_ORDER.map(id => <BlockCard key={id} id={id} active={blocks.includes(id)} onToggle={toggleBlock} />)}</div>
+        <Footer step={step} setStep={setStep} canNext={blocks.length > 0} />
+      </section>
+    </div>}
+
+    {step === 3 && <section style={{ display: 'grid', gap: 12 }}>
+      <section style={{ ...card, padding: 12 }}><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Bloques de la rutina</div><div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingTop: 10 }}>{blocks.map(id => { const b = BLOCKS[id]; const a = selectedBlock === id; return <button key={id} type="button" onClick={() => setSelectedBlock(id)} style={{ border: `1px solid ${a ? b.color : c.border}`, background: a ? b.bg : '#fff', color: a ? b.color : c.ink, borderRadius: 999, padding: '9px 12px', fontWeight: 950, fontFamily: 'inherit', whiteSpace: 'nowrap' }}>{b.icon} {b.label}</button> })}</div></section>
+      <ExerciseLibrary selectedBlock={selectedBlock} items={items} setItems={setItems} />
+      <Footer step={step} setStep={setStep} />
+    </section>}
+
+    {step === 4 && <section style={{ ...card, padding: 16, display: 'grid', gap: 14 }}>
+      <div><div style={{ fontSize: 11, color: c.muted, fontWeight: 950, textTransform: 'uppercase', letterSpacing: '.1em' }}>Resumen</div><div style={{ marginTop: 4, fontSize: 20, fontWeight: 950, color: c.ink }}>Revisá antes de guardar</div></div>
+      <div style={{ border: `1px solid ${c.border}`, borderRadius: 18, padding: 12, background: '#fff' }}><div style={{ color: c.muted, fontSize: 12, fontWeight: 900 }}>Nombre</div><div style={{ color: c.ink, fontSize: 16, fontWeight: 950, marginTop: 3 }}>{nombre || 'Sin nombre'}</div>{notas && <div style={{ color: c.ink2, fontSize: 13, lineHeight: 1.4, marginTop: 8 }}>{notas}</div>}</div>
+      <div style={{ border: `1px solid ${c.border}`, borderRadius: 18, padding: 12, background: '#fff' }}><div style={{ color: c.muted, fontSize: 12, fontWeight: 900 }}>Frecuencia</div><div style={{ color: c.ink, fontSize: 16, fontWeight: 950, marginTop: 3 }}>{frecuencia}</div></div>
+      <div style={{ display: 'grid', gap: 10 }}>{blocks.map(id => { const b = BLOCKS[id]; const groupItems = items.filter(x => itemType(x) === id); return <div key={id} style={{ border: `1px solid ${c.border}`, borderRadius: 18, padding: 12, background: '#fff' }}><div style={{ display: 'flex', gap: 8, alignItems: 'center' }}><span style={{ width: 32, height: 32, borderRadius: 12, display: 'grid', placeItems: 'center', background: b.bg, color: b.color, fontWeight: 950 }}>{b.icon}</span><div style={{ color: c.ink, fontSize: 16, fontWeight: 950 }}>{b.label}</div><span style={{ ...tag, marginLeft: 'auto' }}>{groupItems.length}</span></div><div style={{ display: 'grid', gap: 7, marginTop: 10 }}>{groupItems.length === 0 && <div style={{ color: c.muted, fontSize: 13 }}>Sin ítems cargados.</div>}{groupItems.map((it, i) => <div key={i} style={{ background: '#F8FCFD', border: `1px solid rgba(83,151,166,.18)`, borderRadius: 14, padding: 9 }}><div style={{ color: c.ink, fontSize: 13, fontWeight: 950 }}>{it.nombre || it.texto}</div><div style={{ color: c.muted, fontSize: 12, marginTop: 3 }}>{summarizeItem(it)}</div></div>)}</div></div> })}</div>
+      <Footer step={step} setStep={setStep} />
+    </section>}
+  </div>
 }
