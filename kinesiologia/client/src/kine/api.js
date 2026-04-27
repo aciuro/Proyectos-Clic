@@ -141,6 +141,33 @@ function normalizeRutinas(rutinas) {
   return Array.isArray(rutinas) ? rutinas.map(normalizeRoutine) : rutinas
 }
 
+function normalizeGrado(value) {
+  const raw = String(value ?? '').trim()
+  if (['I', 'II', 'III', 'IV'].includes(raw.toUpperCase())) return raw.toUpperCase()
+  if (raw === '1') return 'I'
+  if (raw === '2') return 'II'
+  if (raw === '3') return 'III'
+  if (raw === '4') return 'IV'
+  return 'NO APLICA'
+}
+
+function normalizeMotivoPayload(data = {}) {
+  const sintoma = data.sintoma || data.lesion || ''
+  return {
+    ...data,
+    sintoma,
+    lesion: sintoma,
+    aparicion: data.aparicion || '',
+    diagnostico: data.diagnostico || '',
+    grado: normalizeGrado(data.grado),
+    momento_dia: data.momento_dia || '',
+    movimientos: data.movimientos || '',
+    afloja_dia: !!data.afloja_dia,
+    monto_sesion: Number(data.monto_sesion || 0),
+    estado: data.estado || 'activo',
+  }
+}
+
 export const api = {
   login:  (data) => req('POST', '/login', data),
   me:     () => req('GET', '/me'),
@@ -164,7 +191,7 @@ export const api = {
 
   getEjercicios:   () => req('GET', '/ejercicios'),
   createEjercicio: (data) => req('POST', '/ejercicios', data),
-  updateEjercicio: (id, data) => req('PUT', `/ejercicios/${id}`, data),
+  updateEjercicio: (id, data) => req('PUT', `/ejercicios/${id}`),
   deleteEjercicio: (id) => req('DELETE', `/ejercicios/${id}`),
 
   getEjerciciosPaciente: (id) => req('GET', `/pacientes/${id}/ejercicios`),
@@ -192,13 +219,13 @@ export const api = {
   },
 
   getMotivos:       (pacienteId) => req('GET', `/pacientes/${pacienteId}/motivos`),
-  createMotivo:     (pacienteId, data) => req('POST', `/pacientes/${pacienteId}/motivos`, data),
-  updateMotivo:     (id, data) => req('PUT', `/motivos/${id}`, data),
+  createMotivo:     (pacienteId, data) => req('POST', `/pacientes/${pacienteId}/motivos`, normalizeMotivoPayload(data)),
+  updateMotivo:     (id, data) => req('PUT', `/motivos/${id}`, normalizeMotivoPayload(data)),
   deleteMotivo:     (id) => req('DELETE', `/motivos/${id}`),
 
   getEvoluciones:   (motivoId) => req('GET', `/motivos/${motivoId}/evoluciones`),
   createEvolucion:  (motivoId, data) => req('POST', `/motivos/${motivoId}/evoluciones`, data),
-  updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`),
+  updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`, data),
   deleteEvolucion:  (id) => req('DELETE', `/evoluciones/${id}`),
   togglePagado:     (id) => req('PATCH', `/evoluciones/${id}/pagar`),
   pagarTodo:        (pacienteId) => req('POST', `/pacientes/${pacienteId}/pagar-todo`),
