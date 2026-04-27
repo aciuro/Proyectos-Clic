@@ -34,7 +34,7 @@ function RutinaCard({ rutina, onEdit, onDelete }) {
             <span style={pill}>{items.length} ítems</span>
           </div>
           <h3 style={{ margin: 0, fontSize: 19, fontWeight: 950, color: c.ink, letterSpacing: '-.035em' }}>{rutina.nombre || 'Rutina sin nombre'}</h3>
-          {rutina.resumen && <p style={{ margin: '7px 0 0', fontSize: 13, color: c.muted, lineHeight: 1.45 }}>{rutina.resumen}</p>}
+          {(rutina.notas || rutina.resumen) && <p style={{ margin: '7px 0 0', fontSize: 13, color: c.muted, lineHeight: 1.45 }}>{rutina.notas || rutina.resumen}</p>}
         </div>
         <div style={{ display: 'flex', gap: 7 }}>
           <button type="button" onClick={() => onEdit(rutina)} style={{ ...btn, background: '#E9F7FA', color: c.skyDark, padding: '9px 12px' }}>Editar</button>
@@ -108,7 +108,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.38)', zIndex: 200, display: 'flex', alignItems: 'stretch', justifyContent: 'center', padding: '10px 12px', backdropFilter: 'blur(7px)', overflow: 'hidden', overscrollBehavior: 'contain' }}>
-      <div style={{ width: 'min(720px, calc(100vw - 24px))', height: 'calc(100dvh - 20px)', maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto', overflowX: 'hidden', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
+      <div style={{ width: 'min(860px, calc(100vw - 24px))', height: 'calc(100dvh - 20px)', maxHeight: 'calc(100dvh - 20px)', overflowY: 'auto', overflowX: 'hidden', background: '#F4FAFB', borderRadius: 30, border: `1px solid ${c.border}`, boxShadow: '0 32px 90px rgba(13,53,64,.28)', overscrollBehaviorY: 'contain', WebkitOverflowScrolling: 'touch', touchAction: 'pan-y' }}>
         <div style={{ position: 'sticky', top: 0, zIndex: 3, background: 'rgba(244,250,251,.96)', backdropFilter: 'blur(12px)', borderBottom: `1px solid ${c.border}`, padding: 16, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: 11, fontWeight: 950, letterSpacing: '.1em', textTransform: 'uppercase', color: c.muted }}>{form.id ? 'Editar rutina' : 'Nueva rutina'}</div>
@@ -121,17 +121,11 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
         </div>
 
         <div style={{ padding: '16px 16px 34px', display: 'grid', gap: 14, overflowX: 'hidden' }}>
-          <section style={{ ...glass, padding: 14, display: 'grid', gap: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: 10 }}>
-              <input style={fld} value={form.nombre || ''} onChange={e => setForm({ ...form, nombre: e.target.value })} placeholder="Nombre: Rodilla semana 2" />
-              <select style={fld} value={form.estado || 'Activa'} onChange={e => setForm({ ...form, estado: e.target.value })}><option>Activa</option><option>Pausada</option><option>Finalizada</option></select>
-              <input style={fld} type="number" min="1" value={form.veces || 1} onChange={e => setForm({ ...form, veces: e.target.value })} placeholder="Veces" />
-            </div>
-            <input style={fld} value={form.resumen || ''} onChange={e => setForm({ ...form, resumen: e.target.value })} placeholder="Resumen corto para el paciente" />
-            <textarea style={{ ...fld, minHeight: 72, resize: 'vertical' }} value={form.notas || ''} onChange={e => setForm({ ...form, notas: e.target.value })} placeholder="Notas generales" />
-          </section>
-
-          <ClinicalRoutineEditorPremium rutina={{ ...form, ejercicios: editorData.ejercicios }} onChange={setEditorData} />
+          <ClinicalRoutineEditorPremium
+            rutina={{ ...form, ejercicios: editorData.ejercicios }}
+            onGeneralChange={(general) => setForm(prev => ({ ...prev, ...general }))}
+            onChange={setEditorData}
+          />
         </div>
       </div>
     </div>
