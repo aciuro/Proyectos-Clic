@@ -15,6 +15,7 @@ import Notas from './Notas.jsx'
 import Cuenta from './Cuenta.jsx'
 import PortalPaciente from './PortalPaciente.jsx'
 import PatientRoutineProgressMount from './PatientRoutineProgressMount.jsx'
+import BrandLogo from './BrandLogo.jsx'
 import './kine.css'
 import './premium-refresh.css'
 import './clinical-routine-mobile.css'
@@ -74,16 +75,6 @@ const ADMIN_CSS = `
   ::-webkit-scrollbar-thumb { background: rgba(63,167,184,.35); border-radius: 2px; }
 `
 
-function LogoSVG() {
-  return (
-    <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-      <ellipse cx="13" cy="13" rx="7.5" ry="10.5" fill="#5BB8CC" transform="rotate(-20 13 13)"/>
-      <ellipse cx="13" cy="13" rx="5.5" ry="8.5" fill="#79CDBB" opacity="0.62" transform="rotate(30 13 13)"/>
-      <line x1="13" y1="4" x2="13" y2="22" stroke={c.ink} strokeWidth="1.2" strokeLinecap="round"/>
-    </svg>
-  )
-}
-
 function AdminLayout({ usuario, onLogout }) {
   const navigate = useNavigate()
   const location = useLocation()
@@ -108,11 +99,13 @@ function AdminLayout({ usuario, onLogout }) {
     <div className="adm-shell">
       <style>{ADMIN_CSS}</style>
       <header className="adm-topbar">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <LogoSVG />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 42, height: 42, borderRadius: 14, background: 'rgba(255,255,255,.72)', display: 'grid', placeItems: 'center', boxShadow: '0 10px 24px rgba(13,53,64,.08)' }}>
+            <BrandLogo size={38} />
+          </div>
           <div>
-            <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: 16, color: c.ink, letterSpacing: '-.02em' }}>Rehabilitaplus</div>
-            <div style={{ fontSize: 9, color: c.muted, letterSpacing: '1px', textTransform: 'uppercase' }}>Portal profesional</div>
+            <div style={{ fontSize: 15, color: c.ink, letterSpacing: '.02em', fontWeight: 950 }}>Kinesiología Deportiva</div>
+            <div style={{ fontSize: 9, color: c.muted, letterSpacing: '1px', textTransform: 'uppercase', fontWeight: 800 }}>Portal profesional</div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -206,8 +199,10 @@ export default function KineApp() {
   if (loading) {
     return (
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', background: '#F6FBFC', gap: 12 }}>
-        <div style={{ width: 46, height: 46, background: `linear-gradient(135deg, ${c.sky} 0%, ${c.skyDark} 100%)`, borderRadius: 16, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: 16, color: '#fff', boxShadow: '0 18px 42px rgba(39,127,146,.2)' }}>R+</div>
-        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 900, color: c.ink }}>Rehabilitaplus</div>
+        <div style={{ width: 64, height: 64, borderRadius: 20, background: 'rgba(255,255,255,.78)', display: 'grid', placeItems: 'center', boxShadow: '0 18px 42px rgba(13,53,64,.12)' }}>
+          <BrandLogo size={58} />
+        </div>
+        <div style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 16, fontWeight: 950, color: c.ink }}>Kinesiología Deportiva</div>
       </div>
     )
   }
