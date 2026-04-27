@@ -154,17 +154,17 @@ function normalizeGrado(value) {
 function normalizeMotivoPayload(data = {}) {
   const sintoma = data.sintoma || data.lesion || ''
   return {
-    ...data,
     sintoma,
-    lesion: sintoma,
     aparicion: data.aparicion || '',
-    diagnostico: data.diagnostico || '',
-    grado: normalizeGrado(data.grado),
     momento_dia: data.momento_dia || '',
     movimientos: data.movimientos || '',
-    afloja_dia: !!data.afloja_dia,
+    afloja_dia: data.afloja_dia ? 1 : 0,
     monto_sesion: Number(data.monto_sesion || 0),
     estado: data.estado || 'activo',
+    diagnostico: data.diagnostico || '',
+    grado: normalizeGrado(data.grado),
+    signos_sintomas: data.signos_sintomas || data.signos || '',
+    dolor: data.dolor === '' || data.dolor == null ? null : Number(data.dolor),
   }
 }
 
