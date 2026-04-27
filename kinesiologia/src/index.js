@@ -4,10 +4,12 @@ const path = require('path');
 const express = require('express');
 const kineRoutes = require('./kine-routes');
 const routineProgressRoutes = require('./routine-progress-routes');
+const routineFeedbackRoutes = require('./routine-feedback-routes');
 
 const app = express();
 
 // ─── Rutas API ────────────────────────────────────────────────
+app.use('/api/kine', routineFeedbackRoutes);
 app.use('/api/kine', routineProgressRoutes);
 app.use('/api/kine', kineRoutes);
 
