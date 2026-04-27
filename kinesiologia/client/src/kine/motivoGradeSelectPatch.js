@@ -51,15 +51,15 @@ function patchFetch() {
   }
 }
 
-function textNodeEquals(node, text) {
-  return node?.textContent?.trim().toLowerCase() === text.toLowerCase()
+function labelText(el) {
+  return el?.textContent?.trim().toLowerCase()
 }
 
-function findField(labelTexts) {
-  const wanted = Array.isArray(labelTexts) ? labelTexts : [labelTexts]
+function findField(names) {
+  const wanted = (Array.isArray(names) ? names : [names]).map(x => x.toLowerCase())
   const labelNode = Array.from(document.querySelectorAll('label div, label span, label p, div, span, p'))
-    .find(el => wanted.some(t => textNodeEquals(el, t)))
-  return labelNode?.closest('label') || labelNode?.parentElement || null
+    .find(el => wanted.includes(labelText(el)))
+  return labelNode?.closest('label') || null
 }
 
 function findMotivoForm() {
@@ -74,23 +74,29 @@ function findMotivoForm() {
   return { form, motivoField, diagnosticoField, gradoField, montoField }
 }
 
-function section(title, subtitle) {
-  const el = document.createElement('div')
-  el.className = 'rehab-motivo-section-title'
-  el.style.cssText = 'margin:14px 0 8px;padding-top:12px;border-top:1px solid rgba(83,151,166,.22);text-align:center;'
-  el.innerHTML = `<div style="font-size:18px;font-weight:950;color:#082B34;letter-spacing:-.02em">${title}</div>${subtitle ? `<div style="margin:5px auto 0;max-width:310px;font-size:13px;line-height:1.25;color:#789FAA;font-weight:750">${subtitle}</div>` : ''}`
-  return el
-}
-
-function relabel(field, text) {
+function setLabel(field, text) {
   const node = Array.from(field?.querySelectorAll('div, span, p') || []).find(n => n.textContent?.trim())
   if (node) {
     node.textContent = text
     node.style.textAlign = 'center'
-    node.style.fontWeight = '950'
-    node.style.color = '#315F68'
+    node.style.fontWeight = '750'
+    node.style.color = '#334155'
     node.style.fontSize = '14px'
+    node.style.marginBottom = '8px'
   }
+}
+
+function restyleField(field) {
+  field?.querySelectorAll('input, textarea, select').forEach(el => {
+    el.style.width = '100%'
+    el.style.borderRadius = '14px'
+    el.style.border = '1px solid #e2e8f0'
+    el.style.background = '#fff'
+    el.style.padding = '12px 14px'
+    el.style.fontSize = '15px'
+    el.style.boxSizing = 'border-box'
+    el.style.textAlign = 'left'
+  })
 }
 
 function ensureSelectForGrade(gradoField) {
@@ -101,16 +107,6 @@ function ensureSelectForGrade(gradoField) {
   const select = document.createElement('select')
   select.value = normalizeGrade(input.value)
   select.style.cssText = input.style.cssText
-  select.style.width = '100%'
-  select.style.borderRadius = input.style.borderRadius || '18px'
-  select.style.border = input.style.border || '1px solid rgba(83,151,166,.30)'
-  select.style.background = '#fff'
-  select.style.padding = input.style.padding || '14px 15px'
-  select.style.fontSize = input.style.fontSize || '16px'
-  select.style.color = input.style.color || '#082B34'
-  select.style.fontFamily = input.style.fontFamily || 'inherit'
-  select.style.boxSizing = 'border-box'
-  select.style.outline = 'none'
   for (const value of GRADO_OPTIONS) {
     const opt = document.createElement('option')
     opt.value = value
@@ -121,55 +117,57 @@ function ensureSelectForGrade(gradoField) {
   input.style.display = 'none'
   input.insertAdjacentElement('beforebegin', select)
   setNativeValue(input, select.value)
+  restyleField(gradoField)
 }
 
-function addSignsAndPain(afterNode) {
-  if (!afterNode || afterNode.parentElement?.querySelector('.rehab-signos-sintomas')) return
+function addClinicalFields(afterNode) {
+  if (!afterNode || afterNode.parentElement?.querySelector('.rehab-clinical-extra')) return
   const extra = getExtraState()
+  const wrap = document.createElement('div')
+  wrap.className = 'rehab-clinical-extra'
+  wrap.style.cssText = 'display:grid;gap:12px;margin-top:12px;'
 
-  const signsWrap = document.createElement('label')
-  signsWrap.className = 'rehab-signos-sintomas'
-  signsWrap.style.cssText = 'display:block;margin-top:12px;text-align:center;'
-  signsWrap.innerHTML = '<div style="font-size:14px;color:#315F68;font-weight:950;margin-bottom:7px;text-align:center">Signos y síntomas</div>'
+  const signs = document.createElement('label')
+  signs.style.cssText = 'display:block;text-align:center;'
+  signs.innerHTML = '<div style="font-size:14px;color:#334155;font-weight:750;margin-bottom:8px;text-align:center">Signos y síntomas</div>'
   const textarea = document.createElement('textarea')
-  textarea.placeholder = 'Ej: dolor al bajar escaleras, edema leve, dolor a la palpación, rigidez matinal...'
-  textarea.rows = 4
-  textarea.style.cssText = 'width:100%;border:1px solid rgba(83,151,166,.30);border-radius:18px;padding:14px 15px;color:#082B34;background:#fff;outline:none;font-family:inherit;font-size:16px;box-sizing:border-box;resize:vertical;min-height:108px;text-align:left;'
+  textarea.placeholder = 'Ej: dolor al bajar escaleras, edema leve, dolor a la palpación...'
+  textarea.rows = 3
+  textarea.style.cssText = 'width:100%;border:1px solid #e2e8f0;border-radius:14px;padding:12px 14px;color:#0f172a;background:#fff;outline:none;font-family:inherit;font-size:15px;box-sizing:border-box;resize:vertical;min-height:90px;text-align:left;'
   textarea.value = extra.signos_sintomas || ''
   textarea.addEventListener('input', () => { getExtraState().signos_sintomas = textarea.value })
-  signsWrap.appendChild(textarea)
+  signs.appendChild(textarea)
 
-  const painWrap = document.createElement('div')
-  painWrap.className = 'rehab-pain-scale'
-  painWrap.style.cssText = 'display:block;margin-top:14px;text-align:center;'
-  painWrap.innerHTML = '<div style="font-size:14px;color:#315F68;font-weight:950;margin-bottom:6px">Dolor actual</div><div style="font-size:12px;color:#789FAA;font-weight:800;margin-bottom:9px">Escala 0 a 10: 0 sin dolor, 10 peor dolor imaginable.</div>'
+  const pain = document.createElement('div')
+  pain.style.cssText = 'text-align:center;'
+  pain.innerHTML = '<div style="font-size:14px;color:#334155;font-weight:750;margin-bottom:6px">Dolor actual</div><div style="font-size:12px;color:#64748b;font-weight:600;margin-bottom:8px">Escala 0 a 10</div>'
   const grid = document.createElement('div')
   grid.style.cssText = 'display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;'
   const summary = document.createElement('div')
-  summary.style.cssText = 'margin-top:8px;font-size:13px;color:#315F68;font-weight:900;text-align:center;'
+  summary.style.cssText = 'margin-top:7px;font-size:12px;color:#334155;font-weight:700;text-align:center;'
   const renderSummary = () => { summary.textContent = extra.dolor === '' ? 'Sin seleccionar' : `${extra.dolor}/10 · ${PAIN_LABELS[Number(extra.dolor)]}` }
   for (let i = 0; i <= 10; i++) {
     const btn = document.createElement('button')
     btn.type = 'button'
     btn.textContent = String(i)
-    btn.style.cssText = 'border:1px solid rgba(83,151,166,.30);background:#fff;color:#082B34;border-radius:12px;padding:9px 0;font-weight:950;font-family:inherit;cursor:pointer;'
+    btn.style.cssText = 'border:1px solid #e2e8f0;background:#fff;color:#0f172a;border-radius:10px;padding:8px 0;font-weight:750;font-family:inherit;cursor:pointer;'
     btn.addEventListener('click', () => {
       extra.dolor = i
-      Array.from(grid.children).forEach(child => { child.style.background = '#fff'; child.style.color = '#082B34'; child.style.borderColor = 'rgba(83,151,166,.30)' })
-      btn.style.background = '#2F9FB2'
+      Array.from(grid.children).forEach(child => { child.style.background = '#fff'; child.style.color = '#0f172a'; child.style.borderColor = '#e2e8f0' })
+      btn.style.background = '#0ea5e9'
       btn.style.color = '#fff'
-      btn.style.borderColor = '#2F9FB2'
+      btn.style.borderColor = '#0ea5e9'
       renderSummary()
     })
     grid.appendChild(btn)
   }
   renderSummary()
-  painWrap.appendChild(grid)
-  painWrap.appendChild(summary)
+  pain.appendChild(grid)
+  pain.appendChild(summary)
 
-  afterNode.insertAdjacentElement('afterend', painWrap)
-  afterNode.insertAdjacentElement('afterend', signsWrap)
-  signsWrap.insertAdjacentElement('beforebegin', section('3. Signos, síntomas y dolor', 'Registro clínico rápido para seguir la evolución.'))
+  wrap.appendChild(signs)
+  wrap.appendChild(pain)
+  afterNode.insertAdjacentElement('afterend', wrap)
 }
 
 function patchLayout() {
@@ -180,71 +178,65 @@ function patchLayout() {
   const overlay = form.parentElement
   if (overlay && overlay.dataset.rehabOverlayPatched !== 'true') {
     overlay.dataset.rehabOverlayPatched = 'true'
-    overlay.style.display = 'flex'
     overlay.style.alignItems = 'flex-start'
     overlay.style.justifyContent = 'center'
     overlay.style.overflowY = 'auto'
     overlay.style.webkitOverflowScrolling = 'touch'
-    overlay.style.padding = 'max(14px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom))'
+    overlay.style.padding = '12px'
     overlay.style.boxSizing = 'border-box'
   }
 
-  if (form.dataset.rehabMotivoPatched !== 'true') {
-    form.dataset.rehabMotivoPatched = 'true'
-    form.style.maxHeight = 'calc(100dvh - 24px)'
-    form.style.overflowY = 'auto'
-    form.style.webkitOverflowScrolling = 'touch'
-    form.style.boxSizing = 'border-box'
-    form.style.textAlign = 'center'
-    form.style.paddingBottom = '0'
-    form.querySelectorAll('input, textarea, select').forEach(el => { el.style.textAlign = 'left'; el.style.fontSize = '16px' })
-
-    if (motivoField) {
-      relabel(motivoField, 'Motivo de consulta')
-      motivoField.insertAdjacentElement('beforebegin', section('1. Motivo de consulta', 'Qué trae al paciente a consulta.'))
-    }
-    if (diagnosticoField) {
-      relabel(diagnosticoField, 'Diagnóstico médico')
-      diagnosticoField.insertAdjacentElement('beforebegin', section('2. Diagnóstico médico', 'Diagnóstico informado o presuntivo, con grado si corresponde.'))
-    }
-
-    const gradoRow = gradoField?.parentElement
-    if (gradoRow && montoField && gradoRow.contains(montoField)) {
-      gradoRow.style.display = 'grid'
-      gradoRow.style.gridTemplateColumns = '1fr'
-      gradoRow.style.gap = '12px'
-    }
-    relabel(gradoField, 'Grado')
+  if (form.dataset.rehabMotivoPatched === 'true') {
     ensureSelectForGrade(gradoField)
+    return
+  }
+  form.dataset.rehabMotivoPatched = 'true'
 
-    addSignsAndPain(gradoRow || gradoField || diagnosticoField || motivoField)
+  form.querySelectorAll('.rehab-motivo-section-title').forEach(x => x.remove())
+  form.style.maxHeight = 'calc(100dvh - 24px)'
+  form.style.overflowY = 'auto'
+  form.style.webkitOverflowScrolling = 'touch'
+  form.style.boxSizing = 'border-box'
+  form.style.textAlign = 'center'
+  form.style.paddingBottom = '0'
+  form.style.gap = '12px'
 
-    if (montoField) {
-      relabel(montoField, 'Monto sesión')
-      const painWrap = form.querySelector('.rehab-pain-scale')
-      if (painWrap) {
-        painWrap.insertAdjacentElement('afterend', montoField)
-        montoField.insertAdjacentElement('beforebegin', section('4. Monto de sesión', 'Dato administrativo para cobros y saldo.'))
-      }
-    }
+  setLabel(motivoField, 'Motivo de consulta')
+  setLabel(diagnosticoField, 'Diagnóstico médico')
+  setLabel(gradoField, 'Grado')
+  setLabel(montoField, 'Monto sesión')
 
-    const actions = Array.from(form.querySelectorAll('div')).find(el => {
-      const text = el.textContent || ''
-      return text.includes('Cancelar') && text.includes('Guardar')
-    })
-    if (actions) {
-      actions.style.position = 'sticky'
-      actions.style.bottom = '0'
-      actions.style.background = '#fff'
-      actions.style.borderTop = '1px solid rgba(83,151,166,.22)'
-      actions.style.padding = '13px 0 16px'
-      actions.style.marginTop = '10px'
-      actions.style.justifyContent = 'center'
-      actions.style.flexWrap = 'wrap'
-      actions.style.zIndex = '2'
-    }
-  } else {
-    ensureSelectForGrade(gradoField)
+  ;[motivoField, diagnosticoField, gradoField, montoField].forEach(restyleField)
+  ensureSelectForGrade(gradoField)
+
+  const gradoRow = gradoField?.parentElement
+  if (gradoRow && montoField && gradoRow.contains(montoField)) {
+    gradoRow.style.display = 'grid'
+    gradoRow.style.gridTemplateColumns = '1fr'
+    gradoRow.style.gap = '12px'
+  }
+
+  addClinicalFields(gradoRow || gradoField || diagnosticoField || motivoField)
+
+  if (montoField) {
+    const extra = form.querySelector('.rehab-clinical-extra')
+    if (extra && !extra.contains(montoField)) extra.insertAdjacentElement('afterend', montoField)
+  }
+
+  const actions = Array.from(form.querySelectorAll('div')).find(el => {
+    const text = el.textContent || ''
+    return text.includes('Cancelar') && text.includes('Guardar')
+  })
+  if (actions) {
+    actions.style.position = 'sticky'
+    actions.style.bottom = '0'
+    actions.style.background = '#fff'
+    actions.style.borderTop = '1px solid #e2e8f0'
+    actions.style.padding = '12px 0 14px'
+    actions.style.marginTop = '8px'
+    actions.style.justifyContent = 'center'
+    actions.style.flexWrap = 'wrap'
+    actions.style.zIndex = '2'
   }
 }
 
