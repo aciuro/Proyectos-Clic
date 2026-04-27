@@ -198,7 +198,7 @@ export const api = {
 
   getEvoluciones:   (motivoId) => req('GET', `/motivos/${motivoId}/evoluciones`),
   createEvolucion:  (motivoId, data) => req('POST', `/motivos/${motivoId}/evoluciones`, data),
-  updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`, data),
+  updateEvolucion:  (id, data) => req('PUT', `/evoluciones/${id}`),
   deleteEvolucion:  (id) => req('DELETE', `/evoluciones/${id}`),
   togglePagado:     (id) => req('PATCH', `/evoluciones/${id}/pagar`),
   pagarTodo:        (pacienteId) => req('POST', `/pacientes/${pacienteId}/pagar-todo`),
@@ -225,6 +225,7 @@ export const api = {
   getRutinaProgreso: (rutinaId) => req('GET', `/rutinas/${rutinaId}/progreso`),
   marcarRutinaItem: (rutinaId, itemIndex, hecho) => req('PATCH', `/rutinas/${rutinaId}/progreso/items/${itemIndex}`, { hecho }),
   reiniciarRutinaIntento: (rutinaId) => req('POST', `/rutinas/${rutinaId}/progreso/reiniciar-intento`, {}),
+  guardarRutinaFeedback: (rutinaId, data) => req('POST', `/rutinas/${rutinaId}/progreso/feedback`, data),
   getAdherenciaRutinas: (pacienteId) => req('GET', `/pacientes/${pacienteId}/adherencia-rutinas`),
 
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
