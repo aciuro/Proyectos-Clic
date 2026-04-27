@@ -14,7 +14,8 @@ const s = {
   card: { background: 'rgba(255,255,255,.96)', border: `1px solid ${c.border}`, borderRadius: 28, boxShadow: '0 14px 38px rgba(13,53,64,.07)' },
   btn: { border: `1px solid ${c.border}`, background: c.white, color: c.skyDark, borderRadius: 16, padding: '10px 13px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' },
   primary: { border: 0, background: `linear-gradient(135deg, ${c.sky}, ${c.skyDark})`, color: '#fff', borderRadius: 18, padding: '12px 16px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 14px 28px rgba(23,111,130,.22)' },
-  input: { width: '100%', border: `1px solid ${c.border}`, borderRadius: 15, padding: '12px 13px', color: c.ink, outline: 'none', fontFamily: 'inherit', fontSize: 14, boxSizing: 'border-box' },
+  input: { width: '100%', border: `1px solid ${c.border}`, borderRadius: 15, padding: '12px 13px', color: c.ink, background: '#FFFFFF', outline: 'none', fontFamily: 'inherit', fontSize: 14, boxSizing: 'border-box' },
+  label: { fontSize: 12, color: c.ink2, fontWeight: 950, marginBottom: 6 },
 }
 
 function initials(p = {}) {
@@ -48,6 +49,10 @@ function SectionTitle({ eyebrow, title, children }) {
     </div>
     {children}
   </div>
+}
+
+function Field({ label, children }) {
+  return <label style={{ display: 'block' }}><div style={s.label}>{label}</div>{children}</label>
 }
 
 function PatientHero({ paciente, saldo, onBack, onNewMotivo, onLegacy }) {
@@ -104,21 +109,46 @@ function MiniStat({ label, value }) {
 }
 
 function MotivoModal({ onClose, onSave }) {
-  const [form, setForm] = useState({ lesion: '', diagnostico: '', grado: 'No aplica', monto_sesion: '', estado: 'activo' })
+  const [form, setForm] = useState({ sintoma: '', diagnostico: '', grado: 'No aplica', monto_sesion: '', estado: 'activo' })
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
   async function submit(e) {
-    e.preventDefault(); setSaving(true)
-    try { await onSave(form); onClose() } finally { setSaving(false) }
+    e.preventDefault()
+    setError('')
+    const sintoma = form.sintoma.trim()
+    if (!sintoma) { setError('Escribí el motivo de consulta.'); return }
+    setSaving(true)
+    try {
+      await onSave({
+        ...form,
+        sintoma,
+        lesion: sintoma,
+        diagnostico: form.diagnostico.trim(),
+        monto_sesion: form.monto_sesion || null,
+      })
+      onClose()
+    } catch (err) {
+      setError(err?.message || 'No se pudo guardar el motivo de consulta.')
+    } finally { setSaving(false) }
   }
   return <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(8,43,52,.44)', zIndex: 200, display: 'grid', placeItems: 'center', padding: 16 }}>
-    <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{ ...s.card, width: '100%', maxWidth: 440, padding: 18, display: 'grid', gap: 11 }}>
+    <form onSubmit={submit} onClick={e => e.stopPropagation()} style={{ ...s.card, width: '100%', maxWidth: 440, padding: 18, display: 'grid', gap: 12, background: '#FFFFFF' }}>
       <SectionTitle eyebrow="Nuevo" title="Motivo de consulta" />
-      <input style={s.input} value={form.lesion} onChange={e => setForm(f => ({ ...f, lesion: e.target.value }))} placeholder="Ej: Tendinopatía rotuliana" required />
-      <input style={s.input} value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} placeholder="Diagnóstico / detalle" />
+      <Field label="Motivo / lesión">
+        <input style={s.input} value={form.sintoma} onChange={e => setForm(f => ({ ...f, sintoma: e.target.value }))} placeholder="Ej: Tendinopatía rotuliana" required />
+      </Field>
+      <Field label="Diagnóstico o detalle">
+        <input style={s.input} value={form.diagnostico} onChange={e => setForm(f => ({ ...f, diagnostico: e.target.value }))} placeholder="Ej: grado II, cadena posterior, edema óseo..." />
+      </Field>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 9 }}>
-        <input style={s.input} value={form.grado} onChange={e => setForm(f => ({ ...f, grado: e.target.value }))} placeholder="Grado" />
-        <input style={s.input} value={form.monto_sesion} onChange={e => setForm(f => ({ ...f, monto_sesion: e.target.value }))} placeholder="Monto sesión" />
+        <Field label="Grado">
+          <input style={s.input} value={form.grado} onChange={e => setForm(f => ({ ...f, grado: e.target.value }))} placeholder="No aplica" />
+        </Field>
+        <Field label="Monto sesión">
+          <input style={s.input} value={form.monto_sesion} onChange={e => setForm(f => ({ ...f, monto_sesion: e.target.value }))} placeholder="$" inputMode="numeric" />
+        </Field>
       </div>
+      {error && <div style={{ border: `1px solid #F5A897`, background: c.redSoft, color: c.red, borderRadius: 14, padding: '10px 12px', fontSize: 13, fontWeight: 800 }}>{error}</div>}
       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 4 }}>
         <button type="button" onClick={onClose} style={s.btn}>Cancelar</button>
         <button type="submit" disabled={saving} style={{ ...s.primary, opacity: saving ? .65 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
