@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import PatientCleanDashboard from './PatientCleanDashboard.jsx'
+import PatientMotivoDashboardPremium from './PatientMotivoDashboardPremium.jsx'
 
 function normalize(text = '') {
   return text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -45,7 +45,7 @@ export default function PatientClinicalRoutineBridge() {
   return (
     <>
       <ClinicalRoutineClickInterceptor />
-      <PatientCleanDashboard />
+      <PatientMotivoDashboardPremium />
     </>
   )
 }
