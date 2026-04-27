@@ -19,6 +19,7 @@ const s = {
 }
 
 const GRADO_OPTIONS = ['I', 'II', 'III', 'IV', 'NO APLICA']
+const TECNICAS_OPCIONES = ['MEP', 'Punción seca', 'Masoterapia', 'Electro', 'Movilidad', 'Ejercicio terapéutico', 'Presoterapia', 'Gun', 'Educación']
 const painLabels = ['sin dolor', 'leve', 'leve', 'leve', 'moderado', 'moderado', 'moderado', 'intenso', 'intenso', 'intenso', 'máximo']
 
 function initials(p = {}) {
@@ -150,24 +151,8 @@ function MotivoModal({ onClose, onSave }) {
     } finally { setSaving(false) }
   }
 
-  return <div
-    onClick={onClose}
-    style={{
-      position: 'fixed', inset: 0, background: 'rgba(8,43,52,.44)', zIndex: 200,
-      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
-      padding: 'max(14px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom))',
-      boxSizing: 'border-box', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
-    }}
-  >
-    <form
-      onSubmit={submit}
-      onClick={e => e.stopPropagation()}
-      style={{
-        ...s.card, width: '100%', maxWidth: 460, maxHeight: 'calc(100dvh - 24px)',
-        overflowY: 'auto', WebkitOverflowScrolling: 'touch', padding: '20px 18px 0',
-        display: 'grid', gap: 16, background: '#FFFFFF', boxSizing: 'border-box', textAlign: 'center'
-      }}
-    >
+  return <ModalShell onClose={onClose} maxWidth={460}>
+    <form onSubmit={submit} style={{ padding: '20px 18px 0', display: 'grid', gap: 16, background: '#FFFFFF', boxSizing: 'border-box', textAlign: 'center' }}>
       <SectionTitle eyebrow="Nuevo" title="Motivo de consulta" centered />
 
       <FormSection number="1" title="Motivo de consulta" text="Qué trae al paciente a consulta.">
@@ -196,30 +181,7 @@ function MotivoModal({ onClose, onSave }) {
             placeholder="Ej: dolor al bajar escaleras, edema leve, dolor a la palpación, rigidez matinal..."
           />
         </Field>
-        <div>
-          <div style={s.label}>Dolor actual</div>
-          <div style={{ marginTop: -2, marginBottom: 9, color: c.muted, fontSize: 12, fontWeight: 800 }}>Escala 0 a 10: 0 sin dolor, 10 peor dolor imaginable.</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
-            {Array.from({ length: 11 }, (_, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => setForm(f => ({ ...f, dolor: i }))}
-                style={{
-                  border: `1px solid ${form.dolor === i ? c.sky : c.border}`,
-                  background: form.dolor === i ? c.sky : '#fff',
-                  color: form.dolor === i ? '#fff' : c.ink,
-                  borderRadius: 12,
-                  padding: '9px 0',
-                  fontWeight: 950,
-                  fontFamily: 'inherit',
-                  cursor: 'pointer'
-                }}
-              >{i}</button>
-            ))}
-          </div>
-          <div style={{ marginTop: 8, color: c.ink2, fontSize: 12, fontWeight: 900 }}>{form.dolor === '' ? 'Sin seleccionar' : `${form.dolor}/10 · ${painLabels[form.dolor]}`}</div>
-        </div>
+        <PainPicker value={form.dolor} onChange={(dolor) => setForm(f => ({ ...f, dolor }))} />
       </FormSection>
 
       <FormSection number="4" title="Monto de sesión" text="Dato administrativo para cobros y saldo.">
@@ -228,20 +190,121 @@ function MotivoModal({ onClose, onSave }) {
         </Field>
       </FormSection>
 
-      {error && <div style={{ border: `1px solid #F5A897`, background: c.redSoft, color: c.red, borderRadius: 16, padding: '11px 12px', fontSize: 13, fontWeight: 850 }}>{error}</div>}
-
-      <div style={{
-        display: 'flex', gap: 9, justifyContent: 'center', flexWrap: 'wrap', position: 'sticky', bottom: 0,
-        background: '#FFFFFF', padding: '13px 0 16px', borderTop: `1px solid ${c.line}`, zIndex: 2
-      }}>
-        <button type="button" onClick={onClose} style={s.btn}>Cancelar</button>
-        <button type="submit" disabled={saving} style={{ ...s.primary, opacity: saving ? .65 : 1 }}>{saving ? 'Guardando...' : 'Guardar'}</button>
-      </div>
+      {error && <ErrorBox>{error}</ErrorBox>}
+      <StickyActions onCancel={onClose} submitText={saving ? 'Guardando...' : 'Guardar'} disabled={saving} />
     </form>
+  </ModalShell>
+}
+
+function SessionModal({ motivo, onClose, onSave }) {
+  const today = new Date().toISOString().slice(0, 10)
+  const [form, setForm] = useState({ fecha: today, dolor: '', notas: '', monto_cobrado: '', pagado: false, tecnicas: [] })
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
+
+  function toggleTecnica(t) {
+    setForm(f => ({ ...f, tecnicas: f.tecnicas.includes(t) ? f.tecnicas.filter(x => x !== t) : [...f.tecnicas, t] }))
+  }
+
+  async function submit(e) {
+    e.preventDefault()
+    setError('')
+    setSaving(true)
+    try {
+      await onSave({
+        fecha: form.fecha,
+        dolor: form.dolor === '' ? null : Number(form.dolor),
+        notas: form.notas.trim(),
+        tecnicas: form.tecnicas.join(', '),
+        tecnicas_sesion: JSON.stringify(form.tecnicas),
+        ejercicios_sesion: JSON.stringify([]),
+        monto_cobrado: form.monto_cobrado || 0,
+        pagado: form.pagado ? 1 : 0,
+      })
+      onClose()
+    } catch (err) {
+      setError(err?.message || 'No se pudo guardar la sesión.')
+    } finally { setSaving(false) }
+  }
+
+  return <ModalShell onClose={onClose} maxWidth={500}>
+    <form onSubmit={submit} style={{ padding: '20px 18px 0', display: 'grid', gap: 16, background: '#FFFFFF', boxSizing: 'border-box', textAlign: 'center' }}>
+      <SectionTitle eyebrow="Nueva sesión" title={motivo?.lesion || motivo?.sintoma || 'Motivo de consulta'} centered />
+
+      <FormSection number="1" title="Fecha y dolor" text="Registro rápido de la sesión actual.">
+        <Field label="Fecha">
+          <input type="date" style={s.input} value={form.fecha} onChange={e => setForm(f => ({ ...f, fecha: e.target.value }))} required />
+        </Field>
+        <PainPicker value={form.dolor} onChange={(dolor) => setForm(f => ({ ...f, dolor }))} />
+      </FormSection>
+
+      <FormSection number="2" title="Qué hiciste en sesión" text="Seleccioná las técnicas usadas.">
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 8 }}>
+          {TECNICAS_OPCIONES.map(t => {
+            const active = form.tecnicas.includes(t)
+            return <button key={t} type="button" onClick={() => toggleTecnica(t)} style={{ border: `1px solid ${active ? c.sky : c.border}`, background: active ? '#E9F7FA' : '#fff', color: active ? c.skyDark : c.ink2, borderRadius: 15, padding: '12px 8px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }}>{active ? '✓ ' : ''}{t}</button>
+          })}
+        </div>
+      </FormSection>
+
+      <FormSection number="3" title="Notas clínicas" text="Resumen de evolución, respuesta al tratamiento o indicaciones.">
+        <textarea style={{ ...s.input, minHeight: 110, resize: 'vertical' }} value={form.notas} onChange={e => setForm(f => ({ ...f, notas: e.target.value }))} placeholder="Ej: buena tolerancia, dolor baja de 6 a 3, evitar saltos esta semana..." />
+      </FormSection>
+
+      <FormSection number="4" title="Cobro" text="Opcional, para mantener saldo actualizado.">
+        <Field label="Monto cobrado">
+          <input style={s.input} value={form.monto_cobrado} onChange={e => setForm(f => ({ ...f, monto_cobrado: e.target.value }))} placeholder="$" inputMode="numeric" />
+        </Field>
+        <button type="button" onClick={() => setForm(f => ({ ...f, pagado: !f.pagado }))} style={{ ...s.btn, background: form.pagado ? c.mint : '#fff', color: form.pagado ? c.mintDark : c.skyDark }}>{form.pagado ? '✓ Pagado' : 'Marcar como pagado'}</button>
+      </FormSection>
+
+      {error && <ErrorBox>{error}</ErrorBox>}
+      <StickyActions onCancel={onClose} submitText={saving ? 'Guardando...' : 'Guardar sesión'} disabled={saving} />
+    </form>
+  </ModalShell>
+}
+
+function ModalShell({ children, onClose, maxWidth = 460 }) {
+  return <div
+    onClick={onClose}
+    style={{
+      position: 'fixed', inset: 0, background: 'rgba(8,43,52,.44)', zIndex: 200,
+      display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      padding: 'max(14px, env(safe-area-inset-top)) 12px max(18px, env(safe-area-inset-bottom))',
+      boxSizing: 'border-box', overflowY: 'auto', WebkitOverflowScrolling: 'touch'
+    }}
+  >
+    <div onClick={e => e.stopPropagation()} style={{ ...s.card, width: '100%', maxWidth, maxHeight: 'calc(100dvh - 24px)', overflowY: 'auto', WebkitOverflowScrolling: 'touch', background: '#FFFFFF', boxSizing: 'border-box' }}>
+      {children}
+    </div>
   </div>
 }
 
-function MotivoDetail({ motivo, evoluciones, rutinas, onBack, onRoutine, onLegacy }) {
+function PainPicker({ value, onChange }) {
+  return <div>
+    <div style={s.label}>Dolor actual</div>
+    <div style={{ marginTop: -2, marginBottom: 9, color: c.muted, fontSize: 12, fontWeight: 800 }}>Escala 0 a 10: 0 sin dolor, 10 peor dolor imaginable.</div>
+    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, minmax(0, 1fr))', gap: 6 }}>
+      {Array.from({ length: 11 }, (_, i) => (
+        <button key={i} type="button" onClick={() => onChange(i)} style={{ border: `1px solid ${value === i ? c.sky : c.border}`, background: value === i ? c.sky : '#fff', color: value === i ? '#fff' : c.ink, borderRadius: 12, padding: '9px 0', fontWeight: 950, fontFamily: 'inherit', cursor: 'pointer' }}>{i}</button>
+      ))}
+    </div>
+    <div style={{ marginTop: 8, color: c.ink2, fontSize: 12, fontWeight: 900 }}>{value === '' ? 'Sin seleccionar' : `${value}/10 · ${painLabels[value]}`}</div>
+  </div>
+}
+
+function ErrorBox({ children }) {
+  return <div style={{ border: `1px solid #F5A897`, background: c.redSoft, color: c.red, borderRadius: 16, padding: '11px 12px', fontSize: 13, fontWeight: 850 }}>{children}</div>
+}
+
+function StickyActions({ onCancel, submitText, disabled }) {
+  return <div style={{ display: 'flex', gap: 9, justifyContent: 'center', flexWrap: 'wrap', position: 'sticky', bottom: 0, background: '#FFFFFF', padding: '13px 0 16px', borderTop: `1px solid ${c.line}`, zIndex: 2 }}>
+    <button type="button" onClick={onCancel} style={s.btn}>Cancelar</button>
+    <button type="submit" disabled={disabled} style={{ ...s.primary, opacity: disabled ? .65 : 1 }}>{submitText}</button>
+  </div>
+}
+
+function MotivoDetail({ motivo, evoluciones, rutinas, onBack, onRoutine, onNewSession }) {
   const [tab, setTab] = useState('sesiones')
   return <section style={{ ...s.card, padding: 15 }}>
     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start', flexWrap: 'wrap' }}>
@@ -252,7 +315,7 @@ function MotivoDetail({ motivo, evoluciones, rutinas, onBack, onRoutine, onLegac
         {motivo.diagnostico && <div style={{ marginTop: 5, color: c.ink2, fontSize: 13 }}>{motivo.diagnostico}</div>}
       </div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <button type="button" onClick={onLegacy} style={s.btn}>+ Sesión</button>
+        <button type="button" onClick={onNewSession} style={s.btn}>+ Sesión</button>
         <button type="button" onClick={onRoutine} style={s.primary}>+ Rutina</button>
       </div>
     </div>
@@ -261,7 +324,7 @@ function MotivoDetail({ motivo, evoluciones, rutinas, onBack, onRoutine, onLegac
       <button type="button" onClick={() => setTab('rutinas')} style={{ ...tabBtn(tab === 'rutinas') }}>Rutinas ({rutinas.length})</button>
     </div>
     <div style={{ marginTop: 12 }}>
-      {tab === 'sesiones' ? <SessionsList items={evoluciones} onLegacy={onLegacy} /> : <RutinasList items={rutinas} onRoutine={onRoutine} />}
+      {tab === 'sesiones' ? <SessionsList items={evoluciones} onNewSession={onNewSession} /> : <RutinasList items={rutinas} onRoutine={onRoutine} />}
     </div>
   </section>
 }
@@ -270,8 +333,8 @@ function tabBtn(active) {
   return { border: `1px solid ${active ? c.sky : c.border}`, background: active ? '#E9F7FA' : c.white, color: active ? c.skyDark : c.ink2, borderRadius: 16, padding: '11px 12px', fontWeight: 950, cursor: 'pointer', fontFamily: 'inherit' }
 }
 
-function SessionsList({ items, onLegacy }) {
-  if (!items.length) return <Empty title="Sin sesiones cargadas" text="Cuando termines de atender, cargá la sesión dentro de este motivo." action="Cargar sesión" onAction={onLegacy} />
+function SessionsList({ items, onNewSession }) {
+  if (!items.length) return <Empty title="Sin sesiones cargadas" text="Cuando termines de atender, cargá la sesión dentro de este motivo." action="Cargar sesión" onAction={onNewSession} />
   return <div style={{ display: 'grid', gap: 9 }}>{items.map((e, idx) => {
     const tecnicas = parseJsonList(e.tecnicas_sesion)
     return <div key={e.id || idx} style={{ border: `1px solid ${c.border}`, borderRadius: 18, background: '#fff', padding: 12 }}>
@@ -319,6 +382,7 @@ export default function PatientMotivoDashboard() {
   const [loading, setLoading] = useState(true)
   const [showLegacy, setShowLegacy] = useState(false)
   const [showMotivoModal, setShowMotivoModal] = useState(false)
+  const [showSessionModal, setShowSessionModal] = useState(false)
 
   const selected = useMemo(() => motivos.find(m => String(m.id) === String(selectedId)), [motivos, selectedId])
 
@@ -354,6 +418,18 @@ export default function PatientMotivoDashboard() {
     await loadBase()
   }
 
+  async function createSession(data) {
+    if (!selectedId) return
+    await api.createEvolucion(selectedId, data)
+    await loadSelected(selectedId)
+    await loadBase()
+  }
+
+  function openRoutineForSelected() {
+    if (!selectedId) return navigate(`/kine/rutinas-clinicas/${id}`)
+    navigate(`/kine/rutinas-clinicas/${id}?motivoId=${selectedId}`)
+  }
+
   if (showLegacy) return <div style={s.shell}><button type="button" onClick={() => setShowLegacy(false)} style={{ ...s.btn, justifySelf: 'start' }}>← Volver a vista por lesión</button><PacienteDetalle /></div>
   if (loading || !paciente) return <div style={{ ...s.card, padding: 22, textAlign: 'center', color: c.muted }}>Cargando paciente...</div>
 
@@ -365,8 +441,9 @@ export default function PatientMotivoDashboard() {
         <button type="button" onClick={() => setShowMotivoModal(true)} style={s.btn}>+ Agregar</button>
       </SectionTitle>
       {motivos.length === 0 ? <Empty title="Todavía no hay motivos" text="Agregá el primer motivo de consulta para empezar a cargar sesiones y rutinas." action="Agregar motivo" onAction={() => setShowMotivoModal(true)} /> : <div style={{ display: 'grid', gap: 10 }}>{motivos.map(m => <MotivoCard key={m.id} motivo={m} metrics={metrics[m.id]} active={String(m.id) === String(selectedId)} onClick={() => setSelectedId(m.id)} />)}</div>}
-    </section> : <MotivoDetail motivo={selected} evoluciones={evoluciones} rutinas={rutinas} onBack={() => setSelectedId(null)} onRoutine={() => navigate(`/kine/rutinas-clinicas/${id}`)} onLegacy={() => setShowLegacy(true)} />}
+    </section> : <MotivoDetail motivo={selected} evoluciones={evoluciones} rutinas={rutinas} onBack={() => setSelectedId(null)} onRoutine={openRoutineForSelected} onNewSession={() => setShowSessionModal(true)} />}
 
     {showMotivoModal && <MotivoModal onClose={() => setShowMotivoModal(false)} onSave={createMotivo} />}
+    {showSessionModal && selected && <SessionModal motivo={selected} onClose={() => setShowSessionModal(false)} onSave={createSession} />}
   </div>
 }
