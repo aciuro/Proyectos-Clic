@@ -109,3 +109,37 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+/* Mobile safety for the clinical routine editor.
+   The exercise library and selected-items panel must stack vertically on phones.
+   React inline styles set a two-column grid, so we override with !important. */
+@media (max-width: 760px) {
+  div[style*="minmax(0px, 1.35fr)"][style*="minmax(290px"] {
+    display: grid !important;
+    grid-template-columns: 1fr !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    overflow: visible !important;
+  }
+
+  div[style*="minmax(0px, 1.35fr)"][style*="minmax(290px"] > section,
+  div[style*="minmax(0px, 1.35fr)"][style*="minmax(290px"] > div {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    opacity: 1 !important;
+    box-sizing: border-box !important;
+  }
+
+  div[style*="grid-template-columns: repeat(4, 1fr)"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  div[style*="grid-template-columns: repeat(3, 1fr)"] {
+    grid-template-columns: 1fr !important;
+  }
+}
