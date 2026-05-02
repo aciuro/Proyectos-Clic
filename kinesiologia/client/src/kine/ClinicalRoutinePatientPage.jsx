@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams, useLocation } from 'react-router-dom'
 import { api } from './api.js'
-import ClinicalRoutineEditorWizard from './ClinicalRoutineEditorWizard.jsx'
+import ClinicalRoutineSmartEditor from './ClinicalRoutineSmartEditor.jsx'
 import { buildRoutinePayload, getRoutineContext, normalizeRoutineItems, summarizeItem } from './clinicalRoutineUtils.js'
 
 const c = {
@@ -121,7 +121,7 @@ function EditorModal({ motivoId, rutina, onClose, onSaved }) {
         </div>
 
         <div style={{ padding: '16px 16px 34px', display: 'grid', gap: 14, overflowX: 'hidden' }}>
-          <ClinicalRoutineEditorWizard
+          <ClinicalRoutineSmartEditor
             rutina={{ ...form, ejercicios: editorData.ejercicios }}
             onGeneralChange={(general) => setForm(prev => ({ ...prev, ...general }))}
             onChange={setEditorData}
