@@ -33,11 +33,16 @@ db.exec(`
     item_key    TEXT,
     nombre      TEXT,
     hecho       INTEGER NOT NULL DEFAULT 0,
+    dolor       INTEGER,
+    dolor_at    TEXT,
     hecho_at    TEXT,
     updated_at  TEXT DEFAULT (datetime('now','localtime')),
     UNIQUE(intento_id, item_index)
   );
 `)
+
+try { db.prepare('ALTER TABLE rutina_progreso_items ADD COLUMN dolor INTEGER').run() } catch {}
+try { db.prepare('ALTER TABLE rutina_progreso_items ADD COLUMN dolor_at TEXT').run() } catch {}
 
 function auth(req, res, next) {
   const token = req.headers.authorization?.split(' ')[1]
@@ -153,11 +158,16 @@ function getProgressPayload(rutina, periodoKey = currentPeriodKey()) {
       tipo: item?.tipo || item?.bloque || 'ejercicio',
       hecho: !!row?.hecho,
       hecho_at: row?.hecho_at || null,
+      dolor: row?.dolor ?? null,
+      dolor_at: row?.dolor_at || null,
+      alerta_dolor: Number(row?.dolor || 0) >= 5,
       series: item?.series || '',
       repeticiones: item?.repeticiones || item?.reps || '',
       reps: item?.repeticiones || item?.reps || '',
       segundos: item?.segundos || '',
       pausa: item?.pausa || '',
+      peso: item?.peso || item?.carga || '',
+      carga: item?.carga || item?.peso || '',
       indicacion: item?.indicacion || item?.detalle || item?.descripcion || '',
       descripcion: item?.descripcion || item?.detalle || item?.indicacion || '',
       imagen: itemImage(item),
@@ -184,6 +194,7 @@ function getProgressPayload(rutina, periodoKey = currentPeriodKey()) {
     objetivo: getTargetCount(rutina),
     total_items: items.length,
     hechos: items.filter(i => i.hecho).length,
+    dolor_alertas: items.filter(i => Number(i.dolor || 0) >= 5),
     items,
   }
 }
@@ -203,6 +214,15 @@ function getPacienteAdherencia(pacienteId, periodoKey = currentPeriodKey()) {
   const detalle = rutinas.map((r) => {
     const progress = getProgressPayload(r, periodoKey)
     const omitidos = progress.items.filter(i => !i.hecho).map(i => i.nombre)
+    const dolor_alertas = progress.items.filter(i => Number(i.dolor || 0) >= 5).map(i => ({
+      rutina_id: r.id,
+      item_index: i.index,
+      nombre: i.nombre,
+      dolor: i.dolor,
+      series: i.series,
+      repeticiones: i.repeticiones,
+      peso: i.peso || i.carga || '',
+    }))
     const pct = progress.objetivo ? Math.min(100, Math.round((progress.completadas / progress.objetivo) * 100)) : 0
     return {
       rutina_id: r.id,
@@ -216,10 +236,12 @@ function getPacienteAdherencia(pacienteId, periodoKey = currentPeriodKey()) {
       ejercicios_hechos: progress.hechos,
       ejercicios_total: progress.total_items,
       omitidos,
+      dolor_alertas,
     }
   })
   const totalObjetivo = detalle.reduce((a, r) => a + (Number(r.objetivo) || 0), 0)
   const totalCompletadas = detalle.reduce((a, r) => a + (Number(r.completadas) || 0), 0)
+  const dolorAlertas = detalle.flatMap(r => r.dolor_alertas || [])
   return {
     paciente_id: Number(pacienteId),
     periodo_key: periodoKey,
@@ -227,6 +249,7 @@ function getPacienteAdherencia(pacienteId, periodoKey = currentPeriodKey()) {
     completadas: totalCompletadas,
     objetivo: totalObjetivo,
     porcentaje: totalObjetivo ? Math.min(100, Math.round((totalCompletadas / totalObjetivo) * 100)) : 0,
+    dolor_alertas: dolorAlertas,
     detalle,
   }
 }
@@ -274,18 +297,45 @@ router.patch('/rutinas/:id/progreso/items/:itemIndex', auth, (req, res) => {
   const intento = getOrCreateCurrentAttempt(rutina, periodoKey)
   const item = ejercicios[itemIndex]
   const hecho = req.body?.hecho ? 1 : 0
+  const dolor = req.body?.dolor === undefined || req.body?.dolor === null || req.body?.dolor === '' ? null : Math.max(0, Math.min(10, Number(req.body.dolor)))
+
   db.prepare(`
-    INSERT INTO rutina_progreso_items (intento_id, item_index, item_key, nombre, hecho, hecho_at, updated_at)
-    VALUES (?, ?, ?, ?, ?, CASE WHEN ?=1 THEN datetime('now','localtime') ELSE NULL END, datetime('now','localtime'))
+    INSERT INTO rutina_progreso_items (intento_id, item_index, item_key, nombre, hecho, dolor, dolor_at, hecho_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, CASE WHEN ? IS NOT NULL THEN datetime('now','localtime') ELSE NULL END, CASE WHEN ?=1 THEN datetime('now','localtime') ELSE NULL END, datetime('now','localtime'))
     ON CONFLICT(intento_id, item_index) DO UPDATE SET
       item_key=excluded.item_key,
       nombre=excluded.nombre,
       hecho=excluded.hecho,
+      dolor=COALESCE(excluded.dolor, rutina_progreso_items.dolor),
+      dolor_at=CASE WHEN excluded.dolor IS NOT NULL THEN datetime('now','localtime') ELSE rutina_progreso_items.dolor_at END,
       hecho_at=CASE WHEN excluded.hecho=1 THEN COALESCE(rutina_progreso_items.hecho_at, datetime('now','localtime')) ELSE NULL END,
       updated_at=datetime('now','localtime')
-  `).run(intento.id, itemIndex, String(item?.id || item?.key || itemIndex), itemName(item, itemIndex), hecho, hecho)
+  `).run(intento.id, itemIndex, String(item?.id || item?.key || itemIndex), itemName(item, itemIndex), hecho, dolor, dolor, hecho)
 
   syncCompletionIfNeeded(intento.id, ejercicios.length)
+  res.json(getProgressPayload(rutina, periodoKey))
+})
+
+router.patch('/rutinas/:id/progreso/items/:itemIndex/dolor', auth, (req, res) => {
+  const rutina = getRutinaConPaciente(req.params.id)
+  if (!puedeAccederRutina(req, rutina)) return res.status(403).json({ error: 'Sin acceso' })
+  const ejercicios = parseEjercicios(rutina)
+  const itemIndex = Number(req.params.itemIndex)
+  if (!Number.isInteger(itemIndex) || itemIndex < 0 || itemIndex >= ejercicios.length) return res.status(400).json({ error: 'Ítem inválido' })
+  const dolor = req.body?.dolor === null || req.body?.dolor === '' ? null : Math.max(0, Math.min(10, Number(req.body?.dolor || 0)))
+  const periodoKey = req.body?.periodo_key || currentPeriodKey()
+  const intento = getOrCreateCurrentAttempt(rutina, periodoKey)
+  const item = ejercicios[itemIndex]
+  db.prepare(`
+    INSERT INTO rutina_progreso_items (intento_id, item_index, item_key, nombre, dolor, dolor_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, CASE WHEN ? IS NOT NULL THEN datetime('now','localtime') ELSE NULL END, datetime('now','localtime'))
+    ON CONFLICT(intento_id, item_index) DO UPDATE SET
+      item_key=excluded.item_key,
+      nombre=excluded.nombre,
+      dolor=excluded.dolor,
+      dolor_at=CASE WHEN excluded.dolor IS NOT NULL THEN datetime('now','localtime') ELSE NULL END,
+      updated_at=datetime('now','localtime')
+  `).run(intento.id, itemIndex, String(item?.id || item?.key || itemIndex), itemName(item, itemIndex), dolor, dolor)
   res.json(getProgressPayload(rutina, periodoKey))
 })
 
