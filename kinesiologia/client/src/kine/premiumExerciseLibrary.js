@@ -1,3 +1,5 @@
+import { exerciseLibrary } from './exerciseLibrary.js'
+
 const BASE_EXERCISES = [
   // Tobillo / pie
   ['Elevación de talones bilateral', 'Tobillo / pie', ['tobillo'], ['concentrica'], ['gemelos', 'sóleo', 'bilateral']],
@@ -140,15 +142,110 @@ function normalizeText(value = '') {
   return String(value).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+function tokens(value = '') {
+  return normalizeText(value)
+    .replace(/[^a-z0-9ñ\s]/g, ' ')
+    .split(/\s+/)
+    .filter(t => t.length > 2 && !['con','del','las','los','una','uno','para','bilateral','unilateral','excentrica','excentrico','isometrico','isometrica'].includes(t))
+}
+
+const VISUAL_LIBRARY = exerciseLibrary.flatMap(group => group.items.map(item => ({ ...item, groupTitle: group.title, norm: normalizeText(item.name), toks: tokens(item.name) })))
+
+const MANUAL_IMAGE_ALIASES = {
+  'elevacion de talones': 'Elevación de talones parado',
+  'gemelo': 'Elevación de talones parado',
+  'soleo': 'Elevación de talones sentado',
+  'camilla de cuadriceps': 'Silla extensora',
+  'isometrico en camilla de cuadriceps': 'Silla extensora',
+  'camilla de isquiotibiales': 'Mesa flexora',
+  'prensa': 'Prensa de piernas 45°',
+  'sentadilla hack': 'Sentadilla hack',
+  'sentadilla': 'Sentadilla libre',
+  'step up': 'Step up',
+  'step down': 'Step up',
+  'split squat': 'Sentadilla búlgara',
+  'nordico': 'Curl nórdico',
+  'curl femoral': 'Mesa flexora',
+  'puente de gluteo': 'Puente de glúteo',
+  'hip thrust': 'Hip thrust',
+  'peso muerto rumano': 'Peso muerto Stiff',
+  'copenhagen': 'Aducción de cadera en máquina',
+  'abduccion de cadera': 'Abducción de cadera en máquina',
+  'aduccion de cadera': 'Aducción de cadera en máquina',
+  'patada de gluteo': 'Glúteo patada en máquina',
+  'rotacion externa hombro': 'Rotación externa del hombro',
+  'rotacion interna hombro': 'Rotación interna del hombro',
+  'face pull': 'Face pull',
+  'remo bajo': 'Remo bajo con triángulo',
+  'remo unilateral': 'Remo con mancuerna',
+  'jalon unilateral': 'Jalón al pecho pronado',
+  'pullover': 'Pullover',
+  'pallof': 'Pallof press',
+  'plancha frontal': 'Plancha frontal',
+  'plancha lateral': 'Plancha lateral',
+  'bird dog': 'Bird dog',
+  'dead bug': 'Dead bug',
+  'curl biceps': 'Curl de bíceps con barra',
+  'triceps': 'Tríceps pulley',
+  'extension de muneca': 'Extensión de muñecas',
+  'flexion de muneca': 'Flexión de muñecas',
+}
+
+function findByAlias(name) {
+  const n = normalizeText(name)
+  const aliasKey = Object.keys(MANUAL_IMAGE_ALIASES).find(k => n.includes(k))
+  if (!aliasKey) return null
+  const wanted = normalizeText(MANUAL_IMAGE_ALIASES[aliasKey])
+  return VISUAL_LIBRARY.find(x => x.norm === wanted) || VISUAL_LIBRARY.find(x => x.norm.includes(wanted) || wanted.includes(x.norm)) || null
+}
+
+function scoreMatch(exerciseName, visual) {
+  const a = tokens(exerciseName)
+  if (!a.length || !visual.toks.length) return 0
+  const overlap = a.filter(t => visual.toks.includes(t)).length
+  const base = overlap / Math.max(a.length, visual.toks.length)
+  const exactBoost = visual.norm === normalizeText(exerciseName) ? 2 : 0
+  const containsBoost = visual.norm.includes(normalizeText(exerciseName)) || normalizeText(exerciseName).includes(visual.norm) ? 0.7 : 0
+  return base + exactBoost + containsBoost
+}
+
+function findVisualImages(name) {
+  const alias = findByAlias(name)
+  if (alias?.images?.length) return { images: alias.images, source: alias.name, real: true }
+
+  const exact = VISUAL_LIBRARY.find(x => x.norm === normalizeText(name))
+  if (exact?.images?.length) return { images: exact.images, source: exact.name, real: true }
+
+  const best = VISUAL_LIBRARY
+    .map(v => ({ v, score: scoreMatch(name, v) }))
+    .sort((a, b) => b.score - a.score)[0]
+
+  if (best?.score >= 0.28 && best.v?.images?.length) return { images: best.v.images, source: best.v.name, real: true }
+  return { images: ['/exercise-placeholder.svg'], source: 'placeholder', real: false }
+}
+
+function isAerobicOrField(name, tags = []) {
+  const hay = normalizeText([name, ...tags].join(' '))
+  return ['bicicleta', 'cinta', 'correr', 'caminar', 'eliptico', 'intermitente', 'pasadas', 'trote', 'cardio'].some(x => hay.includes(x))
+}
+
 function mapExercise(row) {
   const [name, group, regiones, contracciones, tags] = row
-  return { name, group, regiones, contracciones, tags, images: [] }
+  const visual = isAerobicOrField(name, tags) ? { images: [], source: 'sin imagen requerida', real: false } : findVisualImages(name)
+  return { name, group, regiones, contracciones, tags, images: visual.images, imageSource: visual.source, hasRealImage: visual.real }
 }
 
 export const premiumExerciseLibrary = BASE_EXERCISES.map(mapExercise)
 
 export function getPremiumExerciseGroups() {
   return ['Todos', ...Array.from(new Set(premiumExerciseLibrary.map(e => e.group))).sort((a, b) => a.localeCompare(b))]
+}
+
+export function auditPremiumExerciseImages() {
+  const required = premiumExerciseLibrary.filter(e => !isAerobicOrField(e.name, e.tags))
+  const withReal = required.filter(e => e.hasRealImage)
+  const missing = required.filter(e => !e.hasRealImage)
+  return { total: premiumExerciseLibrary.length, required: required.length, withReal: withReal.length, missing: missing.length, missingNames: missing.map(e => e.name) }
 }
 
 export function getPremiumExerciseOptions(context = 'gimnasio', search = '', group = 'Todos', region = 'Todos', contraction = 'Todos') {
@@ -163,8 +260,9 @@ export function getPremiumExerciseOptions(context = 'gimnasio', search = '', gro
       return haystack.includes(q)
     })
     .sort((a, b) => {
+      const imageScore = Number(b.hasRealImage) - Number(a.hasRealImage)
       const regionScore = (e) => region !== 'Todos' && e.regiones?.[0] === region ? 0 : 1
       const groupScore = (e) => e.group.includes('/') ? 0 : 1
-      return regionScore(a) - regionScore(b) || groupScore(a) - groupScore(b) || a.name.localeCompare(b.name)
+      return imageScore || regionScore(a) - regionScore(b) || groupScore(a) - groupScore(b) || a.name.localeCompare(b.name)
     })
 }
