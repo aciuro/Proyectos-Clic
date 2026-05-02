@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import ClinicalRoutineEditorWizard from './ClinicalRoutineEditorWizard.jsx'
 import { getExerciseSuggestions, inferArticulationFromText, getSuggestionSummary } from './exerciseSuggestions.js'
+import { getPremiumExerciseOptions } from './premiumExerciseLibrary.js'
 import { api } from './api.js'
 
 const c = {
@@ -28,15 +29,58 @@ const fieldStyle = {
   outline: 'none',
 }
 
+function norm(text = '') {
+  return String(text).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
 function itemText(item = {}) {
-  return String(item.nombre || item.name || item.texto || item.titulo || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  return norm(item.nombre || item.name || item.texto || item.titulo || '')
 }
 
 function matches(item, query = '') {
-  const q = String(query || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const q = norm(query)
   if (!q) return false
   const name = itemText(item)
   return name.includes(q) || q.split(/\s+/).some(t => t.length > 3 && name.includes(t))
+}
+
+function inferMuscle(text = '') {
+  const q = norm(text)
+  if (q.includes('cuad') || q.includes('vasto') || q.includes('recto femoral')) return 'cuadriceps'
+  if (q.includes('isquio') || q.includes('femoral')) return 'isquiotibiales'
+  if (q.includes('gemelo') || q.includes('soleo') || q.includes('aquiles')) return 'gemelos'
+  if (q.includes('gluteo mayor') || q.includes('hip thrust') || q.includes('puente')) return 'gluteo mayor'
+  if (q.includes('gluteo medio') || q.includes('abduccion') || q.includes('clamshell')) return 'gluteo medio'
+  if (q.includes('aductor')) return 'aductores'
+  return q || 'general'
+}
+
+function inferChainFromName(name = '', tags = []) {
+  const q = norm([name, ...tags].join(' '))
+  if (q.includes('camilla') || q.includes('silla extensora') || q.includes('curl femoral') || q.includes('banda') || q.includes('polea') || q.includes('elevacion de pierna recta')) return 'abierta'
+  if (q.includes('sentadilla') || q.includes('step') || q.includes('split') || q.includes('prensa') || q.includes('hip thrust') || q.includes('puente') || q.includes('peso muerto') || q.includes('balance') || q.includes('copenhagen')) return 'cerrada'
+  return 'mixta'
+}
+
+function matchesChain(option, chain) {
+  if (!chain || chain === 'cualquiera') return true
+  const inferred = inferChainFromName(option.name, option.tags || [])
+  return inferred === chain || inferred === 'mixta'
+}
+
+function matchesMuscle(option, muscle) {
+  if (!muscle) return true
+  const hay = norm([option.name, option.group, ...(option.tags || [])].join(' '))
+  const m = norm(muscle)
+  const aliases = {
+    cuadriceps: ['cuadriceps', 'extension', 'sentadilla', 'step', 'prensa', 'spanish', 'vasto'],
+    isquiotibiales: ['isquio', 'isquiosurales', 'femoral', 'curl femoral', 'nordico', 'peso muerto'],
+    gemelos: ['gemelo', 'talon', 'talones', 'soleo', 'aquiles'],
+    'gluteo mayor': ['gluteo mayor', 'gluteo', 'hip thrust', 'puente', 'patada'],
+    'gluteo medio': ['gluteo medio', 'abduccion', 'clamshell', 'monster walk', 'caminata lateral'],
+    aductores: ['aductor', 'aduccion', 'copenhagen'],
+  }
+  return (aliases[m] || [m]).some(a => hay.includes(a))
 }
 
 function makeExercise(action = {}) {
@@ -48,6 +92,10 @@ function makeExercise(action = {}) {
     repeticiones: action.repeticiones || action.reps || '10',
     pausa: action.pausa || '60 seg',
     indicacion: action.indicacion || action.detalle || '',
+    musculo: action.musculo || inferMuscle(action.nombre || action.name || ''),
+    contraccion: action.contraccion || '',
+    cadena: action.cadena || inferChainFromName(action.nombre || action.name || '', action.tags || []),
+    imagen: action.imagen || action.image || null,
     sugerido_ia: true,
   }
 }
@@ -73,10 +121,86 @@ function makeIndication(action = {}) {
   }
 }
 
+function makeMobility(action = {}) {
+  return {
+    tipo: 'movilidad',
+    bloque: 'movilidad',
+    nombre: action.nombre || 'Bicicleta fija',
+    duracion: action.duracion || '10 min',
+    detalle: action.detalle || 'Entrada en calor suave',
+    sugerido_ia: true,
+  }
+}
+
+function makeStretching(action = {}) {
+  return {
+    tipo: 'indicacion',
+    bloque: 'indicacion',
+    texto: `${action.nombre || 'Elongación final'} · ${action.duracion || '5-8 min'} · ${action.detalle || 'Suave, sin dolor'}`,
+    sugerido_ia: true,
+  }
+}
+
+function resolveExerciseQuery(action = {}) {
+  const cantidad = Number(action.cantidad || 1)
+  const region = action.region || 'Todos'
+  const contraccion = action.contraccion || 'Todos'
+  const musculo = action.musculo || ''
+  const cadena = action.cadena || 'cualquiera'
+
+  const options = getPremiumExerciseOptions('gimnasio', '', 'Todos', region, contraccion)
+    .filter(opt => matchesMuscle(opt, musculo))
+    .filter(opt => matchesChain(opt, cadena))
+
+  const fallback = getPremiumExerciseOptions('gimnasio', '', 'Todos', region, contraccion)
+    .filter(opt => matchesMuscle(opt, musculo))
+
+  return (options.length ? options : fallback).slice(0, cantidad).map(opt => makeExercise({
+    nombre: opt.name,
+    series: action.series || (contraccion === 'isometrica' ? '4' : '3'),
+    repeticiones: action.repeticiones || (contraccion === 'isometrica' ? '30-45 seg' : '8-10'),
+    pausa: action.pausa || '60-90 seg',
+    indicacion: action.indicacion || (contraccion === 'excentrica' ? 'Bajada lenta y controlada' : ''),
+    musculo,
+    contraccion,
+    cadena: cadena === 'cualquiera' ? inferChainFromName(opt.name, opt.tags || []) : cadena,
+    imagen: opt.images?.[0],
+    tags: opt.tags || [],
+  }))
+}
+
+function interleaveExercises(items = []) {
+  const warm = items.filter(it => ['movilidad', 'cardio'].includes(it.tipo || it.bloque))
+  const gym = items.filter(it => (it.tipo === 'ejercicio' || it.bloque === 'gimnasio'))
+  const rest = items.filter(it => !['movilidad', 'cardio'].includes(it.tipo || it.bloque) && !(it.tipo === 'ejercicio' || it.bloque === 'gimnasio'))
+
+  const buckets = new Map()
+  gym.forEach(item => {
+    const key = inferMuscle(item.musculo || item.nombre || '')
+    if (!buckets.has(key)) buckets.set(key, [])
+    buckets.get(key).push(item)
+  })
+
+  const result = []
+  let lastKey = ''
+  while ([...buckets.values()].some(list => list.length)) {
+    const candidates = [...buckets.entries()]
+      .filter(([, list]) => list.length)
+      .sort((a, b) => b[1].length - a[1].length)
+    const chosen = candidates.find(([key]) => key !== lastKey) || candidates[0]
+    const [key, list] = chosen
+    result.push(list.shift())
+    lastKey = key
+  }
+
+  return [...warm, ...result, ...rest]
+}
+
 function reorderClinical(items = []) {
   const order = { movilidad: 0, cardio: 1, ejercicio: 2, gimnasio: 2, campo: 3, agente: 4, post: 4, indicacion: 5 }
   const type = it => it.tipo || it.bloque || 'ejercicio'
-  return [...items].sort((a, b) => (order[type(a)] ?? 9) - (order[type(b)] ?? 9))
+  const grouped = [...items].sort((a, b) => (order[type(a)] ?? 9) - (order[type(b)] ?? 9))
+  return interleaveExercises(grouped)
 }
 
 function applyActionsToRoutine(rutina = {}, actions = []) {
@@ -90,6 +214,22 @@ function applyActionsToRoutine(rutina = {}, actions = []) {
     if (action.type === 'add_exercise') {
       ejercicios.push(makeExercise(action))
       applied.push(`Agregado ejercicio: ${action.nombre || 'Ejercicio'}`)
+    }
+
+    if (action.type === 'add_exercise_query') {
+      const resolved = resolveExerciseQuery(action)
+      ejercicios.push(...resolved)
+      applied.push(`Agregados ${resolved.length} ejercicios de ${action.musculo || 'biblioteca'}${action.cadena ? ` · cadena ${action.cadena}` : ''}`)
+    }
+
+    if (action.type === 'add_mobility' || action.type === 'add_cardio') {
+      ejercicios.push(makeMobility(action))
+      applied.push(`Agregada movilidad/cardio: ${action.nombre || 'Bicicleta fija'}`)
+    }
+
+    if (action.type === 'add_stretching') {
+      ejercicios.push(makeStretching(action))
+      applied.push('Agregada elongación final')
     }
 
     if (action.type === 'add_agent') {
@@ -137,12 +277,13 @@ function applyActionsToRoutine(rutina = {}, actions = []) {
       applied.push(`Frecuencia: ${next.frecuencia}`)
     }
 
-    if (action.type === 'reorder_clinical') {
+    if (action.type === 'interleave_groups' || action.type === 'reorder_clinical') {
       ejercicios = reorderClinical(ejercicios)
-      applied.push('Orden clínico aplicado')
+      applied.push('Orden clínico aplicado con intercalado de grupos')
     }
   })
 
+  ejercicios = reorderClinical(ejercicios)
   next.ejercicios = ejercicios
   return { rutina: next, applied }
 }
@@ -193,14 +334,14 @@ export default function ClinicalRoutineSmartEditor(props) {
   function applyAll() {
     commitRoutine({
       ...localRutina,
-      ejercicios: [...(localRutina?.ejercicios || []), ...suggestions],
+      ejercicios: reorderClinical([...(localRutina?.ejercicios || []), ...suggestions]),
     }, 'Sugerencias agregadas al borrador. Revisá, editá o eliminá antes de guardar.')
   }
 
   function applyOne(ex) {
     commitRoutine({
       ...localRutina,
-      ejercicios: [...(localRutina?.ejercicios || []), ex],
+      ejercicios: reorderClinical([...(localRutina?.ejercicios || []), ex]),
     }, `${ex.nombre || 'Ejercicio'} agregado al borrador.`)
   }
 
@@ -248,143 +389,49 @@ export default function ClinicalRoutineSmartEditor(props) {
 
   return (
     <div style={{ display: 'grid', gap: 12 }}>
-      <div
-        style={{
-          border: `1px solid ${c.border}`,
-          borderRadius: 20,
-          padding: 14,
-          background: '#fff',
-        }}
-      >
-        <div style={{ fontWeight: 900, color: c.ink }}>
-          Asistente IA
-        </div>
-
+      <div style={{ border: `1px solid ${c.border}`, borderRadius: 20, padding: 14, background: '#fff' }}>
+        <div style={{ fontWeight: 900, color: c.ink }}>Asistente IA</div>
         <div style={{ marginTop: 5, fontSize: 12, color: c.muted, lineHeight: 1.35 }}>
-          Auto-aplica cambios al borrador. Podés editarlos o eliminarlos antes de tocar Guardar.
+          Auto-aplica al borrador, busca ejercicios reales de la biblioteca e intercala grupos musculares.
         </div>
-
-        <textarea
-          value={iaPrompt}
-          onChange={e => setIaPrompt(e.target.value)}
-          placeholder="Ej: agregá hielo 15 min, bajá a 3 series, sacá step down..."
-          style={{ ...fieldStyle, minHeight: 76, marginTop: 10, resize: 'vertical' }}
-        />
-
-        <button
-          type="button"
-          onClick={handleIA}
-          disabled={iaLoading || !iaPrompt.trim()}
-          style={{
-            marginTop: 8,
-            border: 'none',
-            borderRadius: 14,
-            padding: '10px 14px',
-            background: `linear-gradient(135deg, ${c.sky}, ${c.skyDark})`,
-            color: '#fff',
-            fontWeight: 900,
-            cursor: iaLoading || !iaPrompt.trim() ? 'default' : 'pointer',
-            opacity: iaLoading || !iaPrompt.trim() ? 0.55 : 1,
-            fontFamily: 'inherit',
-          }}
-        >
+        <textarea value={iaPrompt} onChange={e => setIaPrompt(e.target.value)} placeholder="Ej: bici 10 min, 2 excéntricos cuádriceps cadena cerrada, 2 concéntricos isquios, gemelo, glúteo mayor y elongación..." style={{ ...fieldStyle, minHeight: 76, marginTop: 10, resize: 'vertical' }} />
+        <button type="button" onClick={handleIA} disabled={iaLoading || !iaPrompt.trim()} style={{ marginTop: 8, border: 'none', borderRadius: 14, padding: '10px 14px', background: `linear-gradient(135deg, ${c.sky}, ${c.skyDark})`, color: '#fff', fontWeight: 900, cursor: iaLoading || !iaPrompt.trim() ? 'default' : 'pointer', opacity: iaLoading || !iaPrompt.trim() ? 0.55 : 1, fontFamily: 'inherit' }}>
           {iaLoading ? 'Pensando y aplicando...' : 'Enviar y auto-aplicar'}
         </button>
-
-        {iaAppliedMessage && (
-          <div style={{ marginTop: 10, border: `1px solid rgba(22,133,95,.25)`, background: c.mint, color: c.mintDark, borderRadius: 12, padding: 10, fontSize: 13, fontWeight: 900 }}>
-            {iaAppliedMessage}
-          </div>
-        )}
-
-        {iaError && (
-          <div style={{ marginTop: 10, border: '1px solid #F5A897', background: '#FEF2F2', color: '#B91C1C', borderRadius: 12, padding: 10, fontSize: 13, fontWeight: 800 }}>
-            {iaError}
-          </div>
-        )}
-
-        {iaResponse && (
-          <div style={{ marginTop: 12, border: `1px solid ${c.border}`, background: '#F6FBFC', borderRadius: 14, padding: 12 }}>
-            <div style={{ fontWeight: 900, color: c.ink }}>
-              IA aplicó:
-            </div>
-
-            {iaResponse.resumen && (
-              <div style={{ marginTop: 5, fontSize: 13, color: c.muted }}>
-                {iaResponse.resumen}
-              </div>
-            )}
-
-            {Array.isArray(iaResponse.actions) && iaResponse.actions.length > 0 && (
-              <div style={{ display: 'grid', gap: 7, marginTop: 10 }}>
-                {iaResponse.actions.map((action, index) => (
-                  <div key={`${action.type}-${index}`} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 12, padding: 10, fontSize: 12, color: c.ink }}>
-                    <b>{action.type}</b>{action.nombre ? ` · ${action.nombre}` : ''}{action.query ? ` · ${action.query}` : ''}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+        {iaAppliedMessage && <div style={{ marginTop: 10, border: `1px solid rgba(22,133,95,.25)`, background: c.mint, color: c.mintDark, borderRadius: 12, padding: 10, fontSize: 13, fontWeight: 900 }}>{iaAppliedMessage}</div>}
+        {iaError && <div style={{ marginTop: 10, border: '1px solid #F5A897', background: '#FEF2F2', color: '#B91C1C', borderRadius: 12, padding: 10, fontSize: 13, fontWeight: 800 }}>{iaError}</div>}
+        {iaResponse && <div style={{ marginTop: 12, border: `1px solid ${c.border}`, background: '#F6FBFC', borderRadius: 14, padding: 12 }}>
+          <div style={{ fontWeight: 900, color: c.ink }}>IA aplicó:</div>
+          {iaResponse.resumen && <div style={{ marginTop: 5, fontSize: 13, color: c.muted }}>{iaResponse.resumen}</div>}
+          {Array.isArray(iaResponse.actions) && iaResponse.actions.length > 0 && <div style={{ display: 'grid', gap: 7, marginTop: 10 }}>
+            {iaResponse.actions.map((action, index) => <div key={`${action.type}-${index}`} style={{ border: `1px solid ${c.border}`, background: '#fff', borderRadius: 12, padding: 10, fontSize: 12, color: c.ink }}>
+              <b>{action.type}</b>{action.musculo ? ` · ${action.musculo}` : ''}{action.contraccion ? ` · ${action.contraccion}` : ''}{action.cadena ? ` · cadena ${action.cadena}` : ''}{action.nombre ? ` · ${action.nombre}` : ''}{action.query ? ` · ${action.query}` : ''}
+            </div>)}
+          </div>}
+        </div>}
       </div>
 
       <div style={{ border: `1px solid ${c.border}`, borderRadius: 20, padding: 14, background: '#fff' }}>
-        <div style={{ fontWeight: 900, color: c.ink }}>
-          Sugerencias automáticas
-        </div>
-
+        <div style={{ fontWeight: 900, color: c.ink }}>Sugerencias automáticas</div>
         <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-          <input
-            value={pain}
-            onChange={e => setPain(Number(e.target.value) || 0)}
-            placeholder="Dolor 0-10"
-            style={fieldStyle}
-          />
-
-          <select
-            value={objetivo}
-            onChange={e => setObjetivo(e.target.value)}
-            style={fieldStyle}
-          >
+          <input value={pain} onChange={e => setPain(Number(e.target.value) || 0)} placeholder="Dolor 0-10" style={fieldStyle} />
+          <select value={objetivo} onChange={e => setObjetivo(e.target.value)} style={fieldStyle}>
             <option value="rehab">Rehab</option>
             <option value="fuerza">Fuerza</option>
             <option value="retorno">Retorno</option>
           </select>
         </div>
-
-        <div style={{ marginTop: 8, fontSize: 12, color: c.muted }}>
-          {getSuggestionSummary({ pain, objetivo })}
-        </div>
-
+        <div style={{ marginTop: 8, fontSize: 12, color: c.muted }}>{getSuggestionSummary({ pain, objetivo })}</div>
         <div style={{ marginTop: 12, display: 'grid', gap: 8 }}>
-          {suggestions.map(s => (
-            <div key={s.id} style={{ border: `1px solid ${c.border}`, borderRadius: 14, padding: 10, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
-              <div>
-                <div style={{ fontWeight: 900, color: c.ink }}>
-                  {s.nombre}
-                </div>
-                <div style={{ fontSize: 11, color: c.muted }}>
-                  {s.motivo_sugerencia}
-                </div>
-              </div>
-
-              <button type="button" onClick={() => applyOne(s)} style={{ background: c.sky, color: '#fff', border: 'none', borderRadius: 10, padding: '6px 10px', fontWeight: 900, cursor: 'pointer' }}>
-                +
-              </button>
-            </div>
-          ))}
+          {suggestions.map(s => <div key={s.id} style={{ border: `1px solid ${c.border}`, borderRadius: 14, padding: 10, display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'center' }}>
+            <div><div style={{ fontWeight: 900, color: c.ink }}>{s.nombre}</div><div style={{ fontSize: 11, color: c.muted }}>{s.motivo_sugerencia}</div></div>
+            <button type="button" onClick={() => applyOne(s)} style={{ background: c.sky, color: '#fff', border: 'none', borderRadius: 10, padding: '6px 10px', fontWeight: 900, cursor: 'pointer' }}>+</button>
+          </div>)}
         </div>
-
-        <button type="button" onClick={applyAll} style={{ marginTop: 10, border: `1px solid ${c.border}`, borderRadius: 14, padding: '10px 12px', background: '#fff', color: c.skyDark, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>
-          Agregar todas
-        </button>
+        <button type="button" onClick={applyAll} style={{ marginTop: 10, border: `1px solid ${c.border}`, borderRadius: 14, padding: '10px 12px', background: '#fff', color: c.skyDark, fontWeight: 900, cursor: 'pointer', fontFamily: 'inherit' }}>Agregar todas</button>
       </div>
 
-      <ClinicalRoutineEditorWizard
-        key={editorKey}
-        {...props}
-        rutina={localRutina}
-      />
+      <ClinicalRoutineEditorWizard key={editorKey} {...props} rutina={localRutina} />
     </div>
   )
 }
