@@ -204,7 +204,7 @@ export const api = {
   getTurnosPaciente: (pacienteId) => req('GET', `/pacientes/${pacienteId}/turnos`),
   createTurno: (data) => req('POST', '/turnos', data),
   solicitarTurnoPaciente: (pacienteId, data) => req('POST', `/pacientes/${pacienteId}/turnos`, data),
-  updateTurno: (id, data) => req('PUT', `/turnos/${id}`, data),
+  updateTurno: (id, data) => req('PUT', `/turnos/${id}`),
   deleteTurno: (id) => req('DELETE', `/turnos/${id}`),
 
   getDocumentos:   (pacienteId) => req('GET', `/pacientes/${pacienteId}/documentos`),
@@ -258,6 +258,7 @@ export const api = {
   getDolorEvolucion: (id) => req('GET', `/pacientes/${id}/dolor`),
 
   claudeRutina: (descripcion) => req('POST', '/claude/rutina', { descripcion }),
+  iaRutina: (data) => req('POST', '/ia/rutina', data),
 
   getNotas:     () => req('GET', '/notas'),
   createNota:   (texto) => req('POST', '/notas', { texto }),
