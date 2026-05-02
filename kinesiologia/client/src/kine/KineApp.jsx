@@ -16,6 +16,7 @@ import Cuenta from './Cuenta.jsx'
 import PortalPaciente from './PortalPaciente.jsx'
 import PatientRoutineProgressMount from './PatientRoutineProgressMount.jsx'
 import BrandLogo from './BrandLogo.jsx'
+import FloatingAIAssistant from './FloatingAIAssistant.jsx'
 import './kine.css'
 import './premium-refresh.css'
 import './clinical-routine-mobile.css'
@@ -156,6 +157,7 @@ function AdminLayout({ usuario, onLogout }) {
           )
         })}
       </nav>
+      <FloatingAIAssistant />
     </div>
   )
 }
