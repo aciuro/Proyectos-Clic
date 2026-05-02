@@ -44,7 +44,33 @@ router.post('/ia/rutina', auth, onlyAdmin, async (req, res) => {
     const contexto = req.body?.contexto || {}
     if (!prompt) return res.status(400).json({ error: 'Falta el pedido para la IA' })
 
-    const system = `Sos un asistente clínico para una app de kinesiología. Convertí el pedido del kinesiólogo en acciones JSON seguras para editar una rutina. No inventes diagnósticos. No guardes nada. Solo devolvé JSON válido con esta forma: {"resumen":"...", "actions":[{"type":"add_exercise","nombre":"...","series":"3","repeticiones":"10","pausa":"60 seg","indicacion":"..."},{"type":"remove_item","query":"..."},{"type":"update_all_exercises","series":"3","repeticiones":"10"},{"type":"add_agent","nombre":"Hielo","duracion":"15 min","frecuencia":"post rutina"},{"type":"remove_agent","query":"hielo"},{"type":"set_frequency","veces":3,"frecuencia":"3 veces antes del próximo control"},{"type":"add_indication","texto":"..."},{"type":"reorder_clinical"}]} Acciones permitidas: add_exercise, remove_item, update_all_exercises, add_agent, remove_agent, set_frequency, add_indication, reorder_clinical.`
+    const system = `Sos un copiloto clínico para una app de kinesiología. Convertí el pedido del kinesiólogo en acciones JSON seguras para editar una rutina. No guardes nada y no inventes diagnósticos.
+
+Devolvé SOLO JSON válido con esta forma:
+{"resumen":"...", "actions":[...]}
+
+Acciones permitidas:
+1) {"type":"add_exercise","nombre":"...","series":"3","repeticiones":"10","pausa":"60 seg","indicacion":"..."}
+2) {"type":"add_exercise_query","cantidad":2,"musculo":"cuadriceps","contraccion":"excentrica","region":"rodilla","series":"3","repeticiones":"8-10","pausa":"60-90 seg","indicacion":"Bajada lenta y controlada"}
+3) {"type":"add_mobility","nombre":"Bicicleta fija","duracion":"10 min","detalle":"Entrada en calor suave"}
+4) {"type":"add_stretching","nombre":"Elongación final","duracion":"5-8 min","detalle":"Suave, sin dolor"}
+5) {"type":"add_agent","nombre":"Hielo","duracion":"15 min","frecuencia":"post rutina"}
+6) {"type":"remove_item","query":"..."}
+7) {"type":"remove_agent","query":"hielo"}
+8) {"type":"update_all_exercises","series":"3","repeticiones":"10"}
+9) {"type":"set_frequency","veces":3,"frecuencia":"3 veces antes del próximo control"}
+10) {"type":"add_indication","texto":"..."}
+11) {"type":"reorder_clinical"}
+
+Reglas importantes:
+- Si el kinesiólogo pide “dos excéntricos de cuádriceps”, NO inventes nombres: usá add_exercise_query con cantidad 2, musculo cuadriceps, contraccion excentrica, region rodilla.
+- Si pide “dos concéntricos de isquio”, usá add_exercise_query con musculo isquiotibiales, contraccion concentrica, region rodilla o cadera según contexto.
+- Si pide gemelo, región tobillo, musculo gemelos.
+- Si pide glúteo mayor, región cadera, musculo gluteo mayor.
+- Si pide bicicleta/caminar/cinta/elíptico, usá add_mobility o add_cardio, no add_exercise_query.
+- Si pide elongación al final, usá add_stretching.
+- Terminá con reorder_clinical si armás varios bloques.
+- Preferí dosis conservadoras y editables.`
 
     const input = [
       { role: 'system', content: system },
@@ -60,14 +86,13 @@ router.post('/ia/rutina', auth, onlyAdmin, async (req, res) => {
       body: JSON.stringify({
         model: process.env.OPENAI_MODEL || 'gpt-4.1-mini',
         input,
-        temperature: 0.2,
-        max_output_tokens: 900,
+        temperature: 0.15,
+        max_output_tokens: 1200,
       }),
     })
 
     const data = await response.json().catch(() => ({}))
     if (!response.ok) {
-      // Importante: no devolvemos 401 de OpenAI al frontend, porque api.js lo interpreta como sesión vencida.
       return res.status(502).json({ error: openAIErrorMessage(data, response.status), openai_status: response.status })
     }
 
