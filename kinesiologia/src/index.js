@@ -5,13 +5,16 @@ const express = require('express');
 const kineRoutes = require('./kine-routes');
 const routineProgressRoutes = require('./routine-progress-routes');
 const routineFeedbackRoutes = require('./routine-feedback-routes');
+const openaiRoutes = require('./openai-routes');
 
 const app = express();
+app.use(express.json());
 
 // ─── Rutas API ────────────────────────────────────────────────
 app.use('/api/kine', routineFeedbackRoutes);
 app.use('/api/kine', routineProgressRoutes);
 app.use('/api/kine', kineRoutes);
+app.use('/api/kine', openaiRoutes);
 
 // ─── Archivos estáticos ───────────────────────────────────────
 const uploadsDir = path.join(process.env.DATA_DIR || path.join(__dirname, '..'), 'uploads');
